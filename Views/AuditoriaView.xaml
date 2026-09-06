@@ -1,0 +1,837 @@
+<UserControl x:Class="ClinicaLongevidadApp.Views.AuditoriaView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource Brush_FondoOscuro}"
+             VerticalAlignment="Stretch"
+             HorizontalAlignment="Stretch">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <Style x:Key="EstiloCalendarioAuditoria"
+               TargetType="{x:Type Calendar}">
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Foreground" Value="Black" />
+            <Setter Property="BorderBrush" Value="#D0D0D0" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <Style TargetType="{x:Type DatePicker}">
+            <Setter Property="Background" Value="{StaticResource Brush_FondoPanel}" />
+            <Setter Property="Foreground" Value="{StaticResource Brush_TextoClaro}" />
+            <Setter Property="BorderBrush" Value="{StaticResource Brush_PrincipalAzul}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CalendarStyle" Value="{StaticResource EstiloCalendarioAuditoria}" />
+        </Style>
+
+        <Style TargetType="{x:Type DatePickerTextBox}"
+               BasedOn="{StaticResource {x:Type TextBox}}">
+            <Setter Property="Background" Value="{StaticResource Brush_FondoPanel}" />
+            <Setter Property="Foreground" Value="{StaticResource Brush_TextoClaro}" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type DatePickerTextBox}">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Padding="{TemplateBinding Padding}" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="20"
+          VerticalAlignment="Stretch"
+          HorizontalAlignment="Stretch">
+
+        <Border Background="{StaticResource Brush_PanelOscuro}"
+                BorderBrush="{StaticResource Brush_PrincipalVerde}"
+                BorderThickness="1"
+                CornerRadius="20"
+                Padding="25"
+                Effect="{StaticResource SombraSuave}"
+                VerticalAlignment="Stretch"
+                HorizontalAlignment="Stretch">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- TÍTULO -->
+                <TextBlock Grid.Row="0"
+                           Text="Auditoría del Sistema"
+                           FontSize="32"
+                           FontWeight="Bold"
+                           Foreground="{StaticResource Brush_TextoClaro}"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,25"/>
+
+                <!-- FILTROS PRINCIPALES -->
+                <Border Grid.Row="1"
+                        Background="{StaticResource Brush_FondoPanel}"
+                        BorderBrush="{StaticResource Brush_PrincipalVerde}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="15"
+                        Margin="0,0,0,12">
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="1.2*"/>
+                            <ColumnDefinition Width="1.2*"/>
+                            <ColumnDefinition Width="1.2*"/>
+                            <ColumnDefinition Width="1.2*"/>
+                            <ColumnDefinition Width="1.2*"/>
+                            <ColumnDefinition Width="1.2*"/>
+                            <ColumnDefinition Width="1.2*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- BÚSQUEDA GENERAL -->
+                        <StackPanel Grid.Column="0"
+                                    Margin="0,0,10,0">
+
+                            <TextBlock Text="Buscar"
+                                       Foreground="{StaticResource Brush_TextoClaro}"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,5"/>
+
+                            <TextBox Text="{Binding TextoBusqueda,
+                                                    Mode=TwoWay,
+                                                    UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Usuario, acción, módulo o resultado"/>
+                            <CheckBox Content="Mostrar sólo operaciones de herramientas (export/restore/replay)"
+                                      IsChecked="{Binding MostrarSoloOperacionesHerramientas, Mode=TwoWay}"
+                                      Foreground="{StaticResource Brush_TextoClaro}"
+                                      Margin="0,8,0,0"
+                                      ToolTip="Filtra registros generados por herramientas operativas (RotateKeys)." />
+                        </StackPanel>
+
+                        <!-- USUARIO -->
+                        <StackPanel Grid.Column="1"
+                                    Margin="0,0,10,0">
+
+                            <TextBlock Text="Usuario"
+                                       Foreground="{StaticResource Brush_TextoClaro}"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,5"/>
+
+                            <ComboBox ItemsSource="{Binding Usuarios}"
+                                      SelectedItem="{Binding UsuarioSeleccionado,
+                                                              Mode=TwoWay}"/>
+                        </StackPanel>
+
+                        <!-- MÓDULO -->
+                        <StackPanel Grid.Column="2"
+                                    Margin="0,0,10,0">
+
+                            <TextBlock Text="Módulo"
+                                       Foreground="{StaticResource Brush_TextoClaro}"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,5"/>
+
+                            <ComboBox ItemsSource="{Binding Modulos}"
+                                      SelectedItem="{Binding ModuloSeleccionado,
+                                                              Mode=TwoWay}"/>
+                        </StackPanel>
+
+                        <!-- ACCIÓN -->
+                        <StackPanel Grid.Column="3"
+                                    Margin="0,0,10,0">
+
+                            <TextBlock Text="Acción"
+                                       Foreground="{StaticResource Brush_TextoClaro}"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,5"/>
+
+                            <ComboBox ItemsSource="{Binding Acciones}"
+                                      SelectedItem="{Binding AccionSeleccionada,
+                                                              Mode=TwoWay}"/>
+                        </StackPanel>
+
+                        <!-- RESULTADO -->
+                        <StackPanel Grid.Column="4"
+                                    Margin="0,0,10,0">
+
+                            <TextBlock Text="Resultado"
+                                       Foreground="{StaticResource Brush_TextoClaro}"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,5"/>
+                            <ComboBox ItemsSource="{Binding Resultados}"
+                                      SelectedItem="{Binding ResultadoSeleccionado,
+                                                              Mode=TwoWay}"/>
+                        </StackPanel>
+
+                        <!-- TIPO -->
+                        <StackPanel Grid.Column="5"
+                                    Margin="0,0,10,0">
+
+                            <TextBlock Text="Tipo"
+                                       Foreground="{StaticResource Brush_TextoClaro}"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,5"/>
+
+                            <ComboBox ItemsSource="{Binding Tipos}"
+                                      SelectedItem="{Binding TipoSeleccionado,
+                                                              Mode=TwoWay}"/>
+                        </StackPanel>
+
+                        <!-- ROL -->
+                        <StackPanel Grid.Column="6"
+                                    Margin="0,0,10,0">
+
+                            <TextBlock Text="Rol"
+                                       Foreground="{StaticResource Brush_TextoClaro}"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,5"/>
+
+                            <ComboBox ItemsSource="{Binding Roles}"
+                                      SelectedItem="{Binding RolSeleccionado,
+                                                              Mode=TwoWay}"/>
+                        </StackPanel>
+
+                        <!-- ÁREA -->
+                        <StackPanel Grid.Column="7">
+
+                            <TextBlock Text="Área"
+                                       Foreground="{StaticResource Brush_TextoClaro}"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,5"/>
+
+                            <ComboBox ItemsSource="{Binding Areas}"
+                                      SelectedItem="{Binding AreaSeleccionada,
+                                                              Mode=TwoWay}"/>
+                        </StackPanel>
+                    </Grid>
+
+                </Border>
+
+                <!-- FECHAS -->
+                <Border Grid.Row="2"
+                        Background="{StaticResource Brush_FondoPanel}"
+                        BorderBrush="{StaticResource Brush_PrincipalVerde}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="15"
+                        Margin="0,0,0,12">
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="220"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0"
+                                   Text="Fecha desde:"
+                                   Foreground="{StaticResource Brush_TextoClaro}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"/>
+
+                        <DatePicker Grid.Column="1"
+                                    CalendarStyle="{StaticResource EstiloCalendarioAuditoria}"
+                                    SelectedDate="{Binding FechaDesde,
+                                                           Mode=TwoWay}"/>
+
+                        <TextBlock Grid.Column="2"
+                                   Text="Fecha hasta:"
+                                   Foreground="{StaticResource Brush_TextoClaro}"
+                                   VerticalAlignment="Center"
+                                   Margin="15,0,8,0"/>
+
+                        <DatePicker Grid.Column="3"
+                                    CalendarStyle="{StaticResource EstiloCalendarioAuditoria}"
+                                    SelectedDate="{Binding FechaHasta,
+                                                           Mode=TwoWay}"/>
+
+                        <TextBlock Grid.Column="4"
+                                   Text="Severidad:"
+                                   Foreground="{StaticResource Brush_TextoClaro}"
+                                   VerticalAlignment="Center"
+                                   Margin="15,0,8,0"/>
+
+                        <ComboBox Grid.Column="5"
+                                  ItemsSource="{Binding Severidades}"
+                                  SelectedItem="{Binding SeveridadSeleccionada,
+                                                          Mode=TwoWay}"/>
+
+                        <TextBlock Grid.Column="6"
+                                   Text="PacienteId:"
+                                   Foreground="{StaticResource Brush_TextoClaro}"
+                                   VerticalAlignment="Center"
+                                   Margin="15,0,8,0"/>
+
+                        <TextBox Grid.Column="7"
+                                 Text="{Binding FiltroPacienteId,
+                                                Mode=TwoWay,
+                                                UpdateSourceTrigger=PropertyChanged}"/>
+
+                        <TextBlock Grid.Column="8"
+                                   Text="CitaId:"
+                                   Foreground="{StaticResource Brush_TextoClaro}"
+                                   VerticalAlignment="Center"
+                                   Margin="15,0,8,0"/>
+
+                        <TextBox Grid.Column="9"
+                                 Text="{Binding FiltroCitaId,
+                                                Mode=TwoWay,
+                                                UpdateSourceTrigger=PropertyChanged}"/>
+
+                        <TextBlock Grid.Column="10"
+                                   Text="SesiónId:"
+                                   Foreground="{StaticResource Brush_TextoClaro}"
+                                   VerticalAlignment="Center"
+                                   Margin="15,0,8,0"/>
+
+                        <TextBox Grid.Column="11"
+                                 Text="{Binding FiltroSesionId,
+                                                Mode=TwoWay,
+                                                UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+                </Border>
+
+                <!-- BOTONES -->
+                <StackPanel Grid.Row="3"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            Margin="0,0,0,12">
+
+                    <Button Content="Filtrar"
+                            Command="{Binding AplicarFiltrosCommand}"
+                            Style="{StaticResource EstiloBotonPrincipal}"
+                            Width="110"
+                            Height="50"
+                            Padding="0"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            Margin="5"/>
+
+                    <Button Content="Limpiar"
+                            Command="{Binding LimpiarFiltrosCommand}"
+                            Style="{StaticResource EstiloBotonSecundario}"
+                            Width="110"
+                            Height="50"
+                            Padding="0"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            Margin="5"/>
+
+                    <Button Content="Actualizar"
+                            Command="{Binding ActualizarCommand}"
+                            Style="{StaticResource EstiloBotonSecundario}"
+                            Width="120"
+                            Height="50"
+                            Padding="0"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            Margin="5"/>
+
+                    <Button Content="Exportar CSV"
+                            Command="{Binding ExportarCsvCommand}"
+                            Style="{StaticResource EstiloBotonSecundario}"
+                            Width="135"
+                            Height="50"
+                            Padding="0"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            Margin="5,5,0,5"/>
+
+                    <Button Content="Rotar HMAC"
+                            Command="{Binding RotateHmacCommand}"
+                            Style="{StaticResource EstiloBotonSecundario}"
+                            Width="140"
+                            Height="50"
+                            Padding="0"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            Margin="5"
+                            Visibility="{Binding IsAdmin, Converter={StaticResource BoolToVis}}"/>
+
+                    <Button Content="Rotar ENC"
+                            Command="{Binding RotateEncCommand}"
+                            Style="{StaticResource EstiloBotonSecundario}"
+                            Width="140"
+                            Height="50"
+                            Padding="0"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            Margin="5"
+                            Visibility="{Binding IsAdmin, Converter={StaticResource BoolToVis}}"/>
+
+                    <!-- Backup controls (admin only) -->
+                    <StackPanel Orientation="Horizontal" Margin="10,0,0,0" Visibility="{Binding IsAdmin, Converter={StaticResource BoolToVis}}">
+                        <Button Content="Copia ahora"
+                                Command="{Binding BackupNowCommand}"
+                                Style="{StaticResource EstiloBotonSecundario}"
+                                Width="130"
+                                Height="50"
+                                Margin="5"/>
+
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="5">
+                            <TextBlock Text="Hora copia:" Foreground="{StaticResource Brush_TextoClaro}" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                            <TextBox Width="70" Text="{Binding BackupTimeText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Formato HH:mm" />
+                            <Button Content="Programar" Command="{Binding ScheduleBackupCommand}" Style="{StaticResource EstiloBotonSecundario}" Width="100" Height="30" Margin="8,0,0,0" />
+                            <Button Content="Cancelar" Command="{Binding CancelBackupCommand}" Style="{StaticResource EstiloBotonSecundario}" Width="90" Height="30" Margin="8,0,0,0" />
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- TABLA Y DETALLE -->
+                <Grid Grid.Row="4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2.5*"/>
+                        <ColumnDefinition Width="1*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- TABLA -->
+                    <Grid Grid.Column="0"
+                          Margin="0,0,15,0">
+
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- CONTADOR Y ERROR -->
+                        <DockPanel Grid.Row="0"
+                                   Margin="0,0,0,8">
+
+                            <TextBlock Text="{Binding MensajeError,
+                                                     Mode=OneWay}"
+                                       Foreground="Tomato"
+                                       DockPanel.Dock="Right"
+                                       HorizontalAlignment="Right"
+                                       Margin="10,0,0,0"/>
+
+                            <TextBlock Foreground="{StaticResource Brush_TextoClaro}"
+                                       FontSize="15"
+                                       VerticalAlignment="Center">
+
+                                <Run Text="Registros: "/>
+                                <Run Text="{Binding Registros, Mode=OneWay}" FontWeight="Bold"/>
+                                <Run Text="  |  OK: "/>
+                                <Run Text="{Binding RegistrosOk, Mode=OneWay}" FontWeight="Bold"/>
+                                <Run Text="  |  ERROR: "/>
+                                <Run Text="{Binding RegistrosError, Mode=OneWay}" FontWeight="Bold"/>
+                                <Run Text="  |  Tipos: "/>
+                                <Run Text="{Binding TiposEnVista, Mode=OneWay}" FontWeight="Bold"/>
+                            </TextBlock>
+                        </DockPanel>
+
+                        <DataGrid Grid.Row="1"
+                                  x:Name="AuditoriaDataGrid"
+                                  ItemsSource="{Binding ListaAuditoria,
+                                                        Mode=OneWay}"
+                                  SelectedItem="{Binding RegistroSeleccionado,
+                                                          Mode=TwoWay}"
+                                  AutoGenerateColumns="False"
+                                  Background="{StaticResource Brush_FondoPanel}"
+                                  Foreground="{StaticResource Brush_TextoClaro}"
+                                  RowBackground="{StaticResource Brush_FondoPanel}"
+                                  AlternatingRowBackground="{StaticResource Brush_PanelOscuro}"
+                                  BorderBrush="{StaticResource Brush_PrincipalVerde}"
+                                  BorderThickness="1"
+                                  GridLinesVisibility="All"
+                                  HorizontalGridLinesBrush="#333333"
+                                  VerticalGridLinesBrush="#333333"
+                                  IsReadOnly="True"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  HeadersVisibility="Column"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Auto">
+
+                            <DataGrid.Columns>
+
+                                <DataGridTextColumn Header="Fecha / Hora"
+                                                    Binding="{Binding FechaHora,
+                                                        Mode=OneWay,
+                                                        StringFormat={}{0:dd/MM/yyyy HH:mm:ss}}"
+                                                    Width="180"/>
+
+                                <DataGridTextColumn Header="Usuario Admin"
+                                                    Binding="{Binding UsuarioAdmin,
+                                                        Mode=OneWay}"
+                                                    Width="150"/>
+
+                                <DataGridTextColumn Header="Acción"
+                                                    Binding="{Binding Accion,
+                                                        Mode=OneWay}"
+                                                    Width="250"/>
+
+                                <DataGridTextColumn Header="Módulo"
+                                                    Binding="{Binding Modulo,
+                                                        Mode=OneWay}"
+                                                    Width="150"/>
+
+                                <DataGridTextColumn Header="Usuario Afectado"
+                                                    Binding="{Binding UsuarioAfectado,
+                                                        Mode=OneWay}"
+                                                    Width="170"/>
+
+                                <DataGridTextColumn Header="Resultado"
+                                                    Binding="{Binding Resultado,
+                                                        Mode=OneWay}"
+                                                    Width="100"/>
+
+                                <DataGridTextColumn Header="Tipo"
+                                                    Binding="{Binding Tipo,
+                                                        Mode=OneWay}"
+                                                    Width="120"/>
+
+                                <DataGridTextColumn Header="HMAC Key ver."
+                                                    Binding="{Binding KeyVersion,
+                                                        Mode=OneWay}"
+                                                    Width="140"/>
+
+                                <DataGridTextColumn Header="Enc Key ver."
+                                                    Binding="{Binding KeyVersionEnc,
+                                                        Mode=OneWay}"
+                                                    Width="140"/>
+
+                                <DataGridTextColumn Header="Detalles"
+                                                    Binding="{Binding Detalles,
+                                                        Mode=OneWay}"
+                                                    Width="280"/>
+                            </DataGrid.Columns>
+
+                            <DataGrid.ColumnHeaderStyle>
+                                <Style TargetType="DataGridColumnHeader">
+                                    <Setter Property="Background"
+                                            Value="{StaticResource Brush_PanelOscuro}"/>
+                                    <Setter Property="Foreground"
+                                            Value="{StaticResource Brush_TextoClaro}"/>
+                                    <Setter Property="FontWeight"
+                                            Value="Bold"/>
+                                    <Setter Property="Padding"
+                                            Value="8"/>
+                                    <Setter Property="HorizontalContentAlignment"
+                                            Value="Center"/>
+                                    <Setter Property="VerticalContentAlignment"
+                                            Value="Center"/>
+                                    <Setter Property="BorderBrush"
+                                            Value="{StaticResource Brush_PrincipalVerde}"/>
+                                    <Setter Property="BorderThickness"
+                                            Value="0,0,0,1"/>
+                                </Style>
+                            </DataGrid.ColumnHeaderStyle>
+
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <Setter Property="Background"
+                                            Value="{StaticResource Brush_FondoPanel}"/>
+                                    <Setter Property="Foreground"
+                                            Value="{StaticResource Brush_TextoClaro}"/>
+                                    <Setter Property="BorderBrush"
+                                            Value="#333333"/>
+                                    <Setter Property="BorderThickness"
+                                            Value="0,0,0,1"/>
+                                </Style>
+                            </DataGrid.RowStyle>
+
+                            <DataGrid.CellStyle>
+                                <Style TargetType="DataGridCell">
+                                    <Setter Property="Padding"
+                                            Value="8,5"/>
+                                    <Setter Property="VerticalContentAlignment"
+                                            Value="Center"/>
+                                    <Setter Property="BorderThickness"
+                                            Value="0"/>
+                                </Style>
+                            </DataGrid.CellStyle>
+
+                        </DataGrid>
+                    </Grid>
+
+                    <!-- PANEL DE DETALLE -->
+                    <Border Grid.Column="1"
+                            Background="{StaticResource Brush_FondoPanel}"
+                            BorderBrush="{StaticResource Brush_PrincipalVerde}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="20,0, 20, 20"
+                            Margin="0, 25, 0, 0"
+                            VerticalAlignment="Stretch">
+
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+
+                            <StackPanel>
+                                <StackPanel>
+
+                                    <TextBlock Text="Detalle del registro"
+                                               FontSize="22"
+                                               FontWeight="Bold"
+                                               Foreground="{StaticResource Brush_TextoClaro}"
+                                               HorizontalAlignment="Center"
+                                               Margin="0,0,0,20"/>
+
+                                    <TextBlock Text="Seleccione una fila para ver sus detalles."
+                                               Foreground="{StaticResource Brush_TextoClaro}"
+                                               TextWrapping="Wrap"
+                                               HorizontalAlignment="Center"
+                                               TextAlignment="Center"
+                                               Margin="0,0,0,20"/>
+
+                                    <!-- Resto de los datos del registro -->
+
+                                </StackPanel>
+
+                                <TextBlock Text="Identificador"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource Brush_PrincipalVerde}"/>
+
+                                <TextBlock Text="{Binding RegistroSeleccionado.Id,
+                                                          Mode=OneWay}"
+                                           Foreground="{StaticResource Brush_TextoClaro}"
+                                           Margin="0,0,0,12"/>
+
+                                <TextBlock Text="Fecha y hora"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource Brush_PrincipalVerde}"/>
+
+                                <TextBlock Text="{Binding RegistroSeleccionado.FechaHora,
+                                                          Mode=OneWay,
+                                                          StringFormat={}{0:dd/MM/yyyy HH:mm:ss}}"
+                                           Foreground="{StaticResource Brush_TextoClaro}"
+                                           Margin="0,0,0,12"/>
+
+                                <TextBlock Text="Usuario administrador"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource Brush_PrincipalVerde}"/>
+
+                                <TextBlock Text="{Binding RegistroSeleccionado.UsuarioAdmin,
+                                                          Mode=OneWay}"
+                                           Foreground="{StaticResource Brush_TextoClaro}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,12"/>
+
+                                <TextBlock Text="Acción"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource Brush_PrincipalVerde}"/>
+
+                                <TextBlock Text="{Binding RegistroSeleccionado.Accion,
+                                                          Mode=OneWay}"
+                                           Foreground="{StaticResource Brush_TextoClaro}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,12"/>
+
+                                <TextBlock Text="Rol"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource Brush_PrincipalVerde}"/>
+
+                                <TextBlock Text="{Binding RegistroSeleccionado.Rol,
+                                                          Mode=OneWay}"
+                                           Foreground="{StaticResource Brush_TextoClaro}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,12"/>
+
+                                <TextBlock Text="Área"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource Brush_PrincipalVerde}"/>
+
+                                <TextBlock Text="{Binding RegistroSeleccionado.Area,
+                                                          Mode=OneWay}"
+                                           Foreground="{StaticResource Brush_TextoClaro}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,12"/>
+
+                                <TextBlock Text="Sesión"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource Brush_PrincipalVerde}"/>
+
+                                <DockPanel Margin="0,0,0,12" LastChildFill="True">
+                                    <!-- Session text fills the available space; buttons dock to the right -->
+                                    <TextBlock Text="{Binding RegistroSeleccionado.SesionId, Mode=OneWay}"
+                                               Foreground="{StaticResource Brush_TextoClaro}"
+                                               TextWrapping="Wrap"
+                                               VerticalAlignment="Center"/>
+
+                                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                                        <Button Command="{Binding CopiarSesionIdCommand}"
+                                                Style="{StaticResource EstiloBotonSecundario}"
+                                                Width="36"
+                                                Height="30"
+                                                Margin="8,0,0,0"
+                                                ToolTip="Copiar identificador de sesión">
+                                            <TextBlock Text="📋" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Button>
+
+                                        <Button Command="{Binding CopiarKeyVersionsCommand}"
+                                                Style="{StaticResource EstiloBotonSecundario}"
+                                                Width="36"
+                                                Height="30"
+                                                Margin="8,0,0,0"
+                                                ToolTip="Copiar versiones de clave (HMAC / ENC)">
+                                            <TextBlock Text="📋" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Button>
+                                    </StackPanel>
+                                </DockPanel>
+
+                                <TextBlock Text="Equipo"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource Brush_PrincipalVerde}"/>
+
+                                <TextBlock Text="{Binding RegistroSeleccionado.Equipo,
+                                                          Mode=OneWay}"
+                                           Foreground="{StaticResource Brush_TextoClaro}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,12"/>
+
+                                <TextBlock Text="Versión app"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource Brush_PrincipalVerde}"/>
+
+                                <TextBlock Text="{Binding RegistroSeleccionado.VersionApp,
+                                                          Mode=OneWay}"
+                                           Foreground="{StaticResource Brush_TextoClaro}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,12"/>
+
+                                <TextBlock Text="Versión clave HMAC"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource Brush_PrincipalVerde}"/>
+
+                                <TextBlock Text="{Binding RegistroSeleccionado.KeyVersion,
+                                                          Mode=OneWay}"
+                                           Foreground="{StaticResource Brush_TextoClaro}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,12"/>
+
+                                <TextBlock Text="Versión clave ENC"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource Brush_PrincipalVerde}"/>
+
+                                <TextBlock Text="{Binding RegistroSeleccionado.KeyVersionEnc,
+                                                          Mode=OneWay}"
+                                           Foreground="{StaticResource Brush_TextoClaro}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,12"/>
+
+                                <TextBlock Text="Módulo"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource Brush_PrincipalVerde}"/>
+
+                                <TextBlock Text="{Binding RegistroSeleccionado.Modulo,
+                                                          Mode=OneWay}"
+                                           Foreground="{StaticResource Brush_TextoClaro}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,12"/>
+
+                                <TextBlock Text="Usuario afectado"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource Brush_PrincipalVerde}"/>
+
+                                <TextBlock Text="{Binding RegistroSeleccionado.UsuarioAfectado,
+                                                          Mode=OneWay}"
+                                           Foreground="{StaticResource Brush_TextoClaro}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,12"/>
+
+                                <TextBlock Text="Resultado"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource Brush_PrincipalVerde}"/>
+
+                                <TextBlock Text="{Binding RegistroSeleccionado.Resultado,
+                                                          Mode=OneWay}"
+                                           Foreground="{StaticResource Brush_TextoClaro}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,12"/>
+
+                                <TextBlock Text="Tipo"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource Brush_PrincipalVerde}"/>
+
+                                <TextBlock Text="{Binding RegistroSeleccionado.Tipo,
+                                                          Mode=OneWay}"
+                                           Foreground="{StaticResource Brush_TextoClaro}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,12"/>
+
+                                <TextBlock Text="Detalles"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource Brush_PrincipalVerde}"/>
+
+                                <TextBlock Text="{Binding DetalleRegistroFormateado,
+                                                          Mode=OneWay}"
+                                           Foreground="{StaticResource Brush_TextoClaro}"
+                                           FontFamily="Consolas"
+                                           TextWrapping="Wrap"/>
+
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+                <!-- Snackbar / Toast -->
+                <Border x:Name="SnackbarBorder"
+                        Grid.RowSpan="5"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom"
+                        Margin="0,0,20,20"
+                        Background="#DD333333"
+                        CornerRadius="6"
+                        Padding="10"
+                        Visibility="{Binding SnackbarVisible, Converter={StaticResource BoolToVis}}"
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        Opacity="0">
+                    <Border.RenderTransform>
+                        <TranslateTransform Y="10" />
+                    </Border.RenderTransform>
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SnackbarVisible}" Value="True">
+                                    <DataTrigger.EnterActions>
+                                        <BeginStoryboard Name="ShowSnackbarStoryboard">
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                 From="0" To="1" Duration="0:0:0.22" />
+                                                <DoubleAnimation Storyboard.TargetProperty="(RenderTransform).(TranslateTransform.Y)"
+                                                                 From="10" To="0" Duration="0:0:0.22" />
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.EnterActions>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding SnackbarVisible}" Value="False">
+                                    <DataTrigger.EnterActions>
+                                        <BeginStoryboard Name="HideSnackbarStoryboard">
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                 From="1" To="0" Duration="0:0:0.22" />
+                                                <DoubleAnimation Storyboard.TargetProperty="(RenderTransform).(TranslateTransform.Y)"
+                                                                 From="0" To="10" Duration="0:0:0.22" />
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.EnterActions>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock Text="{Binding SnackbarMessage, Mode=OneWay}"
+                               Foreground="White"
+                               FontWeight="SemiBold"/>
+                </Border>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

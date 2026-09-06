@@ -1,0 +1,358 @@
+﻿using System;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Windows;
+using System.Windows.Input;
+using System.Windows.Threading;
+using System.Text;
+using System.Text.Json;
+using System.Security.Cryptography;
+using ClinicaLongevidadApp.Models;
+using ClinicaLongevidadApp.Services;
+using ClinicaLongevidadApp.ViewModels;
+using ClinicaLongevidadApp.Views;
+
+namespace ClinicaLongevidadApp
+{
+    public partial class App : Application
+    {
+        private static readonly TimeSpan InactivityTimeout = TimeSpan.FromMinutes(10);
+        private static readonly TimeSpan InactivityCheckInterval = TimeSpan.FromSeconds(15);
+        private static System.Threading.Timer? _inactivityTimer;
+        private static DateTime _lastUserActivityUtc = DateTime.UtcNow;
+        private static bool _sessionLocked;
+
+        public static AuditoriaService? AuditoriaService { get; private set; }
+
+        public static DashboardViewModel? DashboardViewModel { get; set; }
+
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+
+            string dbPath = Path.Combine(
+                Environment.GetFolderPath(
+                    Environment.SpecialFolder.LocalApplicationData),
+                "ClinicaLongevidad.db");
+
+            string connectionString = $"Data Source={dbPath}";
+
+            // Configure key provider: prefer Azure Key Vault if configured
+            IKeyProvider keyProvider;
+            string? vaultUri = Environment.GetEnvironmentVariable("KEYVAULT_URI");
+            if (!string.IsNullOrWhiteSpace(vaultUri))
+            {
+                try
+                {
+                    keyProvider = new AzureKeyVaultKeyProvider();
+                }
+                catch
+                {
+                    // fallback
+                    keyProvider = new LocalKeyProvider();
+                }
+            }
+            else
+            {
+                keyProvider = new LocalKeyProvider();
+            }
+
+            // Optional exporters/forwarders
+            IAuditExporter? exporter = null;
+            IWebhookForwarder? forwarder = null;
+
+            string? storageConfigured = Environment.GetEnvironmentVariable("STORAGE_CONNECTION_STRING") ?? Environment.GetEnvironmentVariable("STORAGE_ACCOUNT_URI");
+            if (!string.IsNullOrWhiteSpace(storageConfigured))
+            {
+                try { exporter = new BlobAuditExporter(keyProvider); } catch { exporter = null; }
+            }
+
+            string? webhookUrl = Environment.GetEnvironmentVariable("AUDIT_WEBHOOK_URL");
+            if (!string.IsNullOrWhiteSpace(webhookUrl))
+            {
+                try { forwarder = new WebhookForwarder(keyProvider); } catch { forwarder = null; }
+            }
+
+            AuditoriaService = new AuditoriaService(connectionString, keyProvider, exporter, forwarder);
+            // Store connection string for tools and UI backup service
+            Current.Properties["AuditConnectionString"] = connectionString;
+
+            // Configure key rotation provider and service: prefer Azure Key Vault when available
+            IKeyRotationProvider? rotationProvider = null;
+            if (!string.IsNullOrWhiteSpace(vaultUri))
+            {
+                try
+                {
+                    rotationProvider = new AzureKeyRotationProvider();
+                }
+                catch
+                {
+                    // fallback to local rotation provider if vault setup fails
+                    rotationProvider = new LocalKeyRotationProvider();
+                }
+            }
+            else
+            {
+                rotationProvider = new LocalKeyRotationProvider();
+            }
+
+            // Create key rotation orchestrator and keep it available in Application properties
+            var keyRotationService = new KeyRotationService(rotationProvider, AuditoriaService);
+            Current.Properties["KeyRotationService"] = keyRotationService;
+
+            // Start integrity worker
+            try
+            {
+                var integrityWorker = new AuditoriaIntegrityWorker(AuditoriaService, TimeSpan.FromMinutes(60));
+
+                // Subscribe to integrity failure events to escalate (webhook/export/log).
+                integrityWorker.OnIntegrityFailure += async (errors) =>
+                {
+                    try
+                    {
+                        string eventId = Guid.NewGuid().ToString("N");
+                        var payloadObj = new
+                        {
+                            EventId = eventId,
+                            TimestampUtc = DateTime.UtcNow,
+                            Machine = Environment.MachineName,
+                            AppVersion = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty,
+                            HmacKeyVersion = keyProvider?.GetHmacKeyVersion() ?? string.Empty,
+                            EncKeyVersion = keyProvider?.GetEncryptionKeyVersion() ?? string.Empty,
+                            Errors = errors
+                        };
+
+                        string json = JsonSerializer.Serialize(payloadObj);
+
+                        // Compute signature using key provider if available
+                        string signature = string.Empty;
+                        try
+                        {
+                            var key = keyProvider?.GetHmacKey();
+                            if (key != null && key.Length > 0)
+                            {
+                                using var hmac = new HMACSHA256(key);
+                                var sig = hmac.ComputeHash(Encoding.UTF8.GetBytes(json ?? string.Empty));
+                                signature = Convert.ToHexString(sig);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            LogService.Warning("App", "Failed to compute HMAC for integrity failure payload: " + ex.Message);
+                        }
+
+                        LogService.Error("App", $"Audit integrity failure detected ({errors.Count}): {string.Join("; ", errors)}");
+
+                        // Forward to webhook if available
+                        if (forwarder != null)
+                        {
+                            try { await forwarder.ForwardEventAsync(json!, signature); } catch (Exception ex) { LogService.Error("App", "Error forwarding integrity alert", ex); }
+                        }
+
+                        // Export to blob storage if configured
+                        if (exporter != null)
+                        {
+                            try { await exporter.ExportEventAsync(eventId, json!, signature); } catch (Exception ex) { LogService.Error("App", "Error exporting integrity alert", ex); }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LogService.Error("App", "Error handling integrity failure", ex);
+                    }
+                };
+
+                integrityWorker.Start();
+                // store in App properties for shutdown
+                Current.Properties["AuditoriaIntegrityWorker"] = integrityWorker;
+            }
+            catch (Exception ex)
+            {
+                // Log worker start failures but keep app running
+                LogService.Error("App", "Failed to start AuditoriaIntegrityWorker", ex);
+            }
+
+            DashboardViewModel = new DashboardViewModel();
+
+            InputManager.Current.PreProcessInput += OnPreProcessInput;
+            StartInactivityMonitoring();
+
+            var mainWindow = new MainWindow();
+
+            MainWindow = mainWindow;
+
+            mainWindow.Show();
+        }
+
+        public static void CerrarSesion()
+        {
+            string? usuarioActual = Sesion.UsuarioActual;
+
+            try
+            {
+                AuditoriaService?.RegistrarEvento(new AuditoriaEvento
+                {
+                    UsuarioAdmin = usuarioActual ?? "Sistema",
+                    Accion = "Sesion.Cerrar",
+                    Modulo = "Sesión",
+                    UsuarioAfectado = usuarioActual ?? string.Empty,
+                    Resultado = true,
+                    FechaHora = DateTime.Now,
+                    Tipo = "Sesion",
+                    Detalles = AuditoriaDetallesHelper.CrearJson(
+                        ("Usuario", usuarioActual ?? string.Empty),
+                        ("Area", Sesion.AreaActual ?? string.Empty))
+                });
+            }
+            catch
+            {
+                // No interrumpir el cierre de sesión si falla la auditoría.
+            }
+            finally
+            {
+                ResetInactivityTracking();
+                Sesion.Limpiar();
+                DashboardViewModel = null;
+
+                if (Current?.MainWindow is not null)
+                {
+                    Current.MainWindow.Content = new WelcomeView();
+                }
+            }
+        }
+
+        private static void StartInactivityMonitoring()
+        {
+            _lastUserActivityUtc = DateTime.UtcNow;
+            _inactivityTimer?.Dispose();
+            _inactivityTimer = new System.Threading.Timer(
+                _ => CheckInactivity(),
+                null,
+                InactivityCheckInterval,
+                InactivityCheckInterval);
+        }
+
+        private void OnPreProcessInput(object sender, PreProcessInputEventArgs e)
+        {
+            if (_sessionLocked)
+            {
+                return;
+            }
+
+            if (Sesion.UsuarioActual is null)
+            {
+                return;
+            }
+
+            _lastUserActivityUtc = DateTime.UtcNow;
+        }
+
+        private static void CheckInactivity()
+        {
+            if (_sessionLocked || Sesion.UsuarioActual is null)
+            {
+                return;
+            }
+
+            TimeSpan idleTime = GetIdleTime();
+            TimeSpan appIdle = DateTime.UtcNow - _lastUserActivityUtc;
+
+            if (idleTime < InactivityTimeout && appIdle < InactivityTimeout)
+            {
+                return;
+            }
+
+            Application.Current?.Dispatcher.BeginInvoke(new Action(LockSessionForInactivity));
+        }
+
+        private static void LockSessionForInactivity()
+        {
+            if (_sessionLocked || Sesion.UsuarioActual is null)
+            {
+                return;
+            }
+
+            _sessionLocked = true;
+            _inactivityTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+
+            try
+            {
+                AuditoriaService?.RegistrarEvento(new AuditoriaEvento
+                {
+                    UsuarioAdmin = Sesion.UsuarioActual ?? "Sistema",
+                    Accion = "Sesion.BloqueoInactividad",
+                    Modulo = "Seguridad",
+                    UsuarioAfectado = Sesion.UsuarioActual ?? string.Empty,
+                    Resultado = true,
+                    FechaHora = DateTime.Now,
+                    Tipo = "Sesion",
+                    Detalles = AuditoriaDetallesHelper.CrearJson(
+                        ("TimeoutMinutos", InactivityTimeout.TotalMinutes),
+                        ("Usuario", Sesion.UsuarioActual ?? string.Empty))
+                });
+            }
+            catch
+            {
+                // No interrumpir el bloqueo si falla la auditoría.
+            }
+
+            if (Current?.MainWindow is null)
+            {
+                UnlockSessionAfterInactivity();
+                return;
+            }
+
+            var lockWindow = new InactivityLockWindow
+            {
+                Owner = Current.MainWindow
+            };
+
+            bool? result = lockWindow.ShowDialog();
+
+            if (result == true)
+            {
+                UnlockSessionAfterInactivity();
+            }
+        }
+
+        private static void UnlockSessionAfterInactivity()
+        {
+            _sessionLocked = false;
+            _lastUserActivityUtc = DateTime.UtcNow;
+            _inactivityTimer?.Change(InactivityCheckInterval, InactivityCheckInterval);
+        }
+
+        private static void ResetInactivityTracking()
+        {
+            _sessionLocked = false;
+            _lastUserActivityUtc = DateTime.UtcNow;
+            _inactivityTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+        }
+
+        private static TimeSpan GetIdleTime()
+        {
+            LASTINPUTINFO lastInputInfo = new LASTINPUTINFO
+            {
+                cbSize = (uint)Marshal.SizeOf<LASTINPUTINFO>()
+            };
+
+            if (!GetLastInputInfo(ref lastInputInfo))
+            {
+                return TimeSpan.Zero;
+            }
+
+            uint idleTicks = unchecked((uint)Environment.TickCount - lastInputInfo.dwTime);
+            return TimeSpan.FromMilliseconds(idleTicks);
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct LASTINPUTINFO
+        {
+            public uint cbSize;
+            public uint dwTime;
+        }
+
+        [DllImport("user32.dll")]
+        private static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
+    }
+}

@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
+
+    - name: Test
+      env:
+        AUDIT_HMAC_KEY: ${{ secrets.AUDIT_HMAC_KEY }}
+        AUDIT_ENC_KEY: ${{ secrets.AUDIT_ENC_KEY }}
+      run: dotnet test --no-build --configuration Release --collect:"XPlat Code Coverage"
+
+    - name: Upload coverage artifact
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-reports
+        path: |
+          **/coverage.cobertura.xml
+          **/coverage.opencover.xml
+
+    - name: Upload coverage to Codecov (optional)
+      if: success() && env.CODECOV_TOKEN
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: |
+          **/coverage.cobertura.xml
+        fail_ci_if_error: false

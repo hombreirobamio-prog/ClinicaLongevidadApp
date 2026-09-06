@@ -1,0 +1,669 @@
+<UserControl x:Class="ClinicaLongevidadApp.Views.PanelRecepcionView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:ClinicaLongevidadApp.Converters"
+             xmlns:primitives="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="1.15*" />
+            <RowDefinition Height="0.85*" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Row="0" Grid.Column="0" Margin="0 0 8 8" Padding="12"
+                Background="{StaticResource Brush_FondoPanel}"
+                Visibility="{Binding MostrarSeccionPacientes, Converter={StaticResource BoolToVisibilityConverter}}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <StackPanel.Resources>
+                        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource {x:Type TextBox}}">
+                            <Setter Property="MinHeight" Value="0" />
+                            <Setter Property="Height" Value="28" />
+                            <Setter Property="Padding" Value="4" />
+                        </Style>
+                        <Style TargetType="{x:Type DatePicker}">
+                            <Setter Property="Background" Value="{StaticResource Brush_FondoPanel}" />
+                            <Setter Property="Foreground" Value="{StaticResource Brush_TextoClaro}" />
+                            <Setter Property="BorderBrush" Value="{StaticResource Brush_PrincipalAzul}" />
+                            <Setter Property="BorderThickness" Value="1" />
+                            <Setter Property="MinHeight" Value="0" />
+                            <Setter Property="Height" Value="30" />
+                        </Style>
+                        <Style TargetType="{x:Type DatePickerTextBox}" BasedOn="{StaticResource {x:Type TextBox}}">
+                            <Setter Property="Background" Value="{StaticResource Brush_FondoPanel}" />
+                            <Setter Property="Foreground" Value="{StaticResource Brush_TextoClaro}" />
+                            <Setter Property="BorderBrush" Value="Transparent" />
+                            <Setter Property="BorderThickness" Value="0" />
+                            <Setter Property="Padding" Value="4" />
+                            <Setter Property="Height" Value="30" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="{x:Type DatePickerTextBox}">
+                                        <Border Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}">
+                                            <ScrollViewer x:Name="PART_ContentHost"
+                                                          Padding="{TemplateBinding Padding}" />
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </StackPanel.Resources>
+
+                    <TextBlock Text="NUEVO PACIENTE" FontSize="22" FontWeight="Bold"
+                               Foreground="{StaticResource Brush_TextoClaro}" Margin="0 0 0 12" />
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="1.5*" />
+                            <ColumnDefinition Width="2*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Margin="4">
+                            <TextBlock Text="Nombre y Apellidos" Foreground="{StaticResource Brush_TextoClaro}" />
+                            <TextBox Text="{Binding Nombre, UpdateSourceTrigger=PropertyChanged}" Height="30" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Margin="4">
+                            <TextBlock Text="Teléfono" Foreground="{StaticResource Brush_TextoClaro}" />
+                            <TextBox Text="{Binding Telefono, UpdateSourceTrigger=PropertyChanged}" Height="30" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2" Margin="4">
+                            <TextBlock Text="Email" Foreground="{StaticResource Brush_TextoClaro}" />
+                            <TextBox Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" Height="30" />
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" Margin="0 12 0 0">
+                        <Button Content="{Binding TextoBotonDatos}" Style="{StaticResource EstiloBotonSecundario}"
+                                Width="140" Height="45" Margin="4" Command="{Binding GuardarDatosCommand}" />
+                        <Button Content="Crear Cita" Style="{StaticResource EstiloBotonPrincipal}"
+                                Width="140" Height="45" FontSize="16" Margin="4" Command="{Binding MostrarCrearCitaCommand}" />
+                    </StackPanel>
+
+                    <TextBlock Text="⚠ Protección de datos pendiente de firma/aceptación"
+                               Foreground="#E53935" FontWeight="Bold" Margin="4 6 4 0"
+                               Visibility="{Binding RequiereRegularizarProteccionDatos, Converter={StaticResource BoolToVisibilityConverter}}" />
+
+                    <StackPanel Visibility="{Binding MostrarDatosAdicionales, Converter={StaticResource BoolToVisibilityConverter}}"
+                                Margin="0 12 0 0">
+                        <TextBlock Text="DATOS PROTEGIDOS" FontWeight="Bold"
+                                   Foreground="{StaticResource Brush_TextoClaro}" Margin="4 0 4 8" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="4">
+                                <TextBlock Text="DNI" Foreground="{StaticResource Brush_TextoClaro}" />
+                                <TextBox Text="{Binding DNI, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="4">
+                                <TextBlock Text="Fecha nacimiento" Foreground="{StaticResource Brush_TextoClaro}" />
+                                <DatePicker SelectedDate="{Binding FechaNacimiento}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Margin="4">
+                                <TextBlock Text="Sexo" Foreground="{StaticResource Brush_TextoClaro}" />
+                                <ComboBox SelectedValue="{Binding Sexo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Content">
+                                    <ComboBoxItem Content="Hombre" />
+                                    <ComboBoxItem Content="Mujer" />
+                                    <ComboBoxItem Content="Otro" />
+                                </ComboBox>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="4">
+                                <TextBlock Text="Calle" Foreground="{StaticResource Brush_TextoClaro}" />
+                                <TextBox Text="{Binding Calle, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="4">
+                                <TextBlock Text="Número" Foreground="{StaticResource Brush_TextoClaro}" />
+                                <TextBox Text="{Binding Numero, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Margin="4">
+                                <TextBlock Text="Piso" Foreground="{StaticResource Brush_TextoClaro}" />
+                                <TextBox Text="{Binding Piso, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="3" Margin="4">
+                                <TextBlock Text="CP" Foreground="{StaticResource Brush_TextoClaro}" />
+                                <TextBox Text="{Binding CP, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="4">
+                                <TextBlock Text="Municipio" Foreground="{StaticResource Brush_TextoClaro}" />
+                                <TextBox Text="{Binding Municipio, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="4">
+                                <TextBlock Text="Provincia" Foreground="{StaticResource Brush_TextoClaro}" />
+                                <TextBox Text="{Binding Provincia, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Margin="4">
+                                <TextBlock Text="Fecha alta" Foreground="{StaticResource Brush_TextoClaro}" />
+                                <DatePicker SelectedDate="{Binding FechaAlta}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="4">
+                                <TextBlock Text="Protección de datos" Foreground="{StaticResource Brush_TextoClaro}" />
+                                <ComboBox SelectedValue="{Binding ProteccionDatos, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Content">
+                                    <ComboBoxItem Content="Pendiente" />
+                                    <ComboBoxItem Content="Acepta" />
+                                    <ComboBoxItem Content="No acepta" />
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="4">
+                                <TextBlock Text="Firma" Foreground="{StaticResource Brush_TextoClaro}" />
+                                <TextBox Text="{Binding Firma, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <Border Grid.Row="0" Grid.Column="1" Margin="8 0 0 8" Padding="16" Background="{StaticResource Brush_FondoPanel}"
+                Visibility="{Binding MostrarSeccionCitas, Converter={StaticResource BoolToVisibilityConverter}}">
+            <Border.Resources>
+                <converters:FestivoTipoBrushConverter x:Key="FestivoTipoBrushConverter" />
+                <Style x:Key="CalendarDayButtonFestivoStyle" TargetType="{x:Type primitives:CalendarDayButton}">
+                    <Setter Property="Foreground" Value="Black" />
+                    <Setter Property="BorderBrush" Value="Transparent" />
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="Background">
+                        <Setter.Value>
+                            <Binding Converter="{StaticResource FestivoTipoBrushConverter}" />
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+                <Style x:Key="CalendarFestivosStyle" TargetType="{x:Type Calendar}">
+                    <Setter Property="CalendarDayButtonStyle" Value="{StaticResource CalendarDayButtonFestivoStyle}" />
+                </Style>
+
+                <Style TargetType="{x:Type DatePicker}">
+                    <Setter Property="Background" Value="{StaticResource Brush_FondoPanel}" />
+                    <Setter Property="Foreground" Value="{StaticResource Brush_TextoClaro}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource Brush_PrincipalAzul}" />
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="MinHeight" Value="0" />
+                    <Setter Property="Height" Value="30" />
+                </Style>
+
+                <Style TargetType="{x:Type DatePickerTextBox}" BasedOn="{StaticResource {x:Type TextBox}}">
+                    <Setter Property="Background" Value="{StaticResource Brush_FondoPanel}" />
+                    <Setter Property="Foreground" Value="{StaticResource Brush_TextoClaro}" />
+                    <Setter Property="BorderBrush" Value="Transparent" />
+                    <Setter Property="BorderThickness" Value="0" />
+                    <Setter Property="Padding" Value="4" />
+                    <Setter Property="Height" Value="30" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="{x:Type DatePickerTextBox}">
+                                <Border Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}">
+                                    <ScrollViewer x:Name="PART_ContentHost"
+                                                  Padding="{TemplateBinding Padding}" />
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </Border.Resources>
+            <StackPanel>
+                <TextBlock Text="CREAR CITA" FontSize="20" FontWeight="Bold" Foreground="{StaticResource Brush_TextoClaro}" Margin="0 0 0 12" />
+                <Grid Visibility="{Binding MostrarFormularioCrearCita, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.5*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="1.3*" />
+                        <ColumnDefinition Width="1.1*" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" Text="Paciente" Foreground="{StaticResource Brush_TextoClaro}" FontWeight="Bold" />
+                    <TextBlock Grid.Column="1" Text="Fecha" Foreground="{StaticResource Brush_TextoClaro}" FontWeight="Bold" />
+                    <TextBlock Grid.Column="2" Text="Hora" Foreground="{StaticResource Brush_TextoClaro}" FontWeight="Bold" />
+                    <TextBlock Grid.Column="3" Text="Profesional" Foreground="{StaticResource Brush_TextoClaro}" FontWeight="Bold" />
+                    <TextBlock Grid.Column="4" Text="Estado" Foreground="{StaticResource Brush_TextoClaro}" FontWeight="Bold" />
+
+                    <TextBox Grid.Row="1" Grid.Column="0" Text="{Binding PacienteParaCita, Mode=OneWay}" Height="30" IsReadOnly="True" Margin="0 0 6 0" />
+                    <DatePicker x:Name="DatePickerFechaCita" Grid.Row="1" Grid.Column="1" SelectedDate="{Binding FechaCita}"
+                                CalendarStyle="{StaticResource CalendarFestivosStyle}" Height="30" Margin="0 0 6 0" />
+                    <ComboBox Grid.Row="1" Grid.Column="2" ItemsSource="{Binding HorasDisponibles}" SelectedItem="{Binding HoraCita}" Height="30" Margin="0 0 6 0" />
+                    <ComboBox Grid.Row="1" Grid.Column="3" ItemsSource="{Binding Profesionales}" SelectedItem="{Binding ProfesionalCita}" Height="30" Margin="0 0 6 0" />
+                    <ComboBox Grid.Row="1" Grid.Column="4" SelectedValue="{Binding EstadoCita}" SelectedValuePath="Content" Height="30" Margin="0">
+                        <ComboBoxItem Content="Pendiente" />
+                        <ComboBoxItem Content="Confirmada" />
+                    </ComboBox>
+                </Grid>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0 16 0 0"
+                            Visibility="{Binding MostrarFormularioCrearCita, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <Button Content="Editar cita seleccionada" Command="{Binding EditarCitaCommand}" Style="{StaticResource EstiloBotonSecundario}"
+                            Width="180" Height="42" FontSize="14" Margin="0 0 8 0" />
+                    <Button Content="Cancelar edición" Command="{Binding CancelarEdicionCitaCommand}" Style="{StaticResource EstiloBotonSecundario}"
+                            Width="140" Height="42" FontSize="14" Margin="0 0 8 0"
+                            Visibility="{Binding EstaEditandoCita, Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <Button Content="Aceptar"
+                            Command="{Binding CrearCitaCommand}"
+                            Style="{StaticResource EstiloBotonPrincipal}"
+                            Width="140"
+                            Height="42"
+                            FontSize="15"
+                            Foreground="White"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center" />
+                </StackPanel>
+
+                <Border Margin="12 12 0 0" Padding="10" Background="{StaticResource Brush_FondoPanel}">
+                    <StackPanel>
+                        <TextBlock Text="FICHA DE CITAS DEL PACIENTE" FontWeight="Bold" Foreground="{StaticResource Brush_TextoClaro}" Margin="0 0 0 8"/>
+                        <TextBlock Text="Próximas citas" Foreground="{StaticResource Brush_TextoClaro}" FontWeight="SemiBold" Margin="0 0 0 4"
+                                   Background="{StaticResource Brush_PanelOscuro}" Padding="8,4"/>
+
+                        <DataGrid ItemsSource="{Binding ProximasCitasPaciente}"
+                                  SelectedItem="{Binding ProximaCitaSeleccionada, Mode=TwoWay}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  HeadersVisibility="Column"
+                                  Height="102"
+                                  Margin="0 2 0 8"
+                                  Background="{StaticResource Brush_FondoPanel}"
+                                  Foreground="{StaticResource Brush_TextoClaro}"
+                                  RowBackground="{StaticResource Brush_FondoPanel}"
+                                  AlternatingRowBackground="{StaticResource Brush_PanelOscuro}"
+                                  BorderBrush="{StaticResource Brush_PrincipalVerde}"
+                                  BorderThickness="1"
+                                  GridLinesVisibility="All"
+                                  HorizontalGridLinesBrush="#333333"
+                                  VerticalGridLinesBrush="#333333"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Auto">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha, StringFormat={}{0:dd/MM/yyyy}}" Width="110" />
+                                <DataGridTextColumn Header="Hora" Binding="{Binding Hora}" Width="70" />
+                                <DataGridTextColumn Header="Profesional" Binding="{Binding Profesional}" Width="*" />
+                                <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="120" />
+                            </DataGrid.Columns>
+
+                            <DataGrid.ColumnHeaderStyle>
+                                <Style TargetType="DataGridColumnHeader">
+                                    <Setter Property="Background" Value="{StaticResource Brush_PanelOscuro}"/>
+                                    <Setter Property="Foreground" Value="{StaticResource Brush_TextoClaro}"/>
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                    <Setter Property="Padding" Value="8"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                    <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                    <Setter Property="BorderBrush" Value="{StaticResource Brush_PrincipalVerde}"/>
+                                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                </Style>
+                            </DataGrid.ColumnHeaderStyle>
+
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <Setter Property="Background" Value="{StaticResource Brush_FondoPanel}"/>
+                                    <Setter Property="Foreground" Value="{StaticResource Brush_TextoClaro}"/>
+                                    <Setter Property="BorderBrush" Value="#333333"/>
+                                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                </Style>
+                            </DataGrid.RowStyle>
+
+                            <DataGrid.CellStyle>
+                                <Style TargetType="DataGridCell">
+                                    <Setter Property="Padding" Value="8,5"/>
+                                    <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                </Style>
+                            </DataGrid.CellStyle>
+                        </DataGrid>
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0 0 0 10">
+                            <Button Content="Eliminar seleccionada"
+                                    Command="{Binding EliminarProximaCitaCommand}"
+                                    Style="{StaticResource EstiloBotonSecundario}"
+                                    Width="165"
+                                    Height="38"
+                                    Margin="0 0 8 0"
+                                    Background="#B3FF8A87"
+                                    BorderBrush="#FFFFAEAB"
+                                    IsEnabled="{Binding TieneProximaCitaSeleccionada}" />
+
+                            <Button Command="{Binding EditarProximaCitaCommand}"
+                                    Style="{StaticResource EstiloBotonSecundario}"
+                                    Width="185"
+                                    Height="38"
+                                    HorizontalAlignment="Right"
+                                    Margin="0"
+                                    IsEnabled="{Binding TieneProximaCitaSeleccionada}">
+                                <TextBlock Text="Editar cita seleccionada"
+                                           Foreground="{StaticResource Brush_TextoClaro}"
+                                           FontSize="14"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center">
+                                    <TextBlock.RenderTransform>
+                                        <TranslateTransform Y="-2" />
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                            </Button>
+                        </StackPanel>
+
+                        <TextBlock Text="Historial reciente" Foreground="{StaticResource Brush_TextoClaro}" FontWeight="SemiBold" Margin="0 0 0 4"/>
+
+                        <DataGrid ItemsSource="{Binding HistorialCitasPaciente}" AutoGenerateColumns="False"
+                                  IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column" Height="170"
+                                  Background="{StaticResource Brush_FondoPanel}" Foreground="{StaticResource Brush_TextoClaro}"
+                                  RowBackground="{StaticResource Brush_FondoPanel}" AlternatingRowBackground="{StaticResource Brush_PanelOscuro}"
+                                  BorderBrush="{StaticResource Brush_PrincipalVerde}" BorderThickness="1"
+                                  GridLinesVisibility="All" HorizontalGridLinesBrush="#333333" VerticalGridLinesBrush="#333333"
+                                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha, StringFormat={}{0:dd/MM/yyyy}}" Width="110" />
+                                <DataGridTextColumn Header="Hora" Binding="{Binding Hora}" Width="70" />
+                                <DataGridTextColumn Header="Profesional" Binding="{Binding Profesional}" Width="*" />
+                                <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="120" />
+                            </DataGrid.Columns>
+
+                            <DataGrid.ColumnHeaderStyle>
+                                <Style TargetType="DataGridColumnHeader">
+                                    <Setter Property="Background" Value="{StaticResource Brush_PanelOscuro}"/>
+                                    <Setter Property="Foreground" Value="{StaticResource Brush_TextoClaro}"/>
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                    <Setter Property="Padding" Value="8"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                    <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                    <Setter Property="BorderBrush" Value="{StaticResource Brush_PrincipalVerde}"/>
+                                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                </Style>
+                            </DataGrid.ColumnHeaderStyle>
+
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <Setter Property="Background" Value="{StaticResource Brush_FondoPanel}"/>
+                                    <Setter Property="Foreground" Value="{StaticResource Brush_TextoClaro}"/>
+                                    <Setter Property="BorderBrush" Value="#333333"/>
+                                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                </Style>
+                            </DataGrid.RowStyle>
+
+                            <DataGrid.CellStyle>
+                                <Style TargetType="DataGridCell">
+                                    <Setter Property="Padding" Value="8,5"/>
+                                    <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                </Style>
+                            </DataGrid.CellStyle>
+                        </DataGrid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Grid.Column="0" Margin="0 8 8 0" Padding="16" Background="{StaticResource Brush_FondoPanel}"
+                Visibility="{Binding MostrarSeccionPacientes, Converter={StaticResource BoolToVisibilityConverter}}">
+            <StackPanel>
+                <Border Background="{StaticResource Brush_FondoPanel}" CornerRadius="6" Padding="8" Margin="0 0 0 10">
+                    <TextBlock Text="BUSCAR PACIENTES" FontSize="20" FontWeight="Bold" Foreground="{StaticResource Brush_TextoClaro}" />
+                </Border>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Text="{Binding TextoBusqueda, UpdateSourceTrigger=PropertyChanged}" Height="40" ToolTip="Buscar por nombre, DNI, teléfono o email" />
+                    <Button Grid.Column="1" Content="Limpiar" Style="{StaticResource EstiloBotonSecundario}" Width="90" Height="40" Margin="8 0 0 0" Command="{Binding LimpiarBusquedaCommand}" />
+                </Grid>
+
+                <DataGrid ItemsSource="{Binding Pacientes}" SelectedItem="{Binding PacienteSeleccionado, Mode=TwoWay}"
+                          AutoGenerateColumns="False" Margin="0 10 0 0" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
+                          Background="{StaticResource Brush_FondoPanel}" Foreground="{StaticResource Brush_TextoClaro}"
+                          RowBackground="{StaticResource Brush_FondoPanel}" AlternatingRowBackground="{StaticResource Brush_PanelOscuro}"
+                          BorderBrush="{StaticResource Brush_PrincipalVerde}" BorderThickness="1" HeadersVisibility="Column"
+                          GridLinesVisibility="All" HorizontalGridLinesBrush="#333333" VerticalGridLinesBrush="#333333"
+                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Nombre" Binding="{Binding NombreCompleto}" Width="*" />
+                        <DataGridTextColumn Header="Teléfono" Binding="{Binding Telefono}" Width="130" />
+                        <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="*" />
+                    </DataGrid.Columns>
+
+                    <DataGrid.ColumnHeaderStyle>
+                        <Style TargetType="DataGridColumnHeader">
+                            <Setter Property="Background" Value="{StaticResource Brush_PanelOscuro}"/>
+                            <Setter Property="Foreground" Value="{StaticResource Brush_TextoClaro}"/>
+                            <Setter Property="FontWeight" Value="Bold"/>
+                            <Setter Property="Padding" Value="8"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                            <Setter Property="VerticalContentAlignment" Value="Center"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource Brush_PrincipalVerde}"/>
+                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                        </Style>
+                    </DataGrid.ColumnHeaderStyle>
+
+                    <DataGrid.RowStyle>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Background" Value="{StaticResource Brush_FondoPanel}"/>
+                            <Setter Property="Foreground" Value="{StaticResource Brush_TextoClaro}"/>
+                            <Setter Property="BorderBrush" Value="#333333"/>
+                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                        </Style>
+                    </DataGrid.RowStyle>
+
+                    <DataGrid.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="Padding" Value="8,5"/>
+                            <Setter Property="VerticalContentAlignment" Value="Center"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                        </Style>
+                    </DataGrid.CellStyle>
+                </DataGrid>
+
+                <!-- Ficha movida a Crear Cita -->
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Grid.Column="1" Margin="8 8 0 0" Padding="16" Background="{StaticResource Brush_FondoPanel}"
+                Visibility="{Binding MostrarSeccionCitas, Converter={StaticResource BoolToVisibilityConverter}}">
+            <Border.Resources>
+                <Style x:Key="EstiloCalendarioCitasDia" TargetType="{x:Type Calendar}">
+                    <Setter Property="Background" Value="White" />
+                    <Setter Property="Foreground" Value="Black" />
+                    <Setter Property="BorderBrush" Value="#D0D0D0" />
+                    <Setter Property="BorderThickness" Value="1" />
+                </Style>
+            </Border.Resources>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Border Background="{StaticResource Brush_FondoPanel}" CornerRadius="6" Padding="8" Margin="0 0 0 10">
+                    <TextBlock Text="CITAS DEL DÍA" FontSize="20" FontWeight="Bold" Foreground="{StaticResource Brush_TextoClaro}" />
+                </Border>
+
+                <Grid Grid.Row="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.2*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <DatePicker SelectedDate="{Binding FechaConsultaCitas}"
+                                CalendarStyle="{StaticResource EstiloCalendarioCitasDia}"
+                                Height="30"
+                                Margin="0 0 6 0"
+                                Background="{StaticResource Brush_FondoPanel}"
+                                Foreground="{StaticResource Brush_TextoClaro}"
+                                BorderBrush="{StaticResource Brush_PrincipalAzul}"
+                                BorderThickness="1">
+                        <DatePicker.Resources>
+                            <Style TargetType="{x:Type DatePickerTextBox}" BasedOn="{StaticResource {x:Type TextBox}}">
+                                <Setter Property="Background" Value="{StaticResource Brush_FondoPanel}" />
+                                <Setter Property="Foreground" Value="{StaticResource Brush_TextoClaro}" />
+                                <Setter Property="BorderBrush" Value="Transparent" />
+                                <Setter Property="BorderThickness" Value="0" />
+                                <Setter Property="Padding" Value="4,0,4,0" />
+                                <Setter Property="Height" Value="30" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type DatePickerTextBox}">
+                                            <Border Background="{TemplateBinding Background}"
+                                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                                    BorderThickness="{TemplateBinding BorderThickness}">
+                                                <ScrollViewer x:Name="PART_ContentHost"
+                                                              Padding="{TemplateBinding Padding}"
+                                                              VerticalAlignment="Center" />
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </DatePicker.Resources>
+                    </DatePicker>
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding ProfesionalesFiltro}" SelectedItem="{Binding ProfesionalConsulta}" ToolTip="Filtrar por profesional" />
+
+                    <DataGrid Grid.Row="1" Grid.ColumnSpan="2" Margin="0 10 0 0"
+                              ItemsSource="{Binding CitasDelDia}" SelectedItem="{Binding CitaSeleccionada, Mode=TwoWay}"
+                              AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column"
+                              Background="{StaticResource Brush_FondoPanel}" Foreground="{StaticResource Brush_TextoClaro}"
+                              RowBackground="{StaticResource Brush_FondoPanel}" AlternatingRowBackground="{StaticResource Brush_PanelOscuro}"
+                              BorderBrush="{StaticResource Brush_PrincipalVerde}" BorderThickness="1"
+                              GridLinesVisibility="All" HorizontalGridLinesBrush="#333333" VerticalGridLinesBrush="#333333"
+                              VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Paciente" Binding="{Binding PacienteNombre}" Width="*" />
+                            <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha, StringFormat={}{0:dd/MM/yyyy}}" Width="100" />
+                            <DataGridTextColumn Header="Hora" Binding="{Binding Hora}" Width="70" />
+                            <DataGridTextColumn Header="Profesional" Binding="{Binding Profesional}" Width="*" />
+                            <DataGridTemplateColumn Header="Estado" Width="130">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Stretch" BorderThickness="1">
+                                            <TextBlock Text="{Binding Estado}" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="#66FFFFFF"/>
+                                                    <Setter Property="BorderBrush" Value="#99FFFFFF"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Estado}" Value="Confirmada">
+                                                            <Setter Property="Background" Value="#B36FCF8A"/>
+                                                            <Setter Property="BorderBrush" Value="#FF8BE8A4"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Estado}" Value="Sala espera">
+                                                            <Setter Property="Background" Value="#B3FFD36A"/>
+                                                            <Setter Property="BorderBrush" Value="#FFFFE08F"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Estado}" Value="En consulta">
+                                                            <Setter Property="Background" Value="#B36BBEFF"/>
+                                                            <Setter Property="BorderBrush" Value="#FF8FD0FF"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Estado}" Value="Finalizada">
+                                                            <Setter Property="Background" Value="#B3CFCFCF"/>
+                                                            <Setter Property="BorderBrush" Value="#FFE9E9E9"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Estado}" Value="Cancelada">
+                                                            <Setter Property="Background" Value="#B3FF8A87"/>
+                                                            <Setter Property="BorderBrush" Value="#FFFFAEAB"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Estado}" Value="Pendiente">
+                                                            <Setter Property="Background" Value="#66FFFFFF"/>
+                                                            <Setter Property="BorderBrush" Value="#99FFFFFF"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+
+                        <DataGrid.ColumnHeaderStyle>
+                            <Style TargetType="DataGridColumnHeader">
+                                <Setter Property="Background" Value="{StaticResource Brush_PanelOscuro}"/>
+                                <Setter Property="Foreground" Value="{StaticResource Brush_TextoClaro}"/>
+                                <Setter Property="FontWeight" Value="Bold"/>
+                                <Setter Property="Padding" Value="8"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                <Setter Property="BorderBrush" Value="{StaticResource Brush_PrincipalVerde}"/>
+                                <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                            </Style>
+                        </DataGrid.ColumnHeaderStyle>
+
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Setter Property="Background" Value="{StaticResource Brush_FondoPanel}"/>
+                                <Setter Property="Foreground" Value="{StaticResource Brush_TextoClaro}"/>
+                                <Setter Property="BorderBrush" Value="#333333"/>
+                                <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                            </Style>
+                        </DataGrid.RowStyle>
+
+                        <DataGrid.CellStyle>
+                            <Style TargetType="DataGridCell">
+                                <Setter Property="Padding" Value="8,5"/>
+                                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                            </Style>
+                        </DataGrid.CellStyle>
+                    </DataGrid>
+
+                    <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0 10 0 0">
+                        <Button Content="Confirmar" Command="{Binding ConfirmarCitaCommand}" Style="{StaticResource EstiloBotonSecundario}" Width="110" Height="40" IsEnabled="{Binding PuedeConfirmar}"
+                                Background="#B36FCF8A" BorderBrush="#FF8BE8A4" />
+                        <Button Content="Sala espera" Command="{Binding MarcarSalaEsperaCommand}" Style="{StaticResource EstiloBotonSecundario}" Width="120" Height="40" Margin="8 0 0 0" IsEnabled="{Binding PuedeMarcarSalaEspera}"
+                                Background="#B3FFD36A" BorderBrush="#FFFFE08F" />
+                        <Button Content="En consulta" Command="{Binding MarcarEnConsultaCommand}" Style="{StaticResource EstiloBotonSecundario}" Width="120" Height="40" Margin="8 0 0 0" IsEnabled="{Binding PuedeMarcarEnConsulta}"
+                                Background="#B36BBEFF" BorderBrush="#FF8FD0FF" />
+                        <Button Content="Finalizada" Command="{Binding MarcarFinalizadaCommand}" Style="{StaticResource EstiloBotonSecundario}" Width="120" Height="40" Margin="8 0 0 0" IsEnabled="{Binding PuedeMarcarFinalizada}"
+                                Background="#B3CFCFCF" BorderBrush="#FFE9E9E9" />
+                        <Button Content="Cancelada" Command="{Binding CancelarCitaCommand}" Style="{StaticResource EstiloBotonSecundario}" Width="110" Height="40" Margin="8 0 0 0" IsEnabled="{Binding TieneCitaSeleccionada}"
+                                Background="#B3FF8A87" BorderBrush="#FFFFAEAB" />
+                        <Button Content="Facturar" Command="{Binding FacturarCitaCommand}" Style="{StaticResource EstiloBotonPrincipal}" Width="110" Height="42" FontSize="15" Margin="12 0 0 0" IsEnabled="{Binding PuedeFacturar}" />
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

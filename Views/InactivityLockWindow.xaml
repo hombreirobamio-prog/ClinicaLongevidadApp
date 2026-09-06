@@ -1,0 +1,83 @@
+<Window x:Class="ClinicaLongevidadApp.Views.InactivityLockWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Sesion bloqueada"
+        Width="520"
+        Height="380"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        ShowInTaskbar="False"
+        Topmost="True"
+        WindowState="Maximized"
+        Background="#DD1A1A1A">
+
+    <Grid>
+        <Border Background="{StaticResource Brush_PanelOscuro}"
+                BorderBrush="{StaticResource Brush_PrincipalVerde}"
+                BorderThickness="2"
+                CornerRadius="20"
+                Padding="35"
+                Width="520"
+                Height="380"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                Effect="{StaticResource SombraSuave}">
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Text="Proteccion de datos"
+                       FontSize="30"
+                       FontWeight="Bold"
+                       Foreground="{StaticResource Brush_TextoClaro}"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,15"/>
+
+            <TextBlock Grid.Row="1"
+                       x:Name="UsuarioBloqueadoText"
+                       FontSize="18"
+                       Foreground="{StaticResource Brush_PrincipalVerde}"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,20"/>
+
+            <TextBlock Grid.Row="2"
+                       Text="La sesion se ha bloqueado por inactividad. Introduzca de nuevo su contrasena para continuar."
+                       TextWrapping="Wrap"
+                       TextAlignment="Center"
+                       Foreground="{StaticResource Brush_TextoClaro}"
+                       Margin="0,0,0,20"/>
+
+            <StackPanel Grid.Row="3"
+                        HorizontalAlignment="Center">
+                <TextBlock Text="Contrasena"
+                           Foreground="{StaticResource Brush_TextoClaro}"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,5"/>
+
+                <PasswordBox x:Name="PasswordBox"
+                             Width="280"
+                             HorizontalAlignment="Center"
+                             PasswordChanged="PasswordBox_PasswordChanged"/>
+
+                <Button Content="Desbloquear"
+                        Width="180"
+                        Height="50"
+                        Style="{StaticResource EstiloBotonPrincipal}"
+                        Click="Desbloquear_Click"
+                        Margin="0,20,0,0"/>
+
+                <TextBlock x:Name="MensajeErrorText"
+                           Foreground="Tomato"
+                           HorizontalAlignment="Center"
+                           Margin="0,15,0,0"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,118 @@
+<UserControl x:Class="ClinicaLongevidadApp.Views.UsuariosView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource Brush_FondoOscuro}"
+             VerticalAlignment="Stretch"
+             HorizontalAlignment="Stretch">
+
+    <Grid VerticalAlignment="Stretch"
+          HorizontalAlignment="Stretch">
+
+        <!-- PANEL CENTRAL CLÍNICO -->
+        <Border Background="{StaticResource Brush_PanelOscuro}"
+                CornerRadius="20"
+                Padding="30"
+                Width="900"
+                VerticalAlignment="Stretch"
+                HorizontalAlignment="Center"
+                Effect="{StaticResource SombraSuave}">
+
+            <StackPanel VerticalAlignment="Stretch">
+
+                <!-- TÍTULO -->
+                <TextBlock Text="Gestión de Usuarios"
+                           FontSize="32"
+                           FontWeight="Bold"
+                           Foreground="{StaticResource Brush_TextoClaro}"
+                           HorizontalAlignment="Center"
+                           Margin="0 0 0 20"/>
+
+                <!-- BOTÓN NUEVO USUARIO -->
+                <Button Content="Nuevo Usuario"
+                        Command="{Binding NuevoCommand}"
+                        Style="{StaticResource EstiloBotonPrincipal}"
+                        Width="250"
+                        Height="60"
+                        Margin="0 0 0 20"/>
+
+                <!-- LISTA DE USUARIOS -->
+                <ListBox ItemsSource="{Binding Usuarios}"
+                         SelectedItem="{Binding UsuarioSeleccionado}"
+                         Background="{StaticResource Brush_PanelOscuro}"
+                         Foreground="{StaticResource Brush_TextoClaro}"
+                         BorderBrush="{StaticResource Brush_PrincipalVerde}"
+                         BorderThickness="1"
+                         Padding="10"
+                         Height="300"
+                         Margin="0 0 0 20">
+
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Vertical" Margin="0 5">
+
+                                <!-- NOMBRE COMPLETO -->
+                                <TextBlock Text="{Binding NombreCompleto}"
+                       FontSize="18"
+                       FontWeight="Bold"
+                       Foreground="{StaticResource Brush_TextoClaro}"/>
+
+                                <!-- ROL -->
+                                <TextBlock Text="{Binding Rol}"
+                       Foreground="{StaticResource Brush_PrincipalVerde}"
+                       FontSize="14"/>
+
+                                <!-- ÁREA -->
+                                <TextBlock Text="{Binding Area}"
+                       Foreground="{StaticResource Brush_TextoClaro}"
+                       FontSize="14"/>
+
+                                <!-- EMAIL -->
+                                <TextBlock Text="{Binding Email}"
+                       Foreground="{StaticResource Brush_TextoClaro}"
+                       FontSize="14"/>
+
+                                <!-- ESTADO -->
+                                <TextBlock Text="{Binding Activo, Converter={StaticResource BoolToActivoConverter}}"
+                       Foreground="{StaticResource Brush_TextoClaro}"
+                       FontSize="12"/>
+
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+
+                </ListBox>
+
+                <!-- BOTONES CRUD -->
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            Margin="0 0 0 20">
+
+                    <Button Content="Editar"
+                            Command="{Binding EditarCommand}"
+                            Style="{StaticResource EstiloBotonSecundario}"
+                            Width="150"
+                            Height="45"
+                            Margin="10"/>
+
+                    <Button Content="Eliminar"
+                            Command="{Binding EliminarCommand}"
+                            Style="{StaticResource EstiloBotonSecundario}"
+                            Width="150"
+                            Height="45"
+                            Margin="10"/>
+
+                </StackPanel>
+
+                <!-- BOTÓN VOLVER -->
+                <Button Content="Volver"
+                        Command="{Binding VolverCommand}"
+                        Style="{StaticResource EstiloBotonSecundario}"
+                        Width="250"
+                        Height="60"/>
+
+            </StackPanel>
+
+        </Border>
+
+    </Grid>
+</UserControl>

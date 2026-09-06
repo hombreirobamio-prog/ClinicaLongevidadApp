@@ -1,0 +1,221 @@
+<UserControl x:Class="ClinicaLongevidadApp.Views.UsuarioFormView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:ClinicaLongevidadApp.Converters"
+             Background="{StaticResource Brush_FondoOscuro}">
+
+    <!-- CONVERTERS -->
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <local:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
+    </UserControl.Resources>
+
+    <!-- ANIMACIÓN DE ENTRADA -->
+    <UserControl.Triggers>
+        <EventTrigger RoutedEvent="Loaded">
+            <BeginStoryboard>
+                <Storyboard>
+                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                     From="0" To="1" Duration="0:0:0.5"/>
+                </Storyboard>
+            </BeginStoryboard>
+        </EventTrigger>
+    </UserControl.Triggers>
+
+    <Grid>
+
+        <!-- PANEL CENTRAL CLÍNICO -->
+        <Border Background="{StaticResource Brush_PanelOscuro}"
+                CornerRadius="20"
+                Padding="30"
+                Width="800"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Effect="{StaticResource SombraSuave}">
+
+            <StackPanel>
+
+                <!-- TÍTULO -->
+                <TextBlock Text="Formulario de Usuario"
+                           FontSize="32"
+                           FontWeight="Bold"
+                           Foreground="{StaticResource Brush_TextoClaro}"
+                           HorizontalAlignment="Center"
+                           Margin="0 0 0 20"/>
+
+                <!-- FORMULARIO -->
+                <Grid Margin="0 0 0 20">
+
+                    <!-- FILAS -->
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- COLUMNAS -->
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="200"/>
+                        <ColumnDefinition Width="300"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Nombre de Usuario -->
+                    <TextBlock Text="Nombre de Usuario"
+                               Foreground="{StaticResource Brush_TextoClaro}"
+                               Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding Usuario.NombreUsuario}"
+                             Width="300"
+                             VerticalContentAlignment="Center"
+                             Background="{StaticResource Brush_PanelOscuro}"
+                             Foreground="{StaticResource Brush_TextoClaro}"
+                             BorderBrush="{StaticResource Brush_PrincipalVerde}"
+                             Grid.Row="0" Grid.Column="1"/>
+
+                    <!-- Contraseña -->
+                    <TextBlock Text="Contraseña"
+                               Foreground="{StaticResource Brush_TextoClaro}"
+                               Grid.Row="1" Grid.Column="0"
+                               VerticalAlignment="Center"
+                               Margin="0 10 0 0"/>
+
+                    <!-- Campo de contraseña (solo PasswordBox, seguro) -->
+                    <PasswordBox x:Name="PasswordOculta"
+                                 Grid.Row="1" Grid.Column="1"
+                                 Width="300"
+                                 PasswordChanged="PasswordBox_PasswordChanged"
+                                 Background="{StaticResource Brush_PanelOscuro}"
+                                 Foreground="{StaticResource Brush_TextoClaro}"
+                                 BorderBrush="{StaticResource Brush_PrincipalVerde}"
+                                 Margin="0 10 0 0"/>
+
+                    <!-- Rol -->
+                    <TextBlock Text="Rol"
+                               Foreground="{StaticResource Brush_TextoClaro}"
+                               Grid.Row="2" Grid.Column="0"
+                               VerticalAlignment="Center"
+                               Margin="0 10 0 0"/>
+                    <ComboBox ItemsSource="{Binding Roles}"
+                              SelectedItem="{Binding Usuario.Rol}"
+                              Width="300"
+                              Background="{StaticResource Brush_PanelOscuro}"
+                              Foreground="{StaticResource Brush_TextoClaro}"
+                              BorderBrush="{StaticResource Brush_PrincipalVerde}"
+                              Grid.Row="2" Grid.Column="1"
+                              Margin="0 10 0 0"/>
+
+                    <!-- Activo -->
+                    <TextBlock Text="Activo"
+                               Foreground="{StaticResource Brush_TextoClaro}"
+                               Grid.Row="3" Grid.Column="0"
+                               VerticalAlignment="Center"
+                               Margin="0 10 0 0"/>
+                    <CheckBox IsChecked="{Binding Usuario.Activo}"
+                              Foreground="{StaticResource Brush_TextoClaro}"
+                              VerticalAlignment="Center"
+                              Grid.Row="3" Grid.Column="1"
+                              Margin="0 10 0 0"/>
+
+                    <!-- Nombre Completo -->
+                    <TextBlock Text="Nombre Completo"
+                               Foreground="{StaticResource Brush_TextoClaro}"
+                               Grid.Row="4" Grid.Column="0"
+                               VerticalAlignment="Center"
+                               Margin="0 10 0 0"/>
+                    <TextBox Text="{Binding Usuario.NombreCompleto}"
+                             Width="300"
+                             VerticalContentAlignment="Center"
+                             Background="{StaticResource Brush_PanelOscuro}"
+                             Foreground="{StaticResource Brush_TextoClaro}"
+                             BorderBrush="{StaticResource Brush_PrincipalVerde}"
+                             Grid.Row="4" Grid.Column="1"
+                             Margin="0 10 0 0"/>
+
+                    <!-- Email -->
+                    <TextBlock Text="Email"
+                               Foreground="{StaticResource Brush_TextoClaro}"
+                               Grid.Row="5" Grid.Column="0"
+                               VerticalAlignment="Center"
+                               Margin="0 10 0 0"/>
+                    <TextBox Text="{Binding Usuario.Email}"
+                             Width="300"
+                             VerticalContentAlignment="Center"
+                             Background="{StaticResource Brush_PanelOscuro}"
+                             Foreground="{StaticResource Brush_TextoClaro}"
+                             BorderBrush="{StaticResource Brush_PrincipalVerde}"
+                             Grid.Row="5" Grid.Column="1"
+                             Margin="0 10 0 0"/>
+
+                    <!-- Teléfono Interno -->
+                    <TextBlock Text="Teléfono Interno"
+                               Foreground="{StaticResource Brush_TextoClaro}"
+                               Grid.Row="6" Grid.Column="0"
+                               VerticalAlignment="Center"
+                               Margin="0 10 0 0"/>
+                    <TextBox Text="{Binding Usuario.TelefonoInterno}"
+                             Width="300"
+                             VerticalContentAlignment="Center"
+                             Background="{StaticResource Brush_PanelOscuro}"
+                             Foreground="{StaticResource Brush_TextoClaro}"
+                             BorderBrush="{StaticResource Brush_PrincipalVerde}"
+                             Grid.Row="6" Grid.Column="1"
+                             Margin="0 10 0 0"/>
+
+                    <!-- Área -->
+                    <TextBlock Text="Área"
+                               Foreground="{StaticResource Brush_TextoClaro}"
+                               Grid.Row="7" Grid.Column="0"
+                               VerticalAlignment="Center"
+                               Margin="0 10 0 0"/>
+                    <ComboBox ItemsSource="{Binding Areas}"
+                              SelectedItem="{Binding Usuario.Area}"
+                              Width="300"
+                              Background="{StaticResource Brush_PanelOscuro}"
+                              Foreground="{StaticResource Brush_TextoClaro}"
+                              BorderBrush="{StaticResource Brush_PrincipalVerde}"
+                              Grid.Row="7" Grid.Column="1"
+                              Margin="0 10 0 0"/>
+
+                </Grid>
+
+                <!-- MENSAJE DE ERROR CLÍNICO -->
+                <TextBlock Text="{Binding MensajeError}"
+                           Foreground="Tomato"
+                           FontSize="16"
+                           HorizontalAlignment="Center"
+                           Margin="0 10 0 10"/>
+
+                <!-- BOTONES -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+
+                    <Button Content="Guardar"
+                            Command="{Binding GuardarCommand}"
+                            Style="{StaticResource EstiloBotonPrincipal}"
+                            Width="200" Height="60"/>
+
+                    <Button Content="Restablecer Contraseña"
+                            Command="{Binding RestablecerPasswordCommand}"
+                            Style="{StaticResource EstiloBotonSecundario}"
+                            Width="250" Height="60"
+                            Margin="20 0 0 0"/>
+
+
+                    <Button Content="Volver"
+                            Command="{Binding VolverCommand}"
+                            Style="{StaticResource EstiloBotonSecundario}"
+                            Width="200" Height="60"
+                            Margin="20 0 0 0"/>
+
+                </StackPanel>
+
+            </StackPanel>
+
+        </Border>
+
+    </Grid>
+</UserControl>

@@ -1,0 +1,83 @@
+<UserControl x:Class="ClinicaLongevidadApp.Views.DashboardRecepcionView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             Background="{StaticResource Brush_FondoOscuro}"
+             VerticalAlignment="Stretch"
+             HorizontalAlignment="Stretch">
+
+    <Grid Background="{StaticResource Brush_FondoOscuro}"
+          VerticalAlignment="Stretch"
+          HorizontalAlignment="Stretch">
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="22*"
+                              MinWidth="190"
+                              MaxWidth="280"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0"
+                Background="{StaticResource Brush_PanelOscuro}"
+                Effect="{StaticResource SombraSuave}">
+
+            <StackPanel Margin="12"
+                        HorizontalAlignment="Stretch">
+
+                <TextBlock Text="RECEPCIÓN"
+                           FontSize="22"
+                           FontWeight="Bold"
+                           Foreground="{StaticResource Brush_TextoClaro}"
+                           Margin="0 0 0 20"/>
+
+                <Button Content="Panel de Recepción"
+                        Command="{Binding MostrarPanelRecepcionCommand}"
+                        Style="{StaticResource EstiloBotonPrincipal}"
+                        Width="Auto"
+                        MinHeight="45"
+                        HorizontalAlignment="Stretch"
+                        Margin="0 10 0 0"/>
+
+                <Button Content="Citas"
+                        Command="{Binding MostrarCitasCommand}"
+                        Style="{StaticResource EstiloBotonPrincipal}"
+                        Width="Auto"
+                        MinHeight="45"
+                        HorizontalAlignment="Stretch"
+                        Margin="0 10 0 0"/>
+
+                <Button Content="Pacientes"
+                        Command="{Binding MostrarPacientesCommand}"
+                        Style="{StaticResource EstiloBotonPrincipal}"
+                        Width="Auto"
+                        MinHeight="45"
+                        HorizontalAlignment="Stretch"
+                        Margin="0 10 0 0"/>
+
+                <Button Content="Cerrar sesión"
+                        Command="{Binding CerrarSesionCommand}"
+                        Style="{StaticResource EstiloBotonSecundario}"
+                        Width="Auto"
+                        MinHeight="45"
+                        HorizontalAlignment="Stretch"
+                        Margin="0 30 0 0"/>
+
+            </StackPanel>
+
+        </Border>
+
+        <Border Grid.Column="1"
+                Background="{StaticResource Brush_FondoOscuro}"
+                Padding="20"
+                VerticalAlignment="Stretch"
+                HorizontalAlignment="Stretch">
+
+            <ContentPresenter Content="{Binding VistaActual}"
+                              VerticalAlignment="Stretch"
+                              HorizontalAlignment="Stretch"/>
+        </Border>
+
+    </Grid>
+</UserControl>
