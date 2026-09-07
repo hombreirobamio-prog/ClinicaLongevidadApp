@@ -1,0 +1,30 @@
+name: .NET Build and Test
+
+on:
+  push:
+    branches: [ master, '**' ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    name: Build and test (.NET 8)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore ClinicaLongevidadApp.sln
+
+      - name: Build
+        run: dotnet build ClinicaLongevidadApp.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test ClinicaLongevidadApp.sln --no-build --verbosity normal
