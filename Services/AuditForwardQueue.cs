@@ -30,6 +30,16 @@ namespace ClinicaLongevidadApp.Services
                                 LastError TEXT,
                                 NextAttemptAt TEXT NOT NULL,
                                 CreatedAt TEXT NOT NULL
+                            );
+                            CREATE TABLE IF NOT EXISTS AuditForwardDeadLetter (
+                                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                EventId TEXT NOT NULL,
+                                Payload TEXT NOT NULL,
+                                Signature TEXT,
+                                Attempts INTEGER NOT NULL DEFAULT 0,
+                                LastError TEXT,
+                                CreatedAt TEXT NOT NULL,
+                                FailedAt TEXT NOT NULL
                             );";
             cmd.ExecuteNonQuery();
         }
@@ -108,6 +118,36 @@ namespace ClinicaLongevidadApp.Services
             cmd.ExecuteNonQuery();
         }
 
+        public void MoveToDeadLetter(int id)
+        {
+            using var conn = new SqliteConnection(_connectionString);
+            conn.Open();
+            using var tran = conn.BeginTransaction();
+            try
+            {
+                using var ins = conn.CreateCommand();
+                ins.Transaction = tran;
+                ins.CommandText = @"INSERT INTO AuditForwardDeadLetter (EventId, Payload, Signature, Attempts, LastError, CreatedAt, FailedAt)
+                                    SELECT EventId, Payload, Signature, Attempts, LastError, CreatedAt, @failedAt FROM AuditForwardQueue WHERE Id = @id";
+                ins.Parameters.AddWithValue("@failedAt", DateTime.UtcNow.ToString("o"));
+                ins.Parameters.AddWithValue("@id", id);
+                ins.ExecuteNonQuery();
+
+                using var del = conn.CreateCommand();
+                del.Transaction = tran;
+                del.CommandText = "DELETE FROM AuditForwardQueue WHERE Id = @id";
+                del.Parameters.AddWithValue("@id", id);
+                del.ExecuteNonQuery();
+
+                tran.Commit();
+            }
+            catch (Exception ex)
+            {
+                try { tran.Rollback(); } catch { }
+                try { LogService.Error("AuditForwardQueue", "Failed to move row to dead-letter", ex); } catch { }
+            }
+        }
+
         public class QueueRow
         {
             public int Id { get; set; }
@@ -166,7 +206,16 @@ namespace ClinicaLongevidadApp.Services
                         _queue.MarkFailed(row.Id, ex.Message, attempts);
                         if (attempts >= _maxAttempts)
                         {
-                            try { LogService.Error("AuditForwardQueueWorker", $"Row {row.Id} failed after {attempts} attempts: {ex.Message}"); } catch { }
+                            try
+                            {
+                                // Move to dead-letter for manual inspection/archival
+                                _queue.MoveToDeadLetter(row.Id);
+                                LogService.Error("AuditForwardQueueWorker", $"Row {row.Id} moved to dead-letter after {attempts} attempts: {ex.Message}");
+                            }
+                            catch (Exception e)
+                            {
+                                try { LogService.Error("AuditForwardQueueWorker", $"Failed to move row {row.Id} to dead-letter: {e.Message}", e); } catch { }
+                            }
                         }
                     }
                 }
