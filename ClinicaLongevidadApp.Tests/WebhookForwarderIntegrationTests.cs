@@ -44,7 +44,7 @@ namespace ClinicaLongevidadApp.Tests
                 UsuarioAdmin = "integ-test",
                 Resultado = true,
                 Detalles = "{\"note\":\"integration\"}",
-                Tipo = "Operación"
+                Tipo = "OperaciÃ³n"
             };
 
             svc.RegistrarEvento(evento);
@@ -53,7 +53,7 @@ namespace ClinicaLongevidadApp.Tests
             var completed = await Task.WhenAny(fake.Tcs.Task, Task.Delay(2000));
             Assert.True(completed == fake.Tcs.Task, "Forwarder did not receive payload in time");
 
-            var (payload, signature) = fake.Tcs.Task.Result;
+            var (payload, signature) = await fake.Tcs.Task;
             Assert.False(string.IsNullOrWhiteSpace(payload));
             Assert.False(string.IsNullOrWhiteSpace(signature));
 

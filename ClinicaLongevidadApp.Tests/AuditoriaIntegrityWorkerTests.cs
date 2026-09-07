@@ -66,9 +66,9 @@ namespace ClinicaLongevidadApp.Tests
                 var runTask = worker.RunOnceAsync();
 
                 // Wait for either the run to complete or the event to fire
-                var completed = await Task.WhenAny(runTask, tcs.Task).ConfigureAwait(false);
+                var completed = await Task.WhenAny(runTask, tcs.Task);
                 // Ensure runTask completed
-                await runTask.ConfigureAwait(false);
+                await runTask;
 
                 Assert.True(eventFired, "Expected OnIntegrityFailure to be fired when tamper present");
                 Assert.NotNull(firedErrors);
@@ -99,7 +99,7 @@ namespace ClinicaLongevidadApp.Tests
                 bool eventFired = false;
                 worker.OnIntegrityFailure += (errors) => eventFired = true;
 
-                await worker.RunOnceAsync().ConfigureAwait(false);
+                await worker.RunOnceAsync();
 
                 Assert.False(eventFired, "OnIntegrityFailure should not be fired when integrity is OK");
             }
