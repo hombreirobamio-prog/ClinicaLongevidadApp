@@ -13,6 +13,18 @@ namespace ClinicaLongevidadApp.Services
             _connectionString = connectionString;
         }
 
+    public class AuditRecentDto
+    {
+        public int Id { get; set; }
+        public string EventId { get; set; } = string.Empty;
+        public string FechaHora { get; set; } = string.Empty;
+        public string UsuarioAdmin { get; set; } = string.Empty;
+        public string Accion { get; set; } = string.Empty;
+        public string Modulo { get; set; } = string.Empty;
+        public string UsuarioAfectado { get; set; } = string.Empty;
+        public string Resultado { get; set; } = string.Empty;
+    }
+
         public (int Pending, int DeadLetter) GetCounts()
         {
             try
@@ -56,6 +68,36 @@ namespace ClinicaLongevidadApp.Services
                         LastError = reader.IsDBNull(5) ? string.Empty : reader.GetString(5),
                         NextAttemptAt = reader.IsDBNull(6) ? string.Empty : reader.GetString(6),
                         CreatedAt = reader.IsDBNull(7) ? string.Empty : reader.GetString(7)
+                    });
+                }
+            }
+            catch { }
+            return list;
+        }
+
+        public List<AuditRecentDto> GetRecentAudits(int limit = 50)
+        {
+            var list = new List<AuditRecentDto>();
+            try
+            {
+                using var conn = new SqliteConnection(_connectionString);
+                conn.Open();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT Id, EventId, Fechahora, UsuarioAdmin, Accion, Modulo, UsuarioAfectado, Resultado FROM Auditoria ORDER BY Fechahora DESC LIMIT @max";
+                cmd.Parameters.AddWithValue("@max", limit);
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    list.Add(new AuditRecentDto
+                    {
+                        Id = reader.IsDBNull(0) ? -1 : reader.GetInt32(0),
+                        EventId = reader.IsDBNull(1) ? string.Empty : reader.GetString(1),
+                        FechaHora = reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
+                        UsuarioAdmin = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
+                        Accion = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
+                        Modulo = reader.IsDBNull(5) ? string.Empty : reader.GetString(5),
+                        UsuarioAfectado = reader.IsDBNull(6) ? string.Empty : reader.GetString(6),
+                        Resultado = reader.IsDBNull(7) ? string.Empty : reader.GetString(7)
                     });
                 }
             }
