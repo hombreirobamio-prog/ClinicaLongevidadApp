@@ -1,4 +1,4 @@
-﻿<Window x:Class="ClinicaLongevidadApp.MainWindow"
+<Window x:Class="ClinicaLongevidadApp.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:ClinicaLongevidadApp.Views"
@@ -9,7 +9,15 @@
         MinWidth="800"
         WindowState="Maximized">
 
-    <!-- ⭐ Mostramos directamente el Dashboard -->
-    <local:WelcomeView />
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="Administración">
+                <MenuItem x:Name="MenuItemAuditAdmin" Header="Abrir Auditoría" Click="MenuItemAuditAdmin_Click" Visibility="Collapsed" />
+            </MenuItem>
+        </Menu>
+
+        <!-- ⭐ Mostramos directamente el Dashboard -->
+        <local:WelcomeView />
+    </DockPanel>
 
 </Window>
