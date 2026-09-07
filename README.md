@@ -4,6 +4,16 @@
 ![CI](https://github.com/{owner}/{repo}/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://codecov.io/gh/{owner}/{repo}/branch/main/graph/badge.svg)
 
+## Changelog
+
+- `v0.1.0-auditoria` — 2026-09-05: mejoras en subsistema de auditoría:
+  - Escritura atómica del `PrevHash` + `INSERT` para evitar condiciones de carrera.
+  - Firma HMAC del payload y almacenamiento de `KeyVersion`/`KeyVersionEnc`.
+  - Cifrado AES‑GCM de `Detalles` cuando hay clave de encriptación.
+  - Retries simples y backoff en forwarding/exporting (cola en memoria, 3 intentos).
+  - Test de concurrencia que valida la cadena de hashes bajo escrituras paralelas.
+
+
 ## Estado actual de la aplicación
 
 ### Visión funcional
