@@ -1,5 +1,4 @@
 using System;
-using System;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -37,8 +36,18 @@ namespace ClinicaLongevidadApp.Services
         {
             if (_running) return;
 
+            if (_disposed) throw new ObjectDisposedException(nameof(AuditoriaIntegrityWorker));
+
+            // Ensure we have a fresh, not-cancelled token source for the timer callbacks.
+            if (_cts == null || _cts.IsCancellationRequested)
+            {
+                try { _cts?.Dispose(); } catch { }
+                _cts = new CancellationTokenSource();
+            }
+
             // Timer callback schedules a background task. Use a non-async TimerCallback to avoid
-            // unobserved exceptions and async-void style behavior.
+            // unobserved exceptions and async-void style behavior. The lambda reads the current
+            // CancellationToken from `_cts` so replacing the CTS on Stop/Start is safe.
             _timer = new Timer(_ => _ = RunOnceSafeAsync(_cts.Token), null, TimeSpan.Zero, _interval);
             _running = true;
         }
@@ -53,6 +62,9 @@ namespace ClinicaLongevidadApp.Services
             try
             {
                 _cts.Cancel();
+                try { _cts.Dispose(); } catch { }
+                // leave a fresh CTS so Start can be called again
+                _cts = new CancellationTokenSource();
             }
             catch { }
 

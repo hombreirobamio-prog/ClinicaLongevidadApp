@@ -4,36 +4,36 @@
 ![CI](https://github.com/{owner}/{repo}/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://codecov.io/gh/{owner}/{repo}/branch/main/graph/badge.svg)
 
-## Estado actual de la aplicaciÛn
+## Estado actual de la aplicaci√≥n
 
-### VisiÛn funcional
-La aplicaciÛn `ClinicaLongevidadApp` est· orientada a servir como software clÌnico propio para una clÌnica de longevidad y envejecimiento metabÛlico basada en evidencia. La prioridad actual es consolidar una base operativa segura y trazable sobre la que despuÈs se construyan los mÛdulos clÌnicos avanzados.
+### Visi√≥n funcional
+La aplicaci√≥n `ClinicaLongevidadApp` est√° orientada a servir como software cl√≠nico propio para una cl√≠nica de longevidad y envejecimiento metab√≥lico basada en evidencia. La prioridad actual es consolidar una base operativa segura y trazable sobre la que despu√©s se construyan los m√≥dulos cl√≠nicos avanzados.
 
-### MÛdulos actualmente implementados
+### M√≥dulos actualmente implementados
 
 #### Acceso y seguridad
-- SelecciÛn de ·rea: AdministraciÛn, RecepciÛn y MÈdico.
-- Inicio de sesiÛn con validaciÛn de credenciales.
-- Control de acceso por ·rea.
+- Selecci√≥n de √°rea: Administraci√≥n, Recepci√≥n y M√©dico.
+- Inicio de sesi√≥n con validaci√≥n de credenciales.
+- Control de acceso por √°rea.
 - Bloqueo temporal por intentos fallidos.
-- Cierre de sesiÛn.
+- Cierre de sesi√≥n.
 - Bloqueo por inactividad.
 
-#### AdministraciÛn
-- GestiÛn de usuarios.
-- AuditorÌa con filtros y exportaciÛn CSV.
-- GestiÛn de festivos.
+#### Administraci√≥n
+- Gesti√≥n de usuarios.
+- Auditor√≠a con filtros y exportaci√≥n CSV.
+- Gesti√≥n de festivos.
 
-#### RecepciÛn
-- GestiÛn de pacientes.
-- GestiÛn de citas.
+#### Recepci√≥n
+- Gesti√≥n de pacientes.
+- Gesti√≥n de citas.
 - Vista combinada y modos separados para pacientes y citas.
-- Historial y prÛximas citas del paciente.
+- Historial y pr√≥ximas citas del paciente.
 - Flujo de estados de cita.
 - Control de festivos en agenda.
-- Aviso de regularizaciÛn de protecciÛn de datos.
+- Aviso de regularizaci√≥n de protecci√≥n de datos.
 
-### Flujo actual de citas en recepciÛn
+### Flujo actual de citas en recepci√≥n
 - `Pendiente`
 - `Confirmada`
 - `Sala espera`
@@ -42,30 +42,30 @@ La aplicaciÛn `ClinicaLongevidadApp` est· orientada a servir como software clÌni
 - `Facturada`
 - `Cancelada`
 
-### Estado actual de la auditorÌa
+### Estado actual de la auditor√≠a
 
 #### Ya auditado
 - Login correcto/fallido y acceso no autorizado (`Login.*`).
-- Cierre de sesiÛn, bloqueo por inactividad y desbloqueo (`Sesion.*`).
-- Crear/editar/cambiar rol/cambiar ·rea/activar/desactivar/restablecer password/eliminar usuario (`Usuario.*`).
-- Alta/ediciÛn de pacientes en recepciÛn (`Paciente.*`).
-- CreaciÛn/ediciÛn/confirmaciÛn/cancelaciÛn/cambios de estado/facturaciÛn/eliminaciÛn lÛgica de prÛximas citas (`Cita.*`).
-- Alta/ediciÛn/eliminaciÛn de festivos (`Festivo.*`).
+- Cierre de sesi√≥n, bloqueo por inactividad y desbloqueo (`Sesion.*`).
+- Crear/editar/cambiar rol/cambiar √°rea/activar/desactivar/restablecer password/eliminar usuario (`Usuario.*`).
+- Alta/edici√≥n de pacientes en recepci√≥n (`Paciente.*`).
+- Creaci√≥n/edici√≥n/confirmaci√≥n/cancelaci√≥n/cambios de estado/facturaci√≥n/eliminaci√≥n l√≥gica de pr√≥ximas citas (`Cita.*`).
+- Alta/edici√≥n/eliminaci√≥n de festivos (`Festivo.*`).
 
-#### No auditado todavÌa
-- Cobertura de mÛdulos clÌnicos futuros (·rea MÈdico).
+#### No auditado todav√≠a
+- Cobertura de m√≥dulos cl√≠nicos futuros (√°rea M√©dico).
 
-### AuditorÌa enriquecida
-Se aÒadiÛ `AuditoriaEvento` y `AuditoriaService.RegistrarEvento(...)` con compatibilidad hacia `Registrar(...)`.
+### Auditor√≠a enriquecida
+Se a√±adi√≥ `AuditoriaEvento` y `AuditoriaService.RegistrarEvento(...)` con compatibilidad hacia `Registrar(...)`.
 
 Estado actual:
 - Eventos nuevos con `Tipo` y `Detalles` en JSON.
-- Metadatos autom·ticos en servicio: `Rol`, `Area`, `SesionId`, `Equipo`, `VersionApp`.
-- MigraciÛn completada de flujos activos a `RegistrarEvento(...)`.
-- Sin usos restantes de `App.AuditoriaService?.Registrar(...)` en cÛdigo activo.
+- Metadatos autom√°ticos en servicio: `Rol`, `Area`, `SesionId`, `Equipo`, `VersionApp`.
+- Migraci√≥n completada de flujos activos a `RegistrarEvento(...)`.
+- Sin usos restantes de `App.AuditoriaService?.Registrar(...)` en c√≥digo activo.
 
-### ConvenciÛn actual de `Detalles` (JSON)
-Claves est·ndar actuales:
+### Convenci√≥n actual de `Detalles` (JSON)
+Claves est√°ndar actuales:
 - `PacienteId`
 - `CitaId`
 - `FestivoId`
@@ -91,108 +91,108 @@ Compatibilidad:
 #### Fase 1
 - [x] Crear `AuditoriaEvento`.
 - [x] Ampliar `AuditoriaService` sin romper la API actual.
-- [x] Preparar ampliaciÛn de tabla `Auditoria` con migraciones defensivas.
+- [x] Preparar ampliaci√≥n de tabla `Auditoria` con migraciones defensivas.
 
 #### Fase 2
-- [x] AuditorÌa de operaciones de `PanelRecepcionViewModel`.
+- [x] Auditor√≠a de operaciones de `PanelRecepcionViewModel`.
 
 #### Fase 3
-- [x] AuditorÌa de `FestivosViewModel` (`Festivo.Crear`, `Festivo.Editar`, `Festivo.Eliminar`).
+- [x] Auditor√≠a de `FestivosViewModel` (`Festivo.Crear`, `Festivo.Editar`, `Festivo.Eliminar`).
 
 #### Fase 4
-- [x] Filtros avanzados en `AuditoriaView` (`Tipo`, `Rol`, `¡rea`, `Severidad`, `PacienteId`, `CitaId`, `SesionId`).
-- [x] Detalle formateado JSON y botÛn para copiar `SesionId`.
+- [x] Filtros avanzados en `AuditoriaView` (`Tipo`, `Rol`, `√Årea`, `Severidad`, `PacienteId`, `CitaId`, `SesionId`).
+- [x] Detalle formateado JSON y bot√≥n para copiar `SesionId`.
 
 ### Riesgos detectados
-- El ·rea `MÈdico` no est· implementada a˙n.
-- Los futuros mÛdulos clÌnicos deben mantener el mismo patrÛn de auditorÌa para no perder trazabilidad.
+- El √°rea `M√©dico` no est√° implementada a√∫n.
+- Los futuros m√≥dulos cl√≠nicos deben mantener el mismo patr√≥n de auditor√≠a para no perder trazabilidad.
 
-### Nota de decisiÛn funcional
-El ·rea `MÈdico` a˙n no est· disponible y deber· construirse sobre esta base consolidada de auditorÌa, recepciÛn y administraciÛn.
+### Nota de decisi√≥n funcional
+El √°rea `M√©dico` a√∫n no est√° disponible y deber√° construirse sobre esta base consolidada de auditor√≠a, recepci√≥n y administraci√≥n.
 
-## Proceso de cierre de sesiÛn de trabajo
+## Proceso de cierre de sesi√≥n de trabajo
 
-Al cerrar una sesiÛn de trabajo del proyecto, se debe actualizar `README.md` con un resumen operativo para conservar el contexto.
+Al cerrar una sesi√≥n de trabajo del proyecto, se debe actualizar `README.md` con un resumen operativo para conservar el contexto.
 
-### QuÈ debe guardarse al cerrar sesiÛn
-- Cambios realizados en la sesiÛn.
-- Decisiones tÈcnicas tomadas.
-- Estado actual de cada mÛdulo afectado.
+### Qu√© debe guardarse al cerrar sesi√≥n
+- Cambios realizados en la sesi√≥n.
+- Decisiones t√©cnicas tomadas.
+- Estado actual de cada m√≥dulo afectado.
 - Incidencias detectadas.
 - Tareas pendientes.
 - Siguiente paso recomendado.
 
 ### Formato recomendado del resumen de cierre
 
-#### SesiÛn
+#### Sesi√≥n
 - Fecha: 04/09/2026
-- MÛdulos tocados: AuditorÌa (AuditoriaService, AuditoriaViewModel), Helpers (AuditoriaDetallesHelper), Views relacionadas.
-- Objetivo de la sesiÛn: Corregir error en el filtrado/parseo de detalles de auditorÌa y completar la compatibilidad con formatos JSON y legado.
+- M√≥dulos tocados: Auditor√≠a (AuditoriaService, AuditoriaViewModel), Helpers (AuditoriaDetallesHelper), Views relacionadas.
+- Objetivo de la sesi√≥n: Corregir error en el filtrado/parseo de detalles de auditor√≠a y completar la compatibilidad con formatos JSON y legado.
 
 #### Hecho
-- AÒadido `Helpers/AuditoriaDetallesHelper.cs` con `CoincideCampo(...)` para soportar JSON y formato legado.
-- Revisado `AuditoriaService` y `AuditoriaViewModel`; integrado helper en la vista de auditorÌa.
-- Preparada la lÛgica de integridad y firma en `AuditoriaService` (ver mÈtodos `VerifyIntegrity`, `CalcularHmacInstance`).
-- Se detectÛ un error externo en Copilot/IntegraciÛn (context window exceeded) durante la operaciÛn de cierre de sesiÛn.
+- A√±adido `Helpers/AuditoriaDetallesHelper.cs` con `CoincideCampo(...)` para soportar JSON y formato legado.
+- Revisado `AuditoriaService` y `AuditoriaViewModel`; integrado helper en la vista de auditor√≠a.
+- Preparada la l√≥gica de integridad y firma en `AuditoriaService` (ver m√©todos `VerifyIntegrity`, `CalcularHmacInstance`).
+- Se detect√≥ un error externo en Copilot/Integraci√≥n (context window exceeded) durante la operaci√≥n de cierre de sesi√≥n.
 
 #### Pendiente
-- Ejecutar compilaciÛn completa y pruebas funcionales sobre filtros y exportaciÛn CSV.
-- Verificar integridad de la cadena de auditorÌa con `AuditoriaService.VerifyIntegrity()` en entorno de pruebas.
-- Confirmar gestiÛn y rotaciÛn de claves para HMAC/encryption en entornos seguros.
+- Ejecutar compilaci√≥n completa y pruebas funcionales sobre filtros y exportaci√≥n CSV.
+- Verificar integridad de la cadena de auditor√≠a con `AuditoriaService.VerifyIntegrity()` en entorno de pruebas.
+- Confirmar gesti√≥n y rotaci√≥n de claves para HMAC/encryption en entornos seguros.
 
 #### Riesgos o incidencias
-- Errores de la herramienta Copilot no afectan al repositorio pero impiden algunas acciones de integraciÛn. Mantener registro.
-- Si la tabla `Auditoria` cambia en producciÛn, asegurarse de migraciones defensivas.
+- Errores de la herramienta Copilot no afectan al repositorio pero impiden algunas acciones de integraci√≥n. Mantener registro.
+- Si la tabla `Auditoria` cambia en producci√≥n, asegurarse de migraciones defensivas.
 
 #### Siguiente paso
-- Compilar y probar localmente; validar filtros por `PacienteId`, `CitaId`, `SesionId` y exportaciÛn CSV.
-- Si todo OK, confirmar cierre de sesiÛn y documentar resultados adicionales si aparecen.
+- Compilar y probar localmente; validar filtros por `PacienteId`, `CitaId`, `SesionId` y exportaci√≥n CSV.
+- Si todo OK, confirmar cierre de sesi√≥n y documentar resultados adicionales si aparecen.
 
 ### Regla de trabajo
-Cuando se indique expresamente "cerramos sesiÛn", se debe preparar y dejar actualizado en `README.md` el resumen del estado del proyecto para que no se pierda el progreso entre sesiones.
+Cuando se indique expresamente "cerramos sesi√≥n", se debe preparar y dejar actualizado en `README.md` el resumen del estado del proyecto para que no se pierda el progreso entre sesiones.
 
-#### SesiÛn
+#### Sesi√≥n
 - Fecha: 04/09/2026
-- MÛdulos tocados: AuditorÌa (AuditoriaService, AuditoriaViewModel), Helpers (AuditoriaDetallesHelper), Views relacionadas.
-- Objetivo de la sesiÛn: Corregir error en el filtrado/parseo de detalles de auditorÌa y completar la compatibilidad con formatos JSON y legado.
+- M√≥dulos tocados: Auditor√≠a (AuditoriaService, AuditoriaViewModel), Helpers (AuditoriaDetallesHelper), Views relacionadas.
+- Objetivo de la sesi√≥n: Corregir error en el filtrado/parseo de detalles de auditor√≠a y completar la compatibilidad con formatos JSON y legado.
 
 #### Hecho
-- AÒadido `Helpers/AuditoriaDetallesHelper.cs` con `CoincideCampo(...)` para soportar JSON y formato legado.
-- Revisado `AuditoriaService` y `AuditoriaViewModel`; integrado helper en la vista de auditorÌa.
-- Preparada la lÛgica de integridad y firma en `AuditoriaService` (ver mÈtodos `VerifyIntegrity`, `CalcularHmacInstance`).
-- AÒadidos tests unitarios `ClinicaLongevidadApp.Tests/AuditoriaDetallesHelperTests.cs`.
+- A√±adido `Helpers/AuditoriaDetallesHelper.cs` con `CoincideCampo(...)` para soportar JSON y formato legado.
+- Revisado `AuditoriaService` y `AuditoriaViewModel`; integrado helper en la vista de auditor√≠a.
+- Preparada la l√≥gica de integridad y firma en `AuditoriaService` (ver m√©todos `VerifyIntegrity`, `CalcularHmacInstance`).
+- A√±adidos tests unitarios `ClinicaLongevidadApp.Tests/AuditoriaDetallesHelperTests.cs`.
 
 #### Pendiente
-- Ejecutar compilaciÛn completa y pruebas funcionales sobre filtros y exportaciÛn CSV.
-- Verificar integridad de la cadena de auditorÌa con `AuditoriaService.VerifyIntegrity()` en entorno de pruebas.
-- Confirmar gestiÛn y rotaciÛn de claves para HMAC/encryption en entornos seguros.
+- Ejecutar compilaci√≥n completa y pruebas funcionales sobre filtros y exportaci√≥n CSV.
+- Verificar integridad de la cadena de auditor√≠a con `AuditoriaService.VerifyIntegrity()` en entorno de pruebas.
+- Confirmar gesti√≥n y rotaci√≥n de claves para HMAC/encryption en entornos seguros.
 
 #### Riesgos o incidencias
-- Errores de la herramienta Copilot no afectan al repositorio pero impiden algunas acciones de integraciÛn. Mantener registro.
-- Si la tabla `Auditoria` cambia en producciÛn, asegurarse de migraciones defensivas.
+- Errores de la herramienta Copilot no afectan al repositorio pero impiden algunas acciones de integraci√≥n. Mantener registro.
+- Si la tabla `Auditoria` cambia en producci√≥n, asegurarse de migraciones defensivas.
 
 #### Siguiente paso
-- Compilar y probar localmente; validar filtros por `PacienteId`, `CitaId`, `SesionId` y exportaciÛn CSV.
-- Si todo OK, confirmar cierre de sesiÛn y documentar resultados adicionales si aparecen.
+- Compilar y probar localmente; validar filtros por `PacienteId`, `CitaId`, `SesionId` y exportaci√≥n CSV.
+- Si todo OK, confirmar cierre de sesi√≥n y documentar resultados adicionales si aparecen.
 
-## Registro autom·tico
-Este bloque no modifica el `README.md`. Se aÒade ˙nicamente para registrar que el asistente leyÛ el archivo a peticiÛn del usuario.
+## Registro autom√°tico
+Este bloque no modifica el `README.md`. Se a√±ade √∫nicamente para registrar que el asistente ley√≥ el archivo a petici√≥n del usuario.
 
-#### SesiÛn de cierre reciente
+#### Sesi√≥n de cierre reciente
 - Fecha: 05/09/2026
-- Objetivo: Cierre de sesiÛn de trabajo y estabilizaciÛn del flujo en recepciÛn tras detectar un NRE en guardado de pacientes durante tests.
+- Objetivo: Cierre de sesi√≥n de trabajo y estabilizaci√≥n del flujo en recepci√≥n tras detectar un NRE en guardado de pacientes durante tests.
 - Cambios realizados:
-  - `ViewModels/PanelRecepcionViewModel.cs`: endurecido `GuardarDatos()` para usar una copia local (`pacienteLocal`) y asignar `_pacienteActual` solo tras un guardado exitoso. AuditorÌa referenciada a la copia local para evitar NRE en entornos de prueba.
-  - `ClinicaLongevidadApp.Tests/CerrarSesionTests.cs`: prueba unitaria aÒadida que verifica `App.CerrarSesion()` limpia `Sesion` sin lanzar.
+  - `ViewModels/PanelRecepcionViewModel.cs`: endurecido `GuardarDatos()` para usar una copia local (`pacienteLocal`) y asignar `_pacienteActual` solo tras un guardado exitoso. Auditor√≠a referenciada a la copia local para evitar NRE en entornos de prueba.
+  - `ClinicaLongevidadApp.Tests/CerrarSesionTests.cs`: prueba unitaria a√±adida que verifica `App.CerrarSesion()` limpia `Sesion` sin lanzar.
 - Acciones verificadas:
-  - CompilaciÛn completa: OK (con advertencias menores de paquetes y SDK).
+  - Compilaci√≥n completa: OK (con advertencias menores de paquetes y SDK).
   - Suite de tests: 21/21 OK.
-  - La aplicaciÛn arrancÛ con `dotnet run` sin errores visibles en este entorno (la UI WPF no se muestra aquÌ).
+  - La aplicaci√≥n arranc√≥ con `dotnet run` sin errores visibles en este entorno (la UI WPF no se muestra aqu√≠).
 - Notas:
-  - Advertencias NuGet: `sqlite-net-pcl` y `Azure.Identity` (revisar actualizaciÛn de paquetes si procede).
+  - Advertencias NuGet: `sqlite-net-pcl` y `Azure.Identity` (revisar actualizaci√≥n de paquetes si procede).
 - Siguientes pasos recomendados:
-  1. Revisar y actualizar paquetes NuGet seg˙n polÌtica del proyecto.
-  2. Ejecutar pruebas manuales UI en entorno local para validar flujo completo de recepciÛn.
+  1. Revisar y actualizar paquetes NuGet seg√∫n pol√≠tica del proyecto.
+  2. Ejecutar pruebas manuales UI en entorno local para validar flujo completo de recepci√≥n.
   3. Confirmar y subir cambios al repositorio:
       - `git add .`
       - `git commit -m "Harden GuardarDatos in PanelRecepcionViewModel; add CerrarSesion test"`
@@ -222,42 +222,42 @@ Estado general
 - Proyecto: ClinicaLongevidadApp (WPF, .NET 8)
 - Rama actual: master (repositorio local en C:\Proyectos\ClinicaLongevidadApp)
 
-QuÈ se ha hecho
+Qu√© se ha hecho
 - Restaurado el formulario "Crear Cita" en `Views/PanelRecepcionView.xaml` y vinculado su visibilidad a la propiedad `MostrarFormularioCrearCita` del ViewModel.
 - En `ViewModels/PanelRecepcionViewModel.cs`:
-  - AÒadida gestiÛn de visibilidad para el formulario de cita; en modo `Citas` el formulario aparece por defecto.
-  - Implementada lÛgica de creaciÛn/ediciÛn de citas con validaciones (festivos, disponibilidad, datos de paciente).
-  - AÒadida colecciÛn `ProximasCitasPaciente` y presentaciÛn en la ficha del paciente.
-  - AÒadida propiedad `ProximaCitaSeleccionada` y comandos `EditarProximaCitaCommand` y `EliminarProximaCitaCommand`.
+  - A√±adida gesti√≥n de visibilidad para el formulario de cita; en modo `Citas` el formulario aparece por defecto.
+  - Implementada l√≥gica de creaci√≥n/edici√≥n de citas con validaciones (festivos, disponibilidad, datos de paciente).
+  - A√±adida colecci√≥n `ProximasCitasPaciente` y presentaci√≥n en la ficha del paciente.
+  - A√±adida propiedad `ProximaCitaSeleccionada` y comandos `EditarProximaCitaCommand` y `EliminarProximaCitaCommand`.
   - `EliminarProximaCitaCommand` marca la cita como `Cancelada` y actualiza la vista.
-  - Ajustes para cargar horas disponibles y mantener la ediciÛn correcta cuando se selecciona una cita.
+  - Ajustes para cargar horas disponibles y mantener la edici√≥n correcta cuando se selecciona una cita.
 - En `Views/PanelRecepcionView.xaml` (UI):
   - `Proximas citas` ahora muestra un `DataGrid` seleccionable con columnas `Fecha / Hora / Profesional / Estado`.
   - Estilo de cabecera de columnas alineado con `Historial reciente` (mismo fondo, color y padding).
-  - Listado de prÛximas citas limitado visualmente para mostrar ~3 filas y con scroll si hay m·s.
-  - AÒadidos botones "Editar cita seleccionada" y "Eliminar seleccionada" (a la derecha), con habilitado seg˙n selecciÛn.
+  - Listado de pr√≥ximas citas limitado visualmente para mostrar ~3 filas y con scroll si hay m√°s.
+  - A√±adidos botones "Editar cita seleccionada" y "Eliminar seleccionada" (a la derecha), con habilitado seg√∫n selecci√≥n.
   - Ajustes de espaciado/alto para consistencia visual entre listados.
 - Servicio nuevo/modificado: `Services/AuditoriaService.cs`
   - Servicio que registra eventos en base SQLite con hashing encadenado, firma HMAC, opcional cifrado AES-GCM para detalles, y capacidad de exportar/reenviar.
-  - Incluye utilidades para verificar integridad y generar reportes de diagnÛstico.
+  - Incluye utilidades para verificar integridad y generar reportes de diagn√≥stico.
 
-QuÈ tenemos que hacer / siguientes pasos sugeridos
+Qu√© tenemos que hacer / siguientes pasos sugeridos
 - Tests manuales:
-  - Verificar que al seleccionar distintas prÛximas citas, el botÛn Editar abre la cita correcta.
-  - Probar eliminar cita (marcar como Cancelada) y comprobar que desaparece del listado de prÛximas citas y aparece en historial.
-  - Confirmar que la UI no presenta regresiones en otros listados (Pacientes, Citas del dÌa).
+  - Verificar que al seleccionar distintas pr√≥ximas citas, el bot√≥n Editar abre la cita correcta.
+  - Probar eliminar cita (marcar como Cancelada) y comprobar que desaparece del listado de pr√≥ximas citas y aparece en historial.
+  - Confirmar que la UI no presenta regresiones en otros listados (Pacientes, Citas del d√≠a).
 - Mejoras opcionales:
-  - Habilitar doble clic en fila de `Proximas citas` para abrir ediciÛn directa.
-  - AÒadir confirmaciÛn visual (toast/snackbar) tras eliminar o editar cita.
-  - AÒadir tests unitarios para `PanelRecepcionViewModel` (lÛgica de selecciÛn/ediciÛn/elim.)
+  - Habilitar doble clic en fila de `Proximas citas` para abrir edici√≥n directa.
+  - A√±adir confirmaci√≥n visual (toast/snackbar) tras eliminar o editar cita.
+  - A√±adir tests unitarios para `PanelRecepcionViewModel` (l√≥gica de selecci√≥n/edici√≥n/elim.)
   - Revisar y configurar `AuditoriaService` en entorno (provider de claves, webhook/exportador) y documentar claves necesarias en variables de entorno.
 
-QuÈ estamos haciendo ahora
-- Mantenimiento de consistencia visual y comportamiento de listados en la ficha de paciente (alineaciÛn de cabeceras, padding, altura y scroll).
+Qu√© estamos haciendo ahora
+- Mantenimiento de consistencia visual y comportamiento de listados en la ficha de paciente (alineaci√≥n de cabeceras, padding, altura y scroll).
 - Registrar y recordar las decisiones implementadas para continuar con nuevos ajustes bajo la misma base.
 
 Notas adicionales
-- Para aplicar cambios en ejecuciÛn, usar Hot Reload o reiniciar la app si est· en modo depuraciÛn.
-- Si quieres que incluya cambios adicionales (doble clic, confirmaciones, tests), indÌcalo y lo implemento.
+- Para aplicar cambios en ejecuci√≥n, usar Hot Reload o reiniciar la app si est√° en modo depuraci√≥n.
+- Si quieres que incluya cambios adicionales (doble clic, confirmaciones, tests), ind√≠calo y lo implemento.
 
--- GitHub Copilot (resumen autom·tico)
+-- GitHub Copilot (resumen autom√°tico)
