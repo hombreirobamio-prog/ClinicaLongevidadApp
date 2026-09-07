@@ -1,5 +1,4 @@
 using System;
-using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -195,7 +194,7 @@ namespace ClinicaLongevidadApp
                 {
                     UsuarioAdmin = usuarioActual ?? "Sistema",
                     Accion = "Sesion.Cerrar",
-                    Modulo = "Sesión",
+                    Modulo = "SesiÃ³n",
                     UsuarioAfectado = usuarioActual ?? string.Empty,
                     Resultado = true,
                     FechaHora = DateTime.Now,
@@ -207,7 +206,7 @@ namespace ClinicaLongevidadApp
             }
             catch
             {
-                // No interrumpir el cierre de sesión si falla la auditoría.
+                // No interrumpir el cierre de sesiÃ³n si falla la auditorÃ­a.
             }
             finally
             {
