@@ -393,6 +393,7 @@ namespace ClinicaLongevidadApp.Services
 
                 // Fire-and-forget forwarding/exporting to avoid blocking UI callers
                 var forwarderLocal = _forwarder;
+                var eventIdLocal = evento.EventId ?? Guid.NewGuid().ToString("N");
                 if (forwarderLocal != null)
                 {
                     var signatureLocal = signature ?? string.Empty;
@@ -401,12 +402,14 @@ namespace ClinicaLongevidadApp.Services
                     {
                         const int maxAttempts = 3;
                         int attempt = 0;
+                        bool success = false;
                         while (attempt < maxAttempts)
                         {
                             attempt++;
                             try
                             {
                                 await forwarderLocal.ForwardEventAsync(forwardPayload, signatureLocal).ConfigureAwait(false);
+                                success = true;
                                 break; // success
                             }
                             catch (Exception ex)
@@ -422,25 +425,39 @@ namespace ClinicaLongevidadApp.Services
                                 }
                             }
                         }
+
+                        if (!success)
+                        {
+                            try
+                            {
+                                var q = new AuditForwardQueue(_connectionString);
+                                q.Enqueue(eventIdLocal, forwardPayload, signature ?? string.Empty);
+                            }
+                            catch (Exception ex)
+                            {
+                                try { LogService.Error("AuditoriaService", "Failed to enqueue forward after retries", ex); } catch { }
+                            }
+                        }
                     });
                 }
 
                 var exporterLocal = _exporter;
                 if (exporterLocal != null)
                 {
-                    var eventIdLocal = evento.EventId ?? Guid.NewGuid().ToString("N");
                     var signatureLocal = signature ?? string.Empty;
                     var payloadLocal = payloadJson;
                     Task.Run(async () =>
                     {
                         const int maxAttempts = 3;
                         int attempt = 0;
+                        bool success = false;
                         while (attempt < maxAttempts)
                         {
                             attempt++;
                             try
                             {
                                 await exporterLocal.ExportEventAsync(eventIdLocal, payloadLocal, signatureLocal).ConfigureAwait(false);
+                                success = true;
                                 break;
                             }
                             catch (Exception ex)
@@ -454,6 +471,19 @@ namespace ClinicaLongevidadApp.Services
                                 {
                                     try { await Task.Delay(250 * attempt).ConfigureAwait(false); } catch { }
                                 }
+                            }
+                        }
+
+                        if (!success)
+                        {
+                            try
+                            {
+                                var q = new AuditForwardQueue(_connectionString);
+                                q.Enqueue(eventIdLocal, payloadLocal, signatureLocal);
+                            }
+                            catch (Exception ex)
+                            {
+                                try { LogService.Error("AuditoriaService", "Failed to enqueue export after retries", ex); } catch { }
                             }
                         }
                     });
