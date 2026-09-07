@@ -75,6 +75,17 @@ namespace ClinicaLongevidadApp
             }
 
             AuditoriaService = new AuditoriaService(connectionString, keyProvider, exporter, forwarder);
+            // Start persistent forward queue worker to guarantee forwarding durability
+            try
+            {
+                var forwardQueueWorker = new AuditForwardQueueWorker(connectionString, forwarder, exporter, 30);
+                Current.Properties["AuditForwardQueueWorker"] = forwardQueueWorker;
+            }
+            catch (Exception ex)
+            {
+                // Non-fatal: log and continue
+                LogService.Warning("App", "Failed to start AuditForwardQueueWorker: " + ex.Message);
+            }
             // Store connection string for tools and UI backup service
             Current.Properties["AuditConnectionString"] = connectionString;
 
