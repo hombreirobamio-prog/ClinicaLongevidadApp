@@ -213,3 +213,51 @@ Este bloque no modifica el `README.md`. Se añade únicamente para registrar que e
   1. Actualizar `Azure.Identity` a una versi?n sin vulnerabilidades o documentar mitigaci?n si la actual es requerida.
   2. Ejecutar pruebas manuales UI en entorno local.
   3. Si todo OK, commitear y pushear cambios de dependencias y pruebas.
+
+# Resumen de cambios y estado del trabajo
+
+Fecha: 2026-09-06
+
+Estado general
+- Proyecto: ClinicaLongevidadApp (WPF, .NET 8)
+- Rama actual: master (repositorio local en C:\Proyectos\ClinicaLongevidadApp)
+
+Qué se ha hecho
+- Restaurado el formulario "Crear Cita" en `Views/PanelRecepcionView.xaml` y vinculado su visibilidad a la propiedad `MostrarFormularioCrearCita` del ViewModel.
+- En `ViewModels/PanelRecepcionViewModel.cs`:
+  - Añadida gestión de visibilidad para el formulario de cita; en modo `Citas` el formulario aparece por defecto.
+  - Implementada lógica de creación/edición de citas con validaciones (festivos, disponibilidad, datos de paciente).
+  - Añadida colección `ProximasCitasPaciente` y presentación en la ficha del paciente.
+  - Añadida propiedad `ProximaCitaSeleccionada` y comandos `EditarProximaCitaCommand` y `EliminarProximaCitaCommand`.
+  - `EliminarProximaCitaCommand` marca la cita como `Cancelada` y actualiza la vista.
+  - Ajustes para cargar horas disponibles y mantener la edición correcta cuando se selecciona una cita.
+- En `Views/PanelRecepcionView.xaml` (UI):
+  - `Proximas citas` ahora muestra un `DataGrid` seleccionable con columnas `Fecha / Hora / Profesional / Estado`.
+  - Estilo de cabecera de columnas alineado con `Historial reciente` (mismo fondo, color y padding).
+  - Listado de próximas citas limitado visualmente para mostrar ~3 filas y con scroll si hay más.
+  - Añadidos botones "Editar cita seleccionada" y "Eliminar seleccionada" (a la derecha), con habilitado según selección.
+  - Ajustes de espaciado/alto para consistencia visual entre listados.
+- Servicio nuevo/modificado: `Services/AuditoriaService.cs`
+  - Servicio que registra eventos en base SQLite con hashing encadenado, firma HMAC, opcional cifrado AES-GCM para detalles, y capacidad de exportar/reenviar.
+  - Incluye utilidades para verificar integridad y generar reportes de diagnóstico.
+
+Qué tenemos que hacer / siguientes pasos sugeridos
+- Tests manuales:
+  - Verificar que al seleccionar distintas próximas citas, el botón Editar abre la cita correcta.
+  - Probar eliminar cita (marcar como Cancelada) y comprobar que desaparece del listado de próximas citas y aparece en historial.
+  - Confirmar que la UI no presenta regresiones en otros listados (Pacientes, Citas del día).
+- Mejoras opcionales:
+  - Habilitar doble clic en fila de `Proximas citas` para abrir edición directa.
+  - Añadir confirmación visual (toast/snackbar) tras eliminar o editar cita.
+  - Añadir tests unitarios para `PanelRecepcionViewModel` (lógica de selección/edición/elim.)
+  - Revisar y configurar `AuditoriaService` en entorno (provider de claves, webhook/exportador) y documentar claves necesarias en variables de entorno.
+
+Qué estamos haciendo ahora
+- Mantenimiento de consistencia visual y comportamiento de listados en la ficha de paciente (alineación de cabeceras, padding, altura y scroll).
+- Registrar y recordar las decisiones implementadas para continuar con nuevos ajustes bajo la misma base.
+
+Notas adicionales
+- Para aplicar cambios en ejecución, usar Hot Reload o reiniciar la app si está en modo depuración.
+- Si quieres que incluya cambios adicionales (doble clic, confirmaciones, tests), indícalo y lo implemento.
+
+-- GitHub Copilot (resumen automático)
