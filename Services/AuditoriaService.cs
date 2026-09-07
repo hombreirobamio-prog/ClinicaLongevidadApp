@@ -10,17 +10,6 @@ using System.Threading.Tasks;
 using System.Text;
 using System.Linq;
 using System.Security.Cryptography;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text.RegularExpressions;
-using System.Text.Json;
-using System.Globalization;
-using System.Reflection;
-using System.Threading.Tasks;
-using System.Text;
-using System.Linq;
-using System.Security.Cryptography;
 using Microsoft.Data.Sqlite;
 
 namespace ClinicaLongevidadApp.Services
@@ -407,16 +396,32 @@ namespace ClinicaLongevidadApp.Services
                 var forwarderLocal = _forwarder;
                 if (forwarderLocal != null)
                 {
+                    var signatureLocal = signature ?? string.Empty;
+                    var forwardPayload = payloadJson;
                     Task.Run(async () =>
                     {
-                        try
+                        const int maxAttempts = 3;
+                        int attempt = 0;
+                        while (attempt < maxAttempts)
                         {
-                            var forwardPayload = payloadJson;
-                            await forwarderLocal.ForwardEventAsync(forwardPayload, signature).ConfigureAwait(false);
-                        }
-                        catch (Exception ex)
-                        {
-                            LogService.Error("AuditoriaService", "Failed to forward audit event", ex);
+                            attempt++;
+                            try
+                            {
+                                await forwarderLocal.ForwardEventAsync(forwardPayload, signatureLocal).ConfigureAwait(false);
+                                break; // success
+                            }
+                            catch (Exception ex)
+                            {
+                                LogService.Warning("AuditoriaService", $"Forward attempt {attempt} failed: {ex.Message}");
+                                if (attempt >= maxAttempts)
+                                {
+                                    LogService.Error("AuditoriaService", "Failed to forward audit event after retries", ex);
+                                }
+                                else
+                                {
+                                    try { await Task.Delay(200 * attempt).ConfigureAwait(false); } catch { }
+                                }
+                            }
                         }
                     });
                 }
@@ -425,15 +430,32 @@ namespace ClinicaLongevidadApp.Services
                 if (exporterLocal != null)
                 {
                     var eventIdLocal = evento.EventId ?? Guid.NewGuid().ToString("N");
+                    var signatureLocal = signature ?? string.Empty;
+                    var payloadLocal = payloadJson;
                     Task.Run(async () =>
                     {
-                        try
+                        const int maxAttempts = 3;
+                        int attempt = 0;
+                        while (attempt < maxAttempts)
                         {
-                            await exporterLocal.ExportEventAsync(eventIdLocal, payloadJson, signature).ConfigureAwait(false);
-                        }
-                        catch (Exception ex)
-                        {
-                            LogService.Error("AuditoriaService", "Failed to export audit event", ex);
+                            attempt++;
+                            try
+                            {
+                                await exporterLocal.ExportEventAsync(eventIdLocal, payloadLocal, signatureLocal).ConfigureAwait(false);
+                                break;
+                            }
+                            catch (Exception ex)
+                            {
+                                LogService.Warning("AuditoriaService", $"Export attempt {attempt} failed: {ex.Message}");
+                                if (attempt >= maxAttempts)
+                                {
+                                    LogService.Error("AuditoriaService", "Failed to export audit event after retries", ex);
+                                }
+                                else
+                                {
+                                    try { await Task.Delay(250 * attempt).ConfigureAwait(false); } catch { }
+                                }
+                            }
                         }
                     });
                 }
