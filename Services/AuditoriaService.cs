@@ -1,4 +1,4 @@
-﻿using ClinicaLongevidadApp.Models;
+using ClinicaLongevidadApp.Models;
 using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
@@ -155,8 +155,8 @@ namespace ClinicaLongevidadApp.Services
                     for (int i = 0; i < reader.FieldCount; i++)
                     {
                         string name = reader.GetName(i);
-                        object val = reader.IsDBNull(i) ? null : reader.GetValue(i);
-                        row[name] = val ?? string.Empty;
+                        object? val = reader.IsDBNull(i) ? null : reader.GetValue(i);
+                        row[name] = val ?? (object)string.Empty;
                     }
                     surrounding.Add(row);
                 }
@@ -164,9 +164,9 @@ namespace ClinicaLongevidadApp.Services
                 var report = new Dictionary<string, object>
                 {
                     ["GeneratedAt"] = DateTime.Now.ToString("o", CultureInfo.InvariantCulture),
-                    ["FirstError"] = first,
+                    ["FirstError"] = first ?? string.Empty,
                     ["ParsedId"] = id,
-                    ["Errors"] = errors,
+                    ["Errors"] = errors ?? new List<string>(),
                     ["SurroundingRows"] = surrounding
                 };
 
@@ -401,7 +401,7 @@ namespace ClinicaLongevidadApp.Services
                 // If encryption key available, produce an encrypted payload for storage, but
                 // always compute the hash over the plain normalized details so integrity checks
                 // remain readable and consistent.
-                var encKey = _keyProvider.GetEncryptionKey();
+                var encKey = _keyProvider?.GetEncryptionKey();
                 string encryptedPayload = string.Empty;
                 if (encKey is not null && encKey.Length > 0)
                 {
