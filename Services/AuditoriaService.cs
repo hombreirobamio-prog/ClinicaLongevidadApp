@@ -1,4 +1,4 @@
-﻿using Microsoft.Data.Sqlite;
+using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -144,7 +144,7 @@ namespace ClinicaLongevidadApp.Services
 
                 var surrounding = new List<Dictionary<string, object>>();
 
-                using var conn = new Microsoft.Data.Sqlite.SqliteConnection(_connectionString);
+                using var conn = new SqliteConnection(_connectionString);
                 conn.Open();
 
                 string query = "SELECT Id, UsuarioAdmin, Accion, Fechahora, Modulo, UsuarioAfectado, Resultado, Detalles, DetallesEnc, PrevHash, Hash, Signature, KeyVersion, KeyVersionEnc FROM Auditoria WHERE Id BETWEEN @from AND @to ORDER BY Id";
@@ -249,7 +249,8 @@ namespace ClinicaLongevidadApp.Services
                         byte[] plaintext = Encoding.UTF8.GetBytes(evento.Detalles ?? string.Empty);
                         byte[] cipher = new byte[plaintext.Length];
                         byte[] tag = new byte[16];
-                        using (var aesg = new AesGcm(encKey))
+                        // Use ReadOnlySpan<byte> overload to avoid obsolete byte[] constructor warning
+                        using (var aesg = new AesGcm((ReadOnlySpan<byte>)encKey))
                         {
                             aesg.Encrypt(nonce, plaintext, cipher, tag);
                         }
@@ -346,14 +347,15 @@ namespace ClinicaLongevidadApp.Services
                 cmd.ExecuteNonQuery();
 
                 // Fire-and-forget forwarding/exporting to avoid blocking UI callers
-                if (_forwarder != null)
+                var forwarderLocal = _forwarder;
+                if (forwarderLocal != null)
                 {
                     Task.Run(async () =>
                     {
                         try
                         {
                             var forwardPayload = payloadJson;
-                            await _forwarder.ForwardEventAsync(forwardPayload, signature);
+                            await forwarderLocal.ForwardEventAsync(forwardPayload, signature).ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
@@ -362,13 +364,15 @@ namespace ClinicaLongevidadApp.Services
                     });
                 }
 
-                if (_exporter != null)
+                var exporterLocal = _exporter;
+                if (exporterLocal != null)
                 {
+                    var eventIdLocal = evento.EventId ?? Guid.NewGuid().ToString("N");
                     Task.Run(async () =>
                     {
                         try
                         {
-                            await _exporter.ExportEventAsync(evento.EventId, payloadJson, signature);
+                            await exporterLocal.ExportEventAsync(eventIdLocal, payloadJson, signature).ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
