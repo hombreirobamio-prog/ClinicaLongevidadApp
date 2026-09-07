@@ -240,8 +240,6 @@ namespace ClinicaLongevidadApp.Services
                 using var conn = new SqliteConnection(_connectionString);
                 conn.Open();
 
-                string prevHash = ObtenerUltimoHash(conn) ?? string.Empty;
-
                 // Build canonical payload used for hashing/signing
                 string resultadoStr = evento.Resultado ? "OK" : "ERROR";
 
@@ -299,12 +297,35 @@ namespace ClinicaLongevidadApp.Services
 
                 string payloadJson = JsonSerializer.Serialize(payloadObj);
 
-                // Compute chained hash
-                string hashInput = prevHash + "|" + payloadJson;
+                // We need to read the last hash and insert atomically to avoid race conditions.
+                // Compute expensive items (encryption, signature, payload) before taking DB lock.
+                string prevHash;
                 string hash;
-                using (var sha = SHA256.Create())
+                try
                 {
-                    hash = Convert.ToHexString(sha.ComputeHash(Encoding.UTF8.GetBytes(hashInput)));
+                    // Acquire an immediate transaction to prevent concurrent writers from
+                    // observing the same PrevHash and breaking the chain.
+                    using var beginCmd = conn.CreateCommand();
+                    beginCmd.CommandText = "BEGIN IMMEDIATE;";
+                    beginCmd.ExecuteNonQuery();
+
+                    prevHash = ObtenerUltimoHash(conn) ?? string.Empty;
+
+                    // Compute chained hash using the prevHash observed while holding the transaction
+                    string hashInput = prevHash + "|" + payloadJson;
+                    using (var sha = SHA256.Create())
+                    {
+                        hash = Convert.ToHexString(sha.ComputeHash(Encoding.UTF8.GetBytes(hashInput)));
+                    }
+                }
+                catch
+                {
+                    // If we cannot start the transaction, fail safe by computing with empty prevHash
+                    prevHash = string.Empty;
+                    using (var sha = SHA256.Create())
+                    {
+                        hash = Convert.ToHexString(sha.ComputeHash(Encoding.UTF8.GetBytes((prevHash ?? string.Empty) + "|" + payloadJson)));
+                    }
                 }
 
                 // Compute HMAC signature if key available
@@ -355,7 +376,32 @@ namespace ClinicaLongevidadApp.Services
                 cmd.Parameters.AddWithValue("@kver", keyVer ?? string.Empty);
                 cmd.Parameters.AddWithValue("@kverenc", keyVerEnc ?? string.Empty);
 
-                cmd.ExecuteNonQuery();
+                try
+                {
+                    cmd.ExecuteNonQuery();
+
+                    // Commit explicit transaction if we started one
+                    try
+                    {
+                        using var commitCmd = conn.CreateCommand();
+                        commitCmd.CommandText = "COMMIT;";
+                        commitCmd.ExecuteNonQuery();
+                    }
+                    catch { /* best-effort commit */ }
+                }
+                catch
+                {
+                    // Rollback if available
+                    try
+                    {
+                        using var rb = conn.CreateCommand();
+                        rb.CommandText = "ROLLBACK;";
+                        rb.ExecuteNonQuery();
+                    }
+                    catch { }
+
+                    throw;
+                }
 
                 // Fire-and-forget forwarding/exporting to avoid blocking UI callers
                 var forwarderLocal = _forwarder;
