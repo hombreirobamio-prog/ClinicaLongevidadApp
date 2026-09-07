@@ -9,8 +9,19 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Text;
 using System.Linq;
-using Microsoft.Data.Sqlite;
 using System.Security.Cryptography;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
+using System.Text.Json;
+using System.Globalization;
+using System.Reflection;
+using System.Threading.Tasks;
+using System.Text;
+using System.Linq;
+using System.Security.Cryptography;
+using Microsoft.Data.Sqlite;
 
 namespace ClinicaLongevidadApp.Services
 {
@@ -249,8 +260,8 @@ namespace ClinicaLongevidadApp.Services
                         byte[] plaintext = Encoding.UTF8.GetBytes(evento.Detalles ?? string.Empty);
                         byte[] cipher = new byte[plaintext.Length];
                         byte[] tag = new byte[16];
-                        // Use ReadOnlySpan<byte> overload to avoid obsolete byte[] constructor warning
-                        using (var aesg = new AesGcm((ReadOnlySpan<byte>)encKey))
+                        // Use constructor that specifies tag size to satisfy SYSLIB0053 guidance
+                        using (var aesg = new AesGcm((ReadOnlySpan<byte>)encKey, 16))
                         {
                             aesg.Encrypt(nonce, plaintext, cipher, tag);
                         }
@@ -262,7 +273,7 @@ namespace ClinicaLongevidadApp.Services
                         Buffer.BlockCopy(cipher, 0, combined, nonce.Length + tag.Length, cipher.Length);
                         detallesEnc = Convert.ToBase64String(combined);
                         detallesPlain = null; // do not store plain if encrypted
-                        keyVerEnc = _keyProvider.GetEncryptionKeyVersion();
+                        keyVerEnc = _keyProvider!.GetEncryptionKeyVersion();
                     }
                     catch
                     {
@@ -304,7 +315,7 @@ namespace ClinicaLongevidadApp.Services
                 {
                     using var h = new HMACSHA256(hmacKey);
                     signature = Convert.ToHexString(h.ComputeHash(Encoding.UTF8.GetBytes(payloadJson)));
-                    keyVer = _keyProvider.GetHmacKeyVersion();
+                    keyVer = _keyProvider!.GetHmacKeyVersion();
                 }
 
                 using var cmd = conn.CreateCommand();
