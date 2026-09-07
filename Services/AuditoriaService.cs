@@ -1,4 +1,3 @@
-﻿using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,8 +8,8 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Text;
 using System.Linq;
-using Microsoft.Data.Sqlite;
 using System.Security.Cryptography;
+using Microsoft.Data.Sqlite;
 
 namespace ClinicaLongevidadApp.Services
 {
@@ -74,7 +73,7 @@ namespace ClinicaLongevidadApp.Services
 
             try
             {
-                using var conn = new SqliteConnection(_connectionString);
+                using var conn = new Microsoft.Data.Sqlite.SqliteConnection(_connectionString);
                 conn.Open();
 
                 using var cmd = conn.CreateCommand();
@@ -144,7 +143,7 @@ namespace ClinicaLongevidadApp.Services
 
                 var surrounding = new List<Dictionary<string, object>>();
 
-                using var conn = new Microsoft.Data.Sqlite.SqliteConnection(_connectionString);
+                using var conn = new SqliteConnection(_connectionString);
                 conn.Open();
 
                 string query = "SELECT Id, UsuarioAdmin, Accion, Fechahora, Modulo, UsuarioAfectado, Resultado, Detalles, DetallesEnc, PrevHash, Hash, Signature, KeyVersion, KeyVersionEnc FROM Auditoria WHERE Id BETWEEN @from AND @to ORDER BY Id";
@@ -193,7 +192,7 @@ namespace ClinicaLongevidadApp.Services
             }
         }
 
-        private void IntentarAgregarColumna(SqliteConnection conn, string columnName, string type)
+            private void IntentarAgregarColumna(Microsoft.Data.Sqlite.SqliteConnection conn, string columnName, string type)
         {
             try
             {
@@ -226,10 +225,8 @@ namespace ClinicaLongevidadApp.Services
         {
             try
             {
-                using var conn = new SqliteConnection(_connectionString);
+                using var conn = new Microsoft.Data.Sqlite.SqliteConnection(_connectionString);
                 conn.Open();
-
-                string prevHash = ObtenerUltimoHash(conn) ?? string.Empty;
 
                 // Build canonical payload used for hashing/signing
                 string resultadoStr = evento.Resultado ? "OK" : "ERROR";
@@ -249,7 +246,8 @@ namespace ClinicaLongevidadApp.Services
                         byte[] plaintext = Encoding.UTF8.GetBytes(evento.Detalles ?? string.Empty);
                         byte[] cipher = new byte[plaintext.Length];
                         byte[] tag = new byte[16];
-                        using (var aesg = new AesGcm(encKey))
+                        // Use constructor that specifies tag size to satisfy SYSLIB0053 guidance
+                        using (var aesg = new AesGcm((ReadOnlySpan<byte>)encKey, 16))
                         {
                             aesg.Encrypt(nonce, plaintext, cipher, tag);
                         }
@@ -261,7 +259,7 @@ namespace ClinicaLongevidadApp.Services
                         Buffer.BlockCopy(cipher, 0, combined, nonce.Length + tag.Length, cipher.Length);
                         detallesEnc = Convert.ToBase64String(combined);
                         detallesPlain = null; // do not store plain if encrypted
-                        keyVerEnc = _keyProvider.GetEncryptionKeyVersion();
+                        keyVerEnc = _keyProvider!.GetEncryptionKeyVersion();
                     }
                     catch
                     {
@@ -287,12 +285,35 @@ namespace ClinicaLongevidadApp.Services
 
                 string payloadJson = JsonSerializer.Serialize(payloadObj);
 
-                // Compute chained hash
-                string hashInput = prevHash + "|" + payloadJson;
+                // We need to read the last hash and insert atomically to avoid race conditions.
+                // Compute expensive items (encryption, signature, payload) before taking DB lock.
+                string prevHash;
                 string hash;
-                using (var sha = SHA256.Create())
+                try
                 {
-                    hash = Convert.ToHexString(sha.ComputeHash(Encoding.UTF8.GetBytes(hashInput)));
+                    // Acquire an immediate transaction to prevent concurrent writers from
+                    // observing the same PrevHash and breaking the chain.
+                    using var beginCmd = conn.CreateCommand();
+                    beginCmd.CommandText = "BEGIN IMMEDIATE;";
+                    beginCmd.ExecuteNonQuery();
+
+                    prevHash = ObtenerUltimoHash(conn) ?? string.Empty;
+
+                    // Compute chained hash using the prevHash observed while holding the transaction
+                    string hashInput = prevHash + "|" + payloadJson;
+                    using (var sha = SHA256.Create())
+                    {
+                        hash = Convert.ToHexString(sha.ComputeHash(Encoding.UTF8.GetBytes(hashInput)));
+                    }
+                }
+                catch
+                {
+                    // If we cannot start the transaction, fail safe by computing with empty prevHash
+                    prevHash = string.Empty;
+                    using (var sha = SHA256.Create())
+                    {
+                        hash = Convert.ToHexString(sha.ComputeHash(Encoding.UTF8.GetBytes((prevHash ?? string.Empty) + "|" + payloadJson)));
+                    }
                 }
 
                 // Compute HMAC signature if key available
@@ -303,7 +324,7 @@ namespace ClinicaLongevidadApp.Services
                 {
                     using var h = new HMACSHA256(hmacKey);
                     signature = Convert.ToHexString(h.ComputeHash(Encoding.UTF8.GetBytes(payloadJson)));
-                    keyVer = _keyProvider.GetHmacKeyVersion();
+                    keyVer = _keyProvider!.GetHmacKeyVersion();
                 }
 
                 using var cmd = conn.CreateCommand();
@@ -343,36 +364,97 @@ namespace ClinicaLongevidadApp.Services
                 cmd.Parameters.AddWithValue("@kver", keyVer ?? string.Empty);
                 cmd.Parameters.AddWithValue("@kverenc", keyVerEnc ?? string.Empty);
 
-                cmd.ExecuteNonQuery();
+                try
+                {
+                    cmd.ExecuteNonQuery();
+
+                    // Commit explicit transaction if we started one
+                    try
+                    {
+                        using var commitCmd = conn.CreateCommand();
+                        commitCmd.CommandText = "COMMIT;";
+                        commitCmd.ExecuteNonQuery();
+                    }
+                    catch { /* best-effort commit */ }
+                }
+                catch
+                {
+                    // Rollback if available
+                    try
+                    {
+                        using var rb = conn.CreateCommand();
+                        rb.CommandText = "ROLLBACK;";
+                        rb.ExecuteNonQuery();
+                    }
+                    catch { }
+
+                    throw;
+                }
 
                 // Fire-and-forget forwarding/exporting to avoid blocking UI callers
-                if (_forwarder != null)
+                var forwarderLocal = _forwarder;
+                if (forwarderLocal != null)
                 {
+                    var signatureLocal = signature ?? string.Empty;
+                    var forwardPayload = payloadJson;
                     Task.Run(async () =>
                     {
-                        try
+                        const int maxAttempts = 3;
+                        int attempt = 0;
+                        while (attempt < maxAttempts)
                         {
-                            var forwardPayload = payloadJson;
-                            await _forwarder.ForwardEventAsync(forwardPayload, signature);
-                        }
-                        catch (Exception ex)
-                        {
-                            LogService.Error("AuditoriaService", "Failed to forward audit event", ex);
+                            attempt++;
+                            try
+                            {
+                                await forwarderLocal.ForwardEventAsync(forwardPayload, signatureLocal).ConfigureAwait(false);
+                                break; // success
+                            }
+                            catch (Exception ex)
+                            {
+                                LogService.Warning("AuditoriaService", $"Forward attempt {attempt} failed: {ex.Message}");
+                                if (attempt >= maxAttempts)
+                                {
+                                    LogService.Error("AuditoriaService", "Failed to forward audit event after retries", ex);
+                                }
+                                else
+                                {
+                                    try { await Task.Delay(200 * attempt).ConfigureAwait(false); } catch { }
+                                }
+                            }
                         }
                     });
                 }
 
-                if (_exporter != null)
+                var exporterLocal = _exporter;
+                if (exporterLocal != null)
                 {
+                    var eventIdLocal = evento.EventId ?? Guid.NewGuid().ToString("N");
+                    var signatureLocal = signature ?? string.Empty;
+                    var payloadLocal = payloadJson;
                     Task.Run(async () =>
                     {
-                        try
+                        const int maxAttempts = 3;
+                        int attempt = 0;
+                        while (attempt < maxAttempts)
                         {
-                            await _exporter.ExportEventAsync(evento.EventId, payloadJson, signature);
-                        }
-                        catch (Exception ex)
-                        {
-                            LogService.Error("AuditoriaService", "Failed to export audit event", ex);
+                            attempt++;
+                            try
+                            {
+                                await exporterLocal.ExportEventAsync(eventIdLocal, payloadLocal, signatureLocal).ConfigureAwait(false);
+                                break;
+                            }
+                            catch (Exception ex)
+                            {
+                                LogService.Warning("AuditoriaService", $"Export attempt {attempt} failed: {ex.Message}");
+                                if (attempt >= maxAttempts)
+                                {
+                                    LogService.Error("AuditoriaService", "Failed to export audit event after retries", ex);
+                                }
+                                else
+                                {
+                                    try { await Task.Delay(250 * attempt).ConfigureAwait(false); } catch { }
+                                }
+                            }
                         }
                     });
                 }
@@ -403,7 +485,7 @@ namespace ClinicaLongevidadApp.Services
             var errors = new List<string>();
             try
             {
-                using var conn = new SqliteConnection(_connectionString);
+                using var conn = new Microsoft.Data.Sqlite.SqliteConnection(_connectionString);
                 conn.Open();
 
                 // Include legacy 'Detalles' column to detect tampering in older deployments where payload was stored there
