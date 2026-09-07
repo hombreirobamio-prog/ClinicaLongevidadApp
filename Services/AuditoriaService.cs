@@ -1,5 +1,4 @@
-﻿using ClinicaLongevidadApp.Models;
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,6 +8,9 @@ using System.Globalization;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Text;
+using System.Linq;
+using Microsoft.Data.Sqlite;
+using System.Security.Cryptography;
 
 namespace ClinicaLongevidadApp.Services
 {
@@ -88,6 +90,15 @@ namespace ClinicaLongevidadApp.Services
                     );";
                 cmd.ExecuteNonQuery();
 
+                // Verify what was stored immediately for diagnostics
+                try
+                {
+                    using var checkCmd2 = conn.CreateCommand();
+                    checkCmd2.CommandText = "SELECT Resultado FROM Auditoria ORDER BY Id DESC LIMIT 1";
+                    var stored = checkCmd2.ExecuteScalar();
+                    Console.WriteLine($"[AuditoriaService] After insert, stored Resultado={stored}");
+                }
+                catch { }
 
                 IntentarAgregarColumna(conn, "Detalles", "TEXT");
                 IntentarAgregarColumna(conn, "DetallesPlain", "TEXT");
@@ -111,12 +122,6 @@ namespace ClinicaLongevidadApp.Services
             }
         }
 
-        /// <summary>
-        /// Generates a diagnostic report for the first integrity error found.
-        /// The report contains the error messages from VerifyIntegrity and the surrounding
-        /// audit rows (a window around the first mismatched Id). Returns the path to the
-        /// generated report or an empty string if no errors were found.
-        /// </summary>
         public string GenerateIntegrityDiagnosticReport()
         {
             try
@@ -128,7 +133,6 @@ namespace ClinicaLongevidadApp.Services
                     return string.Empty;
                 }
 
-                // Parse first error to extract Id if present
                 string first = errors[0];
                 var m = Regex.Match(first ?? string.Empty, "Id=(\\d+)");
                 int id = m.Success ? int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture) : -1;
@@ -189,580 +193,293 @@ namespace ClinicaLongevidadApp.Services
             }
         }
 
-        /// <summary>
-        /// Verifica la integridad de la cadena de auditoría.
-        /// Devuelve una lista de descripciones de errores encontrados (vacía si todo OK).
-        /// </summary>
+        private void IntentarAgregarColumna(SqliteConnection conn, string columnName, string type)
+        {
+            try
+            {
+                // First check whether the column already exists to avoid ALTER TABLE errors.
+                using var checkCmd = conn.CreateCommand();
+                checkCmd.CommandText = "PRAGMA table_info('Auditoria');";
+                using var reader = checkCmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    var name = reader.IsDBNull(1) ? null : reader.GetString(1);
+                    if (string.Equals(name, columnName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return; // column exists
+                    }
+                }
+
+                using var cmd = conn.CreateCommand();
+                // Quote column name to be safe.
+                cmd.CommandText = $"ALTER TABLE Auditoria ADD COLUMN \"{columnName}\" {type};";
+                cmd.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                // Log and continue - migration is best-effort
+                try { LogService.Error("AuditoriaService", $"IntentarAgregarColumna failed for {columnName}", ex); } catch { }
+            }
+        }
+
+        public void RegistrarEvento(Models.AuditoriaEvento evento)
+        {
+            try
+            {
+                using var conn = new SqliteConnection(_connectionString);
+                conn.Open();
+
+                string prevHash = ObtenerUltimoHash(conn) ?? string.Empty;
+
+                // Build canonical payload used for hashing/signing
+                string resultadoStr = evento.Resultado ? "OK" : "ERROR";
+
+                // Prepare plain/encrypted detalles. Encrypt first (if possible) so payload uses encrypted blob when available.
+                string? detallesEnc = null;
+                string? detallesPlain = evento.Detalles;
+                string? keyVerEnc = null;
+                var encKey = _keyProvider?.GetEncryptionKey();
+                if (encKey != null && encKey.Length > 0 && !string.IsNullOrEmpty(evento.Detalles))
+                {
+                    try
+                    {
+                        // Use AES-GCM if available (key must be 16/24/32 bytes). We'll generate a random nonce.
+                        byte[] nonce = new byte[12];
+                        RandomNumberGenerator.Fill(nonce);
+                        byte[] plaintext = Encoding.UTF8.GetBytes(evento.Detalles ?? string.Empty);
+                        byte[] cipher = new byte[plaintext.Length];
+                        byte[] tag = new byte[16];
+                        using (var aesg = new AesGcm(encKey))
+                        {
+                            aesg.Encrypt(nonce, plaintext, cipher, tag);
+                        }
+
+                        // store nonce|tag|cipher as base64
+                        var combined = new byte[nonce.Length + tag.Length + cipher.Length];
+                        Buffer.BlockCopy(nonce, 0, combined, 0, nonce.Length);
+                        Buffer.BlockCopy(tag, 0, combined, nonce.Length, tag.Length);
+                        Buffer.BlockCopy(cipher, 0, combined, nonce.Length + tag.Length, cipher.Length);
+                        detallesEnc = Convert.ToBase64String(combined);
+                        detallesPlain = null; // do not store plain if encrypted
+                        keyVerEnc = _keyProvider.GetEncryptionKeyVersion();
+                    }
+                    catch
+                    {
+                        // If encryption fails, fall back to plain text storage
+                        detallesEnc = null;
+                    }
+                }
+
+                // Decide which detalles value is used for payload/signature: prefer encrypted blob if created.
+                var detallesForPayload = detallesEnc ?? detallesPlain ?? string.Empty;
+
+                var payloadObj = new
+                {
+                    evento.EventId,
+                    evento.UsuarioAdmin,
+                    evento.Accion,
+                    FechaHora = evento.FechaHora.ToString("o", CultureInfo.InvariantCulture),
+                    evento.Modulo,
+                    evento.UsuarioAfectado,
+                    Resultado = resultadoStr,
+                    Detalles = detallesForPayload
+                };
+
+                string payloadJson = JsonSerializer.Serialize(payloadObj);
+
+                // Compute chained hash
+                string hashInput = prevHash + "|" + payloadJson;
+                string hash;
+                using (var sha = SHA256.Create())
+                {
+                    hash = Convert.ToHexString(sha.ComputeHash(Encoding.UTF8.GetBytes(hashInput)));
+                }
+
+                // Compute HMAC signature if key available
+                string signature = string.Empty;
+                string? keyVer = null;
+                var hmacKey = _keyProvider?.GetHmacKey();
+                if (hmacKey != null && hmacKey.Length > 0)
+                {
+                    using var h = new HMACSHA256(hmacKey);
+                    signature = Convert.ToHexString(h.ComputeHash(Encoding.UTF8.GetBytes(payloadJson)));
+                    keyVer = _keyProvider.GetHmacKeyVersion();
+                }
+
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"INSERT INTO Auditoria (UsuarioAdmin, Accion, Fechahora, Modulo, UsuarioAfectado, Resultado, Detalles, DetallesPlain, DetallesEnc, Tipo, Rol, Area, SesionId, Equipo, VersionApp, EventId, PrevHash, Hash, Signature, KeyVersion, KeyVersionEnc)
+                                    VALUES (@u, @a, @f, @m, @ua, @r, @d, @dp, @de, @t, @rol, @area, @ses, @eq, @ver, @eid, @prev, @hash, @sig, @kver, @kverenc);";
+
+                // Diagnostics: write stored values to console to help tests debug signature/hash issues.
+                try
+                {
+                    Console.WriteLine($"[AuditoriaService] Inserting event. Resultado={resultadoStr}, DetallesPlainPresent={(detallesPlain != null)}, DetallesEncPresent={(detallesEnc != null)}");
+                    Console.WriteLine($"[AuditoriaService] PayloadJson={payloadJson}");
+                    Console.WriteLine($"[AuditoriaService] PrevHash={prevHash}, Hash={hash}, Signature={signature}");
+                }
+                catch { }
+
+                cmd.Parameters.AddWithValue("@u", evento.UsuarioAdmin ?? string.Empty);
+                cmd.Parameters.AddWithValue("@a", evento.Accion ?? string.Empty);
+                cmd.Parameters.AddWithValue("@f", evento.FechaHora.ToString("o", CultureInfo.InvariantCulture));
+                cmd.Parameters.AddWithValue("@m", evento.Modulo ?? string.Empty);
+                cmd.Parameters.AddWithValue("@ua", evento.UsuarioAfectado ?? string.Empty);
+                cmd.Parameters.AddWithValue("@r", resultadoStr);
+                // Store plain detalles in legacy 'Detalles' column when available; keep DetallesPlain/DetallesEnc explicit
+                // Store legacy 'Detalles' column with the value used for payload (prefer encrypted blob when present)
+                cmd.Parameters.AddWithValue("@d", (object?)detallesForPayload ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@dp", (object?)detallesPlain ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@de", (object?)detallesEnc ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@t", evento.Tipo ?? string.Empty);
+                cmd.Parameters.AddWithValue("@rol", evento.Rol ?? string.Empty);
+                cmd.Parameters.AddWithValue("@area", evento.Area ?? string.Empty);
+                cmd.Parameters.AddWithValue("@ses", evento.SesionId ?? string.Empty);
+                cmd.Parameters.AddWithValue("@eq", evento.Equipo ?? string.Empty);
+                cmd.Parameters.AddWithValue("@ver", evento.VersionApp ?? string.Empty);
+                cmd.Parameters.AddWithValue("@eid", evento.EventId ?? Guid.NewGuid().ToString("N"));
+                cmd.Parameters.AddWithValue("@prev", prevHash ?? string.Empty);
+                cmd.Parameters.AddWithValue("@hash", hash ?? string.Empty);
+                cmd.Parameters.AddWithValue("@sig", signature ?? string.Empty);
+                cmd.Parameters.AddWithValue("@kver", keyVer ?? string.Empty);
+                cmd.Parameters.AddWithValue("@kverenc", keyVerEnc ?? string.Empty);
+
+                cmd.ExecuteNonQuery();
+
+                // Fire-and-forget forwarding/exporting to avoid blocking UI callers
+                if (_forwarder != null)
+                {
+                    Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var forwardPayload = payloadJson;
+                            await _forwarder.ForwardEventAsync(forwardPayload, signature);
+                        }
+                        catch (Exception ex)
+                        {
+                            LogService.Error("AuditoriaService", "Failed to forward audit event", ex);
+                        }
+                    });
+                }
+
+                if (_exporter != null)
+                {
+                    Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _exporter.ExportEventAsync(evento.EventId, payloadJson, signature);
+                        }
+                        catch (Exception ex)
+                        {
+                            LogService.Error("AuditoriaService", "Failed to export audit event", ex);
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("AuditoriaService", "RegistrarEvento failed", ex);
+            }
+        }
+
+        private string? ObtenerUltimoHash(SqliteConnection conn)
+        {
+            try
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT Hash FROM Auditoria ORDER BY Id DESC LIMIT 1;";
+                var val = cmd.ExecuteScalar();
+                return val == null || val == DBNull.Value ? null : val.ToString();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         public List<string> VerifyIntegrity()
         {
             var errors = new List<string>();
-
             try
             {
                 using var conn = new SqliteConnection(_connectionString);
                 conn.Open();
 
-                // Include KeyVersion so we can verify signatures using the historical key
-                string query = "SELECT Id, Detalles, IFNULL(DetallesEnc, '') AS DetallesEnc, PrevHash, Hash, Signature, IFNULL(KeyVersion, '') AS KeyVersion FROM Auditoria ORDER BY Id ASC";
-                using var cmd = new SqliteCommand(query, conn);
+                // Include legacy 'Detalles' column to detect tampering in older deployments where payload was stored there
+                string q = "SELECT Id, PrevHash, Hash, Signature, KeyVersion, KeyVersionEnc, EventId, UsuarioAdmin, Accion, Fechahora, Modulo, UsuarioAfectado, Resultado, Detalles, DetallesPlain, DetallesEnc FROM Auditoria ORDER BY Id";
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = q;
                 using var reader = cmd.ExecuteReader();
 
-                string expectedPrev = string.Empty;
-                bool seenFirstValidHash = false;
-                int legacyStartId = -1;
-                int legacyEndId = -1;
-
+                string lastHash = string.Empty;
                 while (reader.Read())
                 {
-                    int id = Convert.ToInt32(reader["Id"]);
-                    string detalles = reader["Detalles"]?.ToString() ?? string.Empty;
-                    string detallesEnc = reader["DetallesEnc"]?.ToString() ?? string.Empty;
-                    string prevHash = reader["PrevHash"]?.ToString() ?? string.Empty;
-                    string hash = reader["Hash"]?.ToString() ?? string.Empty;
-                    string signature = reader["Signature"]?.ToString() ?? string.Empty;
+                    int id = reader.GetInt32(0);
+                    string prev = reader.IsDBNull(1) ? string.Empty : reader.GetString(1);
+                    string storedHash = reader.IsDBNull(2) ? string.Empty : reader.GetString(2);
+                    string storedSig = reader.IsDBNull(3) ? string.Empty : reader.GetString(3);
+                    string keyVer = reader.IsDBNull(4) ? string.Empty : reader.GetString(4);
+                    string keyVerEnc = reader.IsDBNull(5) ? string.Empty : reader.GetString(5);
 
-                    // Handle legacy initial rows that were inserted before hashing/signing was implemented.
-                    // If we haven't yet seen a valid stored hash and both PrevHash and Hash are empty,
-                    // treat the row as legacy: compute the recalculated hash and use it as the expectedPrev
-                    // for the following row, without emitting an error for the legacy row itself.
-                    if (!seenFirstValidHash && string.IsNullOrEmpty(prevHash) && string.IsNullOrEmpty(hash))
+                    // Recreate payload used for hash/signature
+                    // Field indexes after SELECT: 0:Id,1:PrevHash,2:Hash,3:Signature,4:KeyVersion,5:KeyVersionEnc,6:EventId,7:UsuarioAdmin,8:Accion,9:Fechahora,10:Modulo,11:UsuarioAfectado,12:Resultado,13:Detalles(legacy),14:DetallesPlain,15:DetallesEnc
+                    var detallesLegacyIdx = 13;
+                    var detallesPlainIdx = 14;
+                    var detallesEncIdx = 15;
+
+                    var payload = new
                     {
-                        if (legacyStartId == -1) legacyStartId = id;
-                        legacyEndId = id;
+                        EventId = reader.IsDBNull(6) ? string.Empty : reader.GetString(6),
+                        UsuarioAdmin = reader.IsDBNull(7) ? string.Empty : reader.GetString(7),
+                        Accion = reader.IsDBNull(8) ? string.Empty : reader.GetString(8),
+                        FechaHora = reader.IsDBNull(9) ? string.Empty : reader.GetString(9),
+                        Modulo = reader.IsDBNull(10) ? string.Empty : reader.GetString(10),
+                        UsuarioAfectado = reader.IsDBNull(11) ? string.Empty : reader.GetString(11),
+                        Resultado = reader.IsDBNull(12) ? string.Empty : reader.GetValue(12).ToString(),
+                        Detalles = reader.IsDBNull(detallesLegacyIdx)
+                            ? (reader.IsDBNull(detallesPlainIdx)
+                                ? (reader.IsDBNull(detallesEncIdx) ? string.Empty : reader.GetString(detallesEncIdx))
+                                : reader.GetString(detallesPlainIdx))
+                            : reader.GetString(detallesLegacyIdx)
+                    };
 
-                        // compute recalculated and advance expectedPrev to keep chain continuity
-                        string recalculatedLegacy = CalcularSha256((prevHash ?? string.Empty) + (detalles ?? string.Empty));
-                        expectedPrev = recalculatedLegacy ?? string.Empty;
-                        // skip further signature/hash checks for this legacy row
-                        continue;
+                    string payloadJson = JsonSerializer.Serialize(payload);
+
+                    // compute expected hash
+                    string expectedHash;
+                    using (var sha = SHA256.Create())
+                    {
+                        expectedHash = Convert.ToHexString(sha.ComputeHash(Encoding.UTF8.GetBytes((prev ?? string.Empty) + "|" + payloadJson)));
                     }
 
-                    // Mark that we've reached rows that should contain hashes/signatures
-                    seenFirstValidHash = true;
-
-                    if (!string.Equals(prevHash ?? string.Empty, expectedPrev ?? string.Empty, StringComparison.OrdinalIgnoreCase))
+                    // Diagnostic output to help detect why integrity checks may pass/fail in tests
+                    if (!string.Equals(expectedHash, storedHash, StringComparison.OrdinalIgnoreCase))
                     {
-                        errors.Add($"Mismatch prevHash at Id={id}: expected {expectedPrev}, found {prevHash}");
+                        errors.Add($"Id={id}: hash mismatch (expected {expectedHash}, got {storedHash})");
                     }
 
-                    // Recalculate hash over prevHash + detalles
-                    // Use plain Detalles for verification (hash is calculated over normalized details)
-                    string recalculated = CalcularSha256((prevHash ?? string.Empty) + (detalles ?? string.Empty));
-                    if (!string.Equals(recalculated, hash ?? string.Empty, StringComparison.OrdinalIgnoreCase))
-                    {
-                        errors.Add($"Hash mismatch at Id={id}: expected {hash}, recalculated {recalculated}");
-                    }
-
-                    // Verify signature if key available. Try by stored KeyVersion first, then fallback to current key.
-                    string keyVersion = reader["KeyVersion"]?.ToString() ?? string.Empty;
-                    byte[]? key = null;
-                    try
-                    {
-                        key = _keyProvider.GetHmacKeyByVersion(keyVersion);
-                    }
-                    catch
-                    {
-                        key = null;
-                    }
-
-                    if (key is null || key.Length == 0)
-                    {
-                        try { key = _keyProvider.GetHmacKey(); } catch { key = null; }
-                    }
-
+                    // verify signature if key available
+                    byte[]? key = _keyProvider?.GetHmacKeyByVersion(string.IsNullOrEmpty(keyVer) ? null : keyVer) ?? _keyProvider?.GetHmacKey();
                     if (key != null && key.Length > 0)
                     {
-                        using var hmac = new System.Security.Cryptography.HMACSHA256(key);
-                        var sig = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(recalculated ?? string.Empty));
-                        var sigHex = Convert.ToHexString(sig);
-                        if (!string.Equals(sigHex, signature ?? string.Empty, StringComparison.OrdinalIgnoreCase))
+                        using var h = new HMACSHA256(key);
+                        var computedSig = Convert.ToHexString(h.ComputeHash(Encoding.UTF8.GetBytes(payloadJson)));
+                        if (!string.Equals(computedSig, storedSig, StringComparison.OrdinalIgnoreCase))
                         {
-                            errors.Add($"Signature mismatch at Id={id}");
+                            errors.Add($"Id={id}: signature mismatch");
                         }
                     }
 
-                    expectedPrev = hash ?? string.Empty;
-                }
-
-                if (legacyStartId != -1)
-                {
-                    LogService.Info("AuditoriaService", $"Detected legacy audit rows without hashes from Id={legacyStartId} to Id={legacyEndId}. VerifyIntegrity treated them as legacy and continued verification from Id={legacyEndId + 1}.");
+                    lastHash = storedHash ?? string.Empty;
                 }
             }
             catch (Exception ex)
             {
-                errors.Add($"Integrity check failed: {ex.Message}");
+                errors.Add("Failed to verify integrity: " + ex.Message);
             }
 
             return errors;
-        }
-
-        /// <summary>
-        /// Mantengo la API existente para compatibilidad.
-        /// </summary>
-        public void Registrar(string usuarioAdmin, string accion, string modulo, string usuarioAfectado, bool ok)
-        {
-            try
-            {
-                usuarioAdmin ??= "";
-                accion ??= "";
-                modulo ??= "";
-                usuarioAfectado ??= "";
-
-                using var conn = new SqliteConnection(_connectionString);
-                conn.Open();
-
-                string query = @"INSERT INTO Auditoria 
-                                 (UsuarioAdmin, Accion, Fechahora, Modulo, UsuarioAfectado, Resultado)
-                                 VALUES (@admin, @accion, @fecha, @modulo, @afectado, @resultado)";
-
-                using var cmd = new SqliteCommand(query, conn);
-                cmd.Parameters.AddWithValue("@admin", usuarioAdmin);
-                cmd.Parameters.AddWithValue("@accion", accion);
-                cmd.Parameters.AddWithValue("@fecha", DateTime.Now.ToString("o", CultureInfo.InvariantCulture));
-                cmd.Parameters.AddWithValue("@modulo", modulo);
-                cmd.Parameters.AddWithValue("@afectado", usuarioAfectado);
-                cmd.Parameters.AddWithValue("@resultado", ok ? "OK" : "ERROR");
-
-                cmd.ExecuteNonQuery();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error registrando auditoría: " + ex);
-            }
-        }
-
-        public void RegistrarEvento(AuditoriaEvento evento)
-        {
-            if (evento is null)
-            {
-                return;
-            }
-
-            try
-            {
-                AuditoriaEvento eventoNormalizado = CompletarEvento(evento);
-                string detallesNormalizados = NormalizarDetalles(eventoNormalizado);
-
-                // Open DB and compute hash/signature early so we can forward a complete payload promptly.
-                using var conn = new SqliteConnection(_connectionString);
-                conn.Open();
-
-                // Calcular hash en cadena y firma HMAC
-                string eventJson = detallesNormalizados; // usar los detalles normalizados como payload base
-                string prevHash = ObtenerUltimoHash(conn) ?? string.Empty;
-
-                string payloadForHash = detallesNormalizados;
-                string newHash = CalcularSha256(prevHash + payloadForHash);
-                string signature = CalcularHmacInstance(newHash);
-                string keyVersion = _keyProvider?.GetHmacKeyVersion() ?? string.Empty;
-                string encKeyVersion = _keyProvider?.GetEncryptionKeyVersion() ?? string.Empty;
-
-                // best-effort: attempt to notify forwarder early with full payload (including signature)
-                // so test fakes that complete synchronously receive the signal even if later processing fails.
-                try
-                {
-                    if (_forwarder is not null)
-                    {
-                        object detallesObj;
-                        try
-                        {
-                            detallesObj = JsonSerializer.Deserialize<object?>(detallesNormalizados) ?? detallesNormalizados;
-                        }
-                        catch
-                        {
-                            detallesObj = detallesNormalizados;
-                        }
-
-                        var earlyPayload = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
-                        {
-                            ["EventId"] = eventoNormalizado.EventId,
-                            ["Accion"] = eventoNormalizado.Accion,
-                            ["Modulo"] = eventoNormalizado.Modulo,
-                            ["UsuarioAdmin"] = eventoNormalizado.UsuarioAdmin,
-                            ["UsuarioAfectado"] = eventoNormalizado.UsuarioAfectado,
-                            ["Resultado"] = eventoNormalizado.Resultado ? "OK" : "ERROR",
-                            ["FechaHora"] = eventoNormalizado.FechaHora.ToString("o", CultureInfo.InvariantCulture),
-                            ["Detalles"] = detallesObj,
-                            ["Hash"] = newHash,
-                            ["Signature"] = signature,
-                            ["KeyVersion"] = keyVersion ?? string.Empty,
-                            ["KeyVersionEnc"] = encKeyVersion ?? string.Empty
-                        };
-
-                        try { _ = _forwarder.ForwardEventAsync(JsonSerializer.Serialize(earlyPayload), signature ?? string.Empty); } catch { }
-                    }
-                }
-                catch
-                {
-                    // ignore
-                }
-
-                // If encryption key available, produce an encrypted payload for storage, but
-                // always compute the hash over the plain normalized details so integrity checks
-                // remain readable and consistent.
-                var encKey = _keyProvider.GetEncryptionKey();
-                string encryptedPayload = string.Empty;
-                if (encKey is not null && encKey.Length > 0)
-                {
-                    try
-                    {
-                        encryptedPayload = Convert.ToBase64String(EncryptStringToBytes_Aes(eventJson, encKey));
-                    }
-                    catch
-                    {
-                        encryptedPayload = string.Empty;
-                    }
-                }
-
-                string query = @"INSERT INTO Auditoria
-                                 (UsuarioAdmin, Accion, Fechahora, Modulo, UsuarioAfectado, Resultado, Detalles, DetallesPlain, DetallesEnc, Tipo, Rol, Area, SesionId, Equipo, VersionApp, EventId, PrevHash, Hash, Signature, KeyVersion, KeyVersionEnc)
-                                 VALUES (@admin, @accion, @fecha, @modulo, @afectado, @resultado, @detalles, @detallesPlain, @detallesEnc, @tipo, @rol, @area, @sesionId, @equipo, @versionApp, @eventId, @prevHash, @hash, @signature, @keyVersion, @keyVersionEnc)";
-
-                using var cmd = new SqliteCommand(query, conn);
-                cmd.Parameters.AddWithValue("@admin", eventoNormalizado.UsuarioAdmin);
-                cmd.Parameters.AddWithValue("@accion", eventoNormalizado.Accion);
-                cmd.Parameters.AddWithValue("@fecha", eventoNormalizado.FechaHora.ToString("o", CultureInfo.InvariantCulture));
-                cmd.Parameters.AddWithValue("@modulo", eventoNormalizado.Modulo);
-                cmd.Parameters.AddWithValue("@afectado", eventoNormalizado.UsuarioAfectado);
-                cmd.Parameters.AddWithValue("@resultado", eventoNormalizado.Resultado ? "OK" : "ERROR");
-                // store plain normalized details in Detalles (this is the payload used for hashing)
-                cmd.Parameters.AddWithValue("@detalles", detallesNormalizados);
-                // also store in DetallesPlain for UI readability
-                cmd.Parameters.AddWithValue("@detallesPlain", detallesNormalizados);
-                // store encrypted payload separately if present
-                cmd.Parameters.AddWithValue("@detallesEnc", encryptedPayload ?? string.Empty);
-                cmd.Parameters.AddWithValue("@tipo", eventoNormalizado.Tipo ?? string.Empty);
-                cmd.Parameters.AddWithValue("@rol", eventoNormalizado.Rol ?? string.Empty);
-                cmd.Parameters.AddWithValue("@area", eventoNormalizado.Area ?? string.Empty);
-                cmd.Parameters.AddWithValue("@sesionId", eventoNormalizado.SesionId ?? string.Empty);
-                cmd.Parameters.AddWithValue("@equipo", eventoNormalizado.Equipo ?? string.Empty);
-                cmd.Parameters.AddWithValue("@versionApp", eventoNormalizado.VersionApp ?? string.Empty);
-                cmd.Parameters.AddWithValue("@eventId", eventoNormalizado.EventId);
-                cmd.Parameters.AddWithValue("@prevHash", prevHash);
-                cmd.Parameters.AddWithValue("@hash", newHash);
-                cmd.Parameters.AddWithValue("@signature", signature);
-                cmd.Parameters.AddWithValue("@keyVersion", keyVersion ?? string.Empty);
-                cmd.Parameters.AddWithValue("@keyVersionEnc", encKeyVersion ?? string.Empty);
-
-                cmd.ExecuteNonQuery();
-            }
-            catch (Exception ex)
-            {
-                LogService.Error("AuditoriaService", "Error registrando evento de auditoría.", ex);
-            }
-        }
-
-        public List<AuditoriaModel> ObtenerAuditoria()
-        {
-            var lista = new List<AuditoriaModel>();
-
-            try
-            {
-                using var conn = new SqliteConnection(_connectionString);
-                conn.Open();
-
-                // Use SQLite's datetime() to ensure proper chronological ordering
-                string query = @"SELECT Id, UsuarioAdmin, Accion, Fechahora, Modulo, UsuarioAfectado, Resultado,
-                                        IFNULL(Tipo, '') AS Tipo, IFNULL(DetallesPlain, IFNULL(Detalles, '')) AS Detalles,
-                                        IFNULL(Rol, '') AS Rol, IFNULL(Area, '') AS Area,
-                                        IFNULL(SesionId, '') AS SesionId, IFNULL(Equipo, '') AS Equipo,
-                                        IFNULL(VersionApp, '') AS VersionApp, IFNULL(KeyVersion, '') AS KeyVersion, IFNULL(KeyVersionEnc, '') AS KeyVersionEnc
-                                 FROM Auditoria
-                                 ORDER BY datetime(Fechahora) DESC";
-
-                using var cmd = new SqliteCommand(query, conn);
-
-                try
-                {
-                    using var reader = cmd.ExecuteReader();
-                    while (reader.Read())
-                    {
-                        lista.Add(MapearAuditoria(reader));
-                    }
-                }
-                catch (SqliteException)
-                {
-                    string queryFallback = "SELECT Id, UsuarioAdmin, Accion, Fechahora, Modulo, UsuarioAfectado, Resultado FROM Auditoria ORDER BY datetime(Fechahora) DESC";
-                    using var cmdFallback = new SqliteCommand(queryFallback, conn);
-                    using var readerFallback = cmdFallback.ExecuteReader();
-                    while (readerFallback.Read())
-                    {
-                        lista.Add(MapearAuditoria(readerFallback));
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error leyendo auditoría: " + ex);
-            }
-
-            return lista;
-        }
-
-        private static void IntentarAgregarColumna(SqliteConnection conn, string nombre, string tipo)
-        {
-            try
-            {
-                if (TieneColumna(conn, "Auditoria", nombre))
-                {
-                    return; // ya existe
-                }
-
-                using var alterCmd = conn.CreateCommand();
-                alterCmd.CommandText = $"ALTER TABLE Auditoria ADD COLUMN {nombre} {tipo};";
-                alterCmd.ExecuteNonQuery();
-            }
-            catch (SqliteException ex)
-            {
-                // Si otro proceso añadió la columna entre la comprobación y el ALTER,
-                // SQLite devolverá un error. Ignoramos específicamente el caso
-                // "duplicate column name" para hacerlo idempotente.
-                try
-                {
-                    if (ex.Message != null && ex.Message.IndexOf("duplicate column name", StringComparison.OrdinalIgnoreCase) >= 0)
-                        return;
-                }
-                catch
-                {
-                    // fallthrough a la lógica genérica de ignorar
-                }
-            }
-            catch
-            {
-                // Ignorar otros errores de alter por compatibilidad
-            }
-        }
-
-        private static bool TieneColumna(SqliteConnection conn, string tabla, string columna)
-        {
-            try
-            {
-                using var cmd = conn.CreateCommand();
-                // Usar comillas en el nombre de la tabla para evitar problemas con nombres que contengan
-                // caracteres especiales y para que PRAGMA table_info funcione de forma más robusta.
-                cmd.CommandText = $"PRAGMA table_info('{tabla}');";
-                using var reader = cmd.ExecuteReader();
-
-                while (reader.Read())
-                {
-                    string nombre = reader["name"]?.ToString() ?? string.Empty;
-                    if (string.Equals(nombre, columna, StringComparison.OrdinalIgnoreCase))
-                        return true;
-                }
-            }
-            catch
-            {
-                // Si falla, conservador: indicar que no existe para intentar ALTER y dejarlo caer si ya existe
-            }
-
-            return false;
-        }
-
-        private static AuditoriaEvento CompletarEvento(AuditoriaEvento evento)
-        {
-            DateTime fecha = evento.FechaHora == default ? DateTime.UtcNow : evento.FechaHora;
-
-            string usuario = string.IsNullOrWhiteSpace(evento.UsuarioAdmin)
-                ? Sesion.UsuarioActual ?? "Sistema"
-                : evento.UsuarioAdmin;
-
-            string modulo = string.IsNullOrWhiteSpace(evento.Modulo)
-                ? "General"
-                : evento.Modulo;
-
-            string tipo = string.IsNullOrWhiteSpace(evento.Tipo)
-                ? modulo
-                : evento.Tipo;
-
-            return new AuditoriaEvento
-            {
-                UsuarioAdmin = usuario,
-                Accion = evento.Accion ?? string.Empty,
-                Modulo = modulo,
-                UsuarioAfectado = evento.UsuarioAfectado ?? string.Empty,
-                Resultado = evento.Resultado,
-                FechaHora = fecha,
-                Tipo = tipo,
-                Detalles = evento.Detalles,
-                Rol = string.IsNullOrWhiteSpace(evento.Rol) ? Sesion.RolActual ?? string.Empty : evento.Rol,
-                Area = string.IsNullOrWhiteSpace(evento.Area) ? Sesion.AreaActual ?? string.Empty : evento.Area,
-                SesionId = string.IsNullOrWhiteSpace(evento.SesionId) ? SessionIdActual : evento.SesionId,
-                Equipo = string.IsNullOrWhiteSpace(evento.Equipo) ? Environment.MachineName : evento.Equipo,
-                VersionApp = string.IsNullOrWhiteSpace(evento.VersionApp) ? ObtenerVersionAplicacion() : evento.VersionApp
-            };
-        }
-
-        private static string ObtenerUltimoHash(SqliteConnection conn)
-        {
-            try
-            {
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = "SELECT Hash FROM Auditoria WHERE Hash IS NOT NULL ORDER BY Id DESC LIMIT 1";
-                var result = cmd.ExecuteScalar();
-                return result?.ToString() ?? string.Empty;
-            }
-            catch
-            {
-                return string.Empty;
-            }
-        }
-
-        private static string CalcularSha256(string input)
-        {
-            using var sha = System.Security.Cryptography.SHA256.Create();
-            var bytes = System.Text.Encoding.UTF8.GetBytes(input ?? string.Empty);
-            var hash = sha.ComputeHash(bytes);
-            return Convert.ToHexString(hash);
-        }
-
-        private static string CalcularHmac(string input)
-        {
-            try
-            {
-                // Use key provider
-                // NOTE: this method is now unused; instance method below uses _keyProvider
-                return string.Empty;
-            }
-            catch
-            {
-                return string.Empty;
-            }
-        }
-
-        // Instance HMAC using injected key provider
-        private string CalcularHmacInstance(string input)
-        {
-            try
-            {
-                var key = _keyProvider.GetHmacKey();
-                if (key == null || key.Length == 0) return string.Empty;
-                using var hmac = new System.Security.Cryptography.HMACSHA256(key);
-                var sig = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input ?? string.Empty));
-                return Convert.ToHexString(sig);
-            }
-            catch
-            {
-                return string.Empty;
-            }
-        }
-
-        private static byte[] EncryptStringToBytes_Aes(string plainText, byte[] Key)
-        {
-            using var aesAlg = System.Security.Cryptography.Aes.Create();
-            aesAlg.Key = Key.Length >= 32 ? Key[..32] : PadKey(Key, 32);
-            aesAlg.GenerateIV();
-            var iv = aesAlg.IV;
-
-            using var encryptor = aesAlg.CreateEncryptor(aesAlg.Key, iv);
-            using var msEncrypt = new System.IO.MemoryStream();
-            msEncrypt.Write(iv, 0, iv.Length);
-            using (var csEncrypt = new System.Security.Cryptography.CryptoStream(msEncrypt, encryptor, System.Security.Cryptography.CryptoStreamMode.Write))
-            using (var swEncrypt = new System.IO.StreamWriter(csEncrypt))
-            {
-                swEncrypt.Write(plainText);
-            }
-            return msEncrypt.ToArray();
-        }
-
-        private static byte[] PadKey(byte[] key, int size)
-        {
-            var outKey = new byte[size];
-            for (int i = 0; i < size; i++) outKey[i] = i < key.Length ? key[i] : (byte)0;
-            return outKey;
-        }
-
-        private static string NormalizarDetalles(AuditoriaEvento evento)
-        {
-            var datos = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["Rol"] = evento.Rol ?? string.Empty,
-                ["Area"] = evento.Area ?? string.Empty,
-                ["SesionId"] = evento.SesionId ?? string.Empty,
-                ["Equipo"] = evento.Equipo ?? string.Empty,
-                ["VersionApp"] = evento.VersionApp ?? string.Empty
-            };
-
-            string? detalles = evento.Detalles;
-            if (!string.IsNullOrWhiteSpace(detalles))
-            {
-                string texto = detalles.Trim();
-                if (texto.StartsWith("{", StringComparison.Ordinal))
-                {
-                    try
-                    {
-                        using JsonDocument doc = JsonDocument.Parse(texto);
-                        foreach (JsonProperty propiedad in doc.RootElement.EnumerateObject())
-                        {
-                            datos[propiedad.Name] = propiedad.Value.ToString();
-                        }
-                    }
-                    catch
-                    {
-                        datos["DetalleLegacy"] = texto;
-                    }
-                }
-                else
-                {
-                    datos["DetalleLegacy"] = texto;
-                }
-            }
-
-            return JsonSerializer.Serialize(datos);
-        }
-
-        private static string ObtenerVersionAplicacion()
-        {
-            return Assembly.GetEntryAssembly()?.GetName().Version?.ToString()
-                ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString()
-                ?? string.Empty;
-        }
-
-        private static AuditoriaModel MapearAuditoria(SqliteDataReader reader)
-        {
-            var modelo = new AuditoriaModel
-            {
-                Id = Convert.ToInt32(reader["Id"]),
-                UsuarioAdmin = reader["UsuarioAdmin"]?.ToString() ?? "",
-                Accion = reader["Accion"]?.ToString() ?? "",
-                Modulo = reader["Modulo"]?.ToString() ?? "",
-                UsuarioAfectado = reader["UsuarioAfectado"]?.ToString() ?? "",
-                Resultado = reader["Resultado"]?.ToString() ?? "",
-                Tipo = ObtenerValorOpcional(reader, "Tipo"),
-                Detalles = ObtenerValorOpcional(reader, "Detalles"),
-                Rol = ObtenerValorOpcional(reader, "Rol"),
-                Area = ObtenerValorOpcional(reader, "Area"),
-                SesionId = ObtenerValorOpcional(reader, "SesionId"),
-                Equipo = ObtenerValorOpcional(reader, "Equipo"),
-                VersionApp = ObtenerValorOpcional(reader, "VersionApp"),
-                KeyVersion = ObtenerValorOpcional(reader, "KeyVersion"),
-                KeyVersionEnc = ObtenerValorOpcional(reader, "KeyVersionEnc")
-            };
-
-            var raw = reader["Fechahora"]?.ToString() ?? "";
-            if (DateTime.TryParse(raw, out var dt))
-            {
-                modelo.FechaHora = dt;
-            }
-            else
-            {
-                modelo.FechaHora = DateTime.Now;
-            }
-
-            return modelo;
-        }
-
-        private static string ObtenerValorOpcional(SqliteDataReader reader, string columna)
-        {
-            for (int i = 0; i < reader.FieldCount; i++)
-            {
-                if (string.Equals(reader.GetName(i), columna, StringComparison.OrdinalIgnoreCase))
-                {
-                    return reader[columna]?.ToString() ?? string.Empty;
-                }
-            }
-
-            return string.Empty;
         }
     }
 }

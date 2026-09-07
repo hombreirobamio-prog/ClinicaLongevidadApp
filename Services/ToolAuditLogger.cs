@@ -1,6 +1,5 @@
+﻿using ClinicaLongevidadApp.Models;
 using System;
-using ClinicaLongevidadApp.Models;
-
 namespace ClinicaLongevidadApp.Services
 {
     public static class ToolAuditLogger
@@ -21,7 +20,7 @@ namespace ClinicaLongevidadApp.Services
                     UsuarioAdmin = usuario ?? Environment.UserName ?? string.Empty,
                     Resultado = resultado,
                     Detalles = System.Text.Json.JsonSerializer.Serialize(detalles ?? new { }),
-                    Tipo = "Operaci�n"
+                    Tipo = "Operación"
                 };
                 svc.RegistrarEvento(evento);
             }
