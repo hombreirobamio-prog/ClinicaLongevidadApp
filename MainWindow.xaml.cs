@@ -2,6 +2,7 @@ using System.Windows;
 
 using System;
 using System.Windows;
+using ClinicaLongevidadApp.Services;
 
 namespace ClinicaLongevidadApp
 {
@@ -15,9 +16,10 @@ namespace ClinicaLongevidadApp
             {
                 DataContext = App.DashboardViewModel;
             }
+
             // Update admin menu visibility based on session
             UpdateAdminMenuVisibility();
-            Services.Sesion.SessionChanged += () => UpdateAdminMenuVisibility();
+            Sesion.SessionChanged += () => UpdateAdminMenuVisibility();
 #if DEBUG
             try { MenuItemDebugAdmin.Visibility = Visibility.Visible; } catch { }
 #endif
@@ -28,7 +30,7 @@ namespace ClinicaLongevidadApp
             try
             {
                 var isAdmin = false;
-                var role = Services.Sesion.RolActual;
+                var role = Sesion.RolActual;
                 if (!string.IsNullOrWhiteSpace(role))
                 {
                     var r = role.Trim().ToLowerInvariant();
@@ -39,6 +41,7 @@ namespace ClinicaLongevidadApp
                     }
                 }
                 MenuItemAuditAdmin.Visibility = isAdmin ? Visibility.Visible : Visibility.Collapsed;
+                MenuItemRecentAudit.Visibility = isAdmin ? Visibility.Visible : Visibility.Collapsed;
             }
             catch { }
         }
@@ -48,20 +51,35 @@ namespace ClinicaLongevidadApp
             App.ShowAuditAdminWindow();
         }
 
+        private void MenuItemRecentAudit_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            string? conn = null;
+            try { conn = App.Current.Properties["AuditConnectionString"] as string; } catch { }
+            if (string.IsNullOrWhiteSpace(conn))
+            {
+                MessageBox.Show("Audit connection string not available.", "Audit Recent", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var w = new Views.RecentAuditWindow(conn);
+            w.Owner = this;
+            w.Show();
+        }
+
         private void MenuItemDebugAdmin_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             try
             {
                 // Toggle admin role for development/testing
-                if (string.Equals(Services.Sesion.RolActual, "Admin", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(Sesion.RolActual, "Admin", StringComparison.OrdinalIgnoreCase))
                 {
-                    Services.Sesion.RolActual = null;
+                    Sesion.RolActual = null;
                 }
                 else
                 {
-                    Services.Sesion.RolActual = "Admin";
+                    Sesion.RolActual = "Admin";
                 }
-                Services.Sesion.NotifyChanged();
+                Sesion.NotifyChanged();
             }
             catch { }
         }
