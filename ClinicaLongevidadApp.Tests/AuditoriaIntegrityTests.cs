@@ -25,11 +25,14 @@ namespace ClinicaLongevidadApp.Tests
         {
             var service = new AuditoriaService(_connectionString);
 
+
             var evento1 = new AuditoriaEvento { UsuarioAdmin = "u1", Accion = "A1", Modulo = "M" , Detalles = "{\"a\":1}" };
             var evento2 = new AuditoriaEvento { UsuarioAdmin = "u2", Accion = "A2", Modulo = "M" , Detalles = "{\"b\":2}" };
 
             service.RegistrarEvento(evento1);
             service.RegistrarEvento(evento2);
+
+
 
             // Integrity should be OK
             var ok = service.VerifyIntegrity();
@@ -44,6 +47,8 @@ namespace ClinicaLongevidadApp.Tests
                 cmd.ExecuteNonQuery();
             }
 
+
+
             var errors = service.VerifyIntegrity();
             Assert.NotEmpty(errors);
         }
@@ -52,5 +57,6 @@ namespace ClinicaLongevidadApp.Tests
         {
             try { if (File.Exists(_dbPath)) File.Delete(_dbPath); } catch { }
         }
+
     }
 }

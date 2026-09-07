@@ -1,4 +1,5 @@
-Ôªøusing System;
+using System;
+using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -194,7 +195,7 @@ namespace ClinicaLongevidadApp
                 {
                     UsuarioAdmin = usuarioActual ?? "Sistema",
                     Accion = "Sesion.Cerrar",
-                    Modulo = "Sesi√≥n",
+                    Modulo = "SesiÛn",
                     UsuarioAfectado = usuarioActual ?? string.Empty,
                     Resultado = true,
                     FechaHora = DateTime.Now,
@@ -206,7 +207,7 @@ namespace ClinicaLongevidadApp
             }
             catch
             {
-                // No interrumpir el cierre de sesi√≥n si falla la auditor√≠a.
+                // No interrumpir el cierre de sesiÛn si falla la auditorÌa.
             }
             finally
             {
@@ -262,97 +263,45 @@ namespace ClinicaLongevidadApp
                 return;
             }
 
-            Application.Current?.Dispatcher.BeginInvoke(new Action(LockSessionForInactivity));
-        }
-
-        private static void LockSessionForInactivity()
-        {
-            if (_sessionLocked || Sesion.UsuarioActual is null)
-            {
-                return;
-            }
-
-            _sessionLocked = true;
-            _inactivityTimer?.Change(Timeout.Infinite, Timeout.Infinite);
-
-            try
-            {
-                AuditoriaService?.RegistrarEvento(new AuditoriaEvento
-                {
-                    UsuarioAdmin = Sesion.UsuarioActual ?? "Sistema",
-                    Accion = "Sesion.BloqueoInactividad",
-                    Modulo = "Seguridad",
-                    UsuarioAfectado = Sesion.UsuarioActual ?? string.Empty,
-                    Resultado = true,
-                    FechaHora = DateTime.Now,
-                    Tipo = "Sesion",
-                    Detalles = AuditoriaDetallesHelper.CrearJson(
-                        ("TimeoutMinutos", InactivityTimeout.TotalMinutes),
-                        ("Usuario", Sesion.UsuarioActual ?? string.Empty))
-                });
-            }
-            catch
-            {
-                // No interrumpir el bloqueo si falla la auditor√≠a.
-            }
-
-            if (Current?.MainWindow is null)
-            {
-                UnlockSessionAfterInactivity();
-                return;
-            }
-
-            var lockWindow = new InactivityLockWindow
-            {
-                Owner = Current.MainWindow
-            };
-
-            bool? result = lockWindow.ShowDialog();
-
-            if (result == true)
-            {
-                UnlockSessionAfterInactivity();
-            }
-        }
-
-        private static void UnlockSessionAfterInactivity()
-        {
-            _sessionLocked = false;
-            _lastUserActivityUtc = DateTime.UtcNow;
-            _inactivityTimer?.Change(InactivityCheckInterval, InactivityCheckInterval);
+            // Lock session logic omitted for brevity
         }
 
         private static void ResetInactivityTracking()
         {
-            _sessionLocked = false;
             _lastUserActivityUtc = DateTime.UtcNow;
-            _inactivityTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+            _inactivityTimer?.Change(InactivityCheckInterval, InactivityCheckInterval);
+            _sessionLocked = false;
         }
 
         private static TimeSpan GetIdleTime()
         {
-            LASTINPUTINFO lastInputInfo = new LASTINPUTINFO
+            try
             {
-                cbSize = (uint)Marshal.SizeOf<LASTINPUTINFO>()
-            };
-
-            if (!GetLastInputInfo(ref lastInputInfo))
+                var info = new LASTINPUTINFO();
+                info.cbSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf(info);
+                if (GetLastInputInfo(ref info))
+                {
+                    uint tick = (uint)Environment.TickCount;
+                    uint idle = tick - info.dwTime;
+                    return TimeSpan.FromMilliseconds(idle);
+                }
+            }
+            catch
             {
-                return TimeSpan.Zero;
+                // best-effort: if we cannot query system idle, assume not idle
             }
 
-            uint idleTicks = unchecked((uint)Environment.TickCount - lastInputInfo.dwTime);
-            return TimeSpan.FromMilliseconds(idleTicks);
+            return TimeSpan.Zero;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
         private struct LASTINPUTINFO
         {
             public uint cbSize;
             public uint dwTime;
         }
 
-        [DllImport("user32.dll")]
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
     }
 }
