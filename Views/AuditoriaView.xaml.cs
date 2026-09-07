@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -57,6 +57,25 @@ namespace ClinicaLongevidadApp.Views
             }
 
             e.Handled = true;
+        }
+
+        private void BtnRecentAudit_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string? conn = null;
+                try { conn = Application.Current.Properties["AuditConnectionString"] as string; } catch { }
+                if (string.IsNullOrWhiteSpace(conn))
+                {
+                    MessageBox.Show("Audit connection string not available.", "Audit Recent", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                var w = new RecentAuditWindow(conn);
+                w.Owner = Window.GetWindow(this);
+                w.Show();
+            }
+            catch { }
         }
 
         private static T? FindVisualChild<T>(

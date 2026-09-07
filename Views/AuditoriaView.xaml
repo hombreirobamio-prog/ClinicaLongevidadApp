@@ -346,6 +346,16 @@
                             VerticalContentAlignment="Center"
                             Margin="5"/>
 
+                    <Button Content="Últimos movimientos"
+                            Click="BtnRecentAudit_Click"
+                            Style="{StaticResource EstiloBotonSecundario}"
+                            Width="160"
+                            Height="50"
+                            Padding="0"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            Margin="5"/>
+
                     <Button Content="Exportar CSV"
                             Command="{Binding ExportarCsvCommand}"
                             Style="{StaticResource EstiloBotonSecundario}"
