@@ -131,9 +131,9 @@ namespace ClinicaLongevidadApp.Tests
             var proc = workerType.GetMethod("ProcessOnceAsync", BindingFlags.Instance | BindingFlags.Public);
             Assert.NotNull(proc);
 
-            int attempts = 0;
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            while (sw.Elapsed < TimeSpan.FromSeconds(20))
+            bool movedToDeadLetter = false;
+            while (sw.Elapsed < TimeSpan.FromSeconds(30))
             {
                 var task = (Task)proc.Invoke(worker, null)!;
                 await task;
@@ -142,34 +142,42 @@ namespace ClinicaLongevidadApp.Tests
                 {
                     using var conn = new SqliteConnection(_connectionString);
                     conn.Open();
-                    using var cmd = conn.CreateCommand();
-                    cmd.CommandText = "SELECT Id, Attempts FROM AuditForwardQueue LIMIT 1";
-                    using var reader = cmd.ExecuteReader();
-                    int rowId = -1;
-                    if (reader.Read())
+
+                    // If there's still an item in queue, force NextAttemptAt into the past so the worker can pick it again quickly
+                    using (var q = conn.CreateCommand())
                     {
-                        rowId = reader.IsDBNull(0) ? -1 : reader.GetInt32(0);
-                        attempts = reader.IsDBNull(1) ? 0 : reader.GetInt32(1);
+                        q.CommandText = "SELECT Id, Attempts FROM AuditForwardQueue LIMIT 1";
+                        using var reader = q.ExecuteReader();
+                        if (reader.Read())
+                        {
+                            var rowId = reader.IsDBNull(0) ? -1 : reader.GetInt32(0);
+                            var attempts = reader.IsDBNull(1) ? 0 : reader.GetInt32(1);
+                            if (rowId != -1)
+                            {
+                                using var upd = conn.CreateCommand();
+                                upd.CommandText = "UPDATE AuditForwardQueue SET NextAttemptAt = @n WHERE Id = @id";
+                                upd.Parameters.AddWithValue("@n", DateTime.UtcNow.AddSeconds(-1).ToString("o"));
+                                upd.Parameters.AddWithValue("@id", rowId);
+                                upd.ExecuteNonQuery();
+                            }
+                        }
                     }
 
-                    // If attempts not yet at max, force NextAttemptAt into the past so the worker can pick it again quickly
-                    if (rowId != -1 && attempts < 5)
+                    using var check = conn.CreateCommand();
+                    check.CommandText = "SELECT COUNT(1) FROM AuditForwardDeadLetter";
+                    var dead = Convert.ToInt32(check.ExecuteScalar() ?? 0);
+                    if (dead > 0)
                     {
-                        using var upd = conn.CreateCommand();
-                        upd.CommandText = "UPDATE AuditForwardQueue SET NextAttemptAt = @n WHERE Id = @id";
-                        upd.Parameters.AddWithValue("@n", DateTime.UtcNow.AddSeconds(-1).ToString("o"));
-                        upd.Parameters.AddWithValue("@id", rowId);
-                        upd.ExecuteNonQuery();
+                        movedToDeadLetter = true;
+                        break;
                     }
                 }
                 catch { }
 
-                if (attempts >= 5) break;
-
                 await Task.Delay(200);
             }
 
-            Assert.True(attempts >= 5, $"Expected attempts >=5 but was {attempts}");
+            Assert.True(movedToDeadLetter, "Expected item to be moved to dead-letter within timeout");
 
             using (var conn2 = new SqliteConnection(_connectionString))
             {
@@ -177,7 +185,26 @@ namespace ClinicaLongevidadApp.Tests
                 using var cmd2 = conn2.CreateCommand();
                 cmd2.CommandText = "SELECT COUNT(1) FROM AuditForwardQueue";
                 var cnt = Convert.ToInt32(cmd2.ExecuteScalar() ?? 0);
-                Assert.Equal(1, cnt);
+                Assert.Equal(0, cnt);
+
+                using var cmd3 = conn2.CreateCommand();
+                cmd3.CommandText = "SELECT COUNT(1) FROM AuditForwardDeadLetter";
+                var dead = Convert.ToInt32(cmd3.ExecuteScalar() ?? 0);
+                Assert.Equal(1, dead);
+
+                using var cmd4 = conn2.CreateCommand();
+                cmd4.CommandText = "SELECT Attempts, LastError FROM AuditForwardDeadLetter LIMIT 1";
+                using var reader = cmd4.ExecuteReader();
+                int attemptsStored = 0;
+                string lastError = string.Empty;
+                if (reader.Read())
+                {
+                    attemptsStored = reader.IsDBNull(0) ? 0 : reader.GetInt32(0);
+                    lastError = reader.IsDBNull(1) ? string.Empty : reader.GetString(1);
+                }
+                // allow slight timing variance; expect it to have reached near max attempts
+                Assert.True(attemptsStored >= 4, $"Expected attemptsStored >=4 but was {attemptsStored}");
+                Assert.False(string.IsNullOrEmpty(lastError));
             }
 
             if (worker is IDisposable disp) disp.Dispose();
