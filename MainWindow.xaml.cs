@@ -18,6 +18,9 @@ namespace ClinicaLongevidadApp
             // Update admin menu visibility based on session
             UpdateAdminMenuVisibility();
             Services.Sesion.SessionChanged += () => UpdateAdminMenuVisibility();
+#if DEBUG
+            try { MenuItemDebugAdmin.Visibility = Visibility.Visible; } catch { }
+#endif
         }
 
         private void UpdateAdminMenuVisibility()
@@ -38,6 +41,24 @@ namespace ClinicaLongevidadApp
         private void MenuItemAuditAdmin_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             App.ShowAuditAdminWindow();
+        }
+
+        private void MenuItemDebugAdmin_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            try
+            {
+                // Toggle admin role for development/testing
+                if (string.Equals(Services.Sesion.RolActual, "Admin", StringComparison.OrdinalIgnoreCase))
+                {
+                    Services.Sesion.RolActual = null;
+                }
+                else
+                {
+                    Services.Sesion.RolActual = "Admin";
+                }
+                Services.Sesion.NotifyChanged();
+            }
+            catch { }
         }
     }
 }
