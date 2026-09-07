@@ -41,6 +41,7 @@ namespace ClinicaLongevidadApp.Tests
             // Assert
             mockCitaService.Verify(s => s.Guardar(It.IsAny<Cita>()), Times.Once);
             mockAuditoria.Verify(a => a.RegistrarEvento(It.Is<AuditoriaEvento>(e => e.Accion.Contains("Cita"))), Times.Once);
+            Assert.True(called, "Auditoría no fue invocada (flag)");
         }
 
         [Fact]
@@ -67,7 +68,7 @@ namespace ClinicaLongevidadApp.Tests
 
             // Assert
             mockCitaService.Verify(s => s.Guardar(It.Is<Cita>(c => c.Id == 5 && c.Estado == "Confirmada")), Times.Once);
-            Assert.True(called, "Auditor�a no fue invocada (flag)");
+            Assert.True(called, "Auditoría no fue invocada (flag)");
             mockAuditoria.Verify(a => a.RegistrarEvento(It.Is<AuditoriaEvento>(e => e.Accion == "Cita.Confirmar")), Times.Once);
         }
     }
