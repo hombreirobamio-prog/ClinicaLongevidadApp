@@ -34,6 +34,7 @@
 
   <ItemGroup>
     <None Include=".github\workflows\ci.yml" />
+    <None Include=".github\workflows\dotnet-build-test.yml" />
     <None Include="ClinicaLongevidadApp.Tests\ClinicaLongevidadApp.Tests.csproj" />
     <None Include="ClinicaLongevidadApp.Tests\README.md" />
     <None Include="tools\RotateKeys\README.md" />
