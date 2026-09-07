@@ -1,4 +1,3 @@
-using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -74,7 +73,7 @@ namespace ClinicaLongevidadApp.Services
 
             try
             {
-                using var conn = new SqliteConnection(_connectionString);
+                using var conn = new Microsoft.Data.Sqlite.SqliteConnection(_connectionString);
                 conn.Open();
 
                 using var cmd = conn.CreateCommand();
@@ -193,7 +192,7 @@ namespace ClinicaLongevidadApp.Services
             }
         }
 
-        private void IntentarAgregarColumna(SqliteConnection conn, string columnName, string type)
+            private void IntentarAgregarColumna(Microsoft.Data.Sqlite.SqliteConnection conn, string columnName, string type)
         {
             try
             {
@@ -226,7 +225,7 @@ namespace ClinicaLongevidadApp.Services
         {
             try
             {
-                using var conn = new SqliteConnection(_connectionString);
+                using var conn = new Microsoft.Data.Sqlite.SqliteConnection(_connectionString);
                 conn.Open();
 
                 // Build canonical payload used for hashing/signing
@@ -486,7 +485,7 @@ namespace ClinicaLongevidadApp.Services
             var errors = new List<string>();
             try
             {
-                using var conn = new SqliteConnection(_connectionString);
+                using var conn = new Microsoft.Data.Sqlite.SqliteConnection(_connectionString);
                 conn.Open();
 
                 // Include legacy 'Detalles' column to detect tampering in older deployments where payload was stored there
