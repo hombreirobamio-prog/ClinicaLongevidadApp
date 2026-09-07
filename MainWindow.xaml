@@ -13,6 +13,7 @@
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="Administración">
                 <MenuItem x:Name="MenuItemAuditAdmin" Header="Abrir Auditoría" Click="MenuItemAuditAdmin_Click" Visibility="Collapsed" />
+                <MenuItem x:Name="MenuItemDebugAdmin" Header="Toggle Admin (dev)" Click="MenuItemDebugAdmin_Click" Visibility="Collapsed" />
             </MenuItem>
         </Menu>
 
