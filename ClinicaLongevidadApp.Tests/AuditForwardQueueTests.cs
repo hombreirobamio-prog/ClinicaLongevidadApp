@@ -109,6 +109,80 @@ namespace ClinicaLongevidadApp.Tests
             try { if (File.Exists(_dbPath)) File.Delete(_dbPath); } catch { }
         }
 
+        [Fact]
+        public async Task Enqueued_Item_Reaches_MaxAttempts()
+        {
+            var failingForwarder = new ThrowingForwarder();
+            var service = new AuditoriaService(_connectionString, null, null, failingForwarder);
+
+            var ev = new AuditoriaEvento { UsuarioAdmin = "t", Accion = "X", Modulo = "T", Detalles = "{\"x\":3}" };
+            service.RegistrarEvento(ev);
+
+            bool queued = await WaitForQueueCountAsync(1, TimeSpan.FromSeconds(8));
+            Assert.True(queued, "Expected an item to be enqueued");
+
+            var asm = typeof(AuditoriaService).Assembly;
+            var workerType = asm.GetType("ClinicaLongevidadApp.Services.AuditForwardQueueWorker");
+            Assert.NotNull(workerType);
+
+            var worker = Activator.CreateInstance(workerType, _connectionString, (object)failingForwarder, null, 1);
+            Assert.NotNull(worker);
+
+            var proc = workerType.GetMethod("ProcessOnceAsync", BindingFlags.Instance | BindingFlags.Public);
+            Assert.NotNull(proc);
+
+            int attempts = 0;
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (sw.Elapsed < TimeSpan.FromSeconds(20))
+            {
+                var task = (Task)proc.Invoke(worker, null)!;
+                await task;
+
+                try
+                {
+                    using var conn = new SqliteConnection(_connectionString);
+                    conn.Open();
+                    using var cmd = conn.CreateCommand();
+                    cmd.CommandText = "SELECT Id, Attempts FROM AuditForwardQueue LIMIT 1";
+                    using var reader = cmd.ExecuteReader();
+                    int rowId = -1;
+                    if (reader.Read())
+                    {
+                        rowId = reader.IsDBNull(0) ? -1 : reader.GetInt32(0);
+                        attempts = reader.IsDBNull(1) ? 0 : reader.GetInt32(1);
+                    }
+
+                    // If attempts not yet at max, force NextAttemptAt into the past so the worker can pick it again quickly
+                    if (rowId != -1 && attempts < 5)
+                    {
+                        using var upd = conn.CreateCommand();
+                        upd.CommandText = "UPDATE AuditForwardQueue SET NextAttemptAt = @n WHERE Id = @id";
+                        upd.Parameters.AddWithValue("@n", DateTime.UtcNow.AddSeconds(-1).ToString("o"));
+                        upd.Parameters.AddWithValue("@id", rowId);
+                        upd.ExecuteNonQuery();
+                    }
+                }
+                catch { }
+
+                if (attempts >= 5) break;
+
+                await Task.Delay(200);
+            }
+
+            Assert.True(attempts >= 5, $"Expected attempts >=5 but was {attempts}");
+
+            using (var conn2 = new SqliteConnection(_connectionString))
+            {
+                conn2.Open();
+                using var cmd2 = conn2.CreateCommand();
+                cmd2.CommandText = "SELECT COUNT(1) FROM AuditForwardQueue";
+                var cnt = Convert.ToInt32(cmd2.ExecuteScalar() ?? 0);
+                Assert.Equal(1, cnt);
+            }
+
+            if (worker is IDisposable disp) disp.Dispose();
+        }
+
         private class ThrowingForwarder : IWebhookForwarder
         {
             public Task ForwardEventAsync(string jsonPayload, string signature)
