@@ -31,7 +31,12 @@ namespace ClinicaLongevidadApp
                 var role = Services.Sesion.RolActual;
                 if (!string.IsNullOrWhiteSpace(role))
                 {
-                    isAdmin = string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase);
+                    var r = role.Trim().ToLowerInvariant();
+                    // Accept common admin role names in Spanish/English
+                    if (r.Contains("admin") || r.Contains("administr") || r.Contains("administrador"))
+                    {
+                        isAdmin = true;
+                    }
                 }
                 MenuItemAuditAdmin.Visibility = isAdmin ? Visibility.Visible : Visibility.Collapsed;
             }
