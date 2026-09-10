@@ -185,20 +185,6 @@ namespace ClinicaLongevidadApp
 
             DashboardViewModel = new DashboardViewModel();
 
-            // Optional test helper: force admin session only when explicitly requested
-            // by setting environment variable FORCE_ADMIN=1. This avoids accidental
-            // elevation during normal development or production runs.
-            try
-            {
-                if (string.Equals(Environment.GetEnvironmentVariable("FORCE_ADMIN"), "1", StringComparison.OrdinalIgnoreCase))
-                {
-                    Sesion.RolActual = "Administración";
-                    Sesion.AreaActual = "Administración";
-                    Console.WriteLine("[DIAG] FORCE_ADMIN=1: forced Sesion to Administración");
-                }
-            }
-            catch { }
-
             InputManager.Current.PreProcessInput += OnPreProcessInput;
             StartInactivityMonitoring();
 
