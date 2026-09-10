@@ -24,10 +24,13 @@ jobs:
         dotnet restore
         Write-Host "Looking for tools projects to restore..."
         $projects = Get-ChildItem -Path tools -Recurse -Filter *.csproj -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
-        if (-not $projects) { Write-Host "No tools projects found."; exit 0 }
-        foreach ($p in $projects) {
-          Write-Host "Restoring $p"
-          dotnet restore $p
+        if (-not $projects) {
+          Write-Host "No tools projects found."
+        } else {
+          foreach ($p in $projects) {
+            Write-Host "Restoring $p"
+            dotnet restore $p
+          }
         }
 
     - name: Build
@@ -37,10 +40,13 @@ jobs:
       run: |
         Write-Host "Looking for tools projects..."
         $projects = Get-ChildItem -Path tools -Recurse -Filter *.csproj -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
-        if (-not $projects) { Write-Host "No tools projects found."; exit 0 }
-        foreach ($p in $projects) {
-          Write-Host "Building $p"
-          dotnet build $p --no-restore --configuration Release
+        if (-not $projects) {
+          Write-Host "No tools projects found."
+        } else {
+          foreach ($p in $projects) {
+            Write-Host "Building $p"
+            dotnet build $p --no-restore --configuration Release
+          }
         }
 
     - name: Test
