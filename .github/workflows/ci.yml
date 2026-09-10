@@ -25,6 +25,16 @@ jobs:
     - name: Build
       run: dotnet build --no-restore --configuration Release
 
+    - name: Build tools projects
+      run: |
+        Write-Host "Looking for tools projects..."
+        $projects = Get-ChildItem -Path tools -Recurse -Filter *.csproj -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
+        if (-not $projects) { Write-Host "No tools projects found."; exit 0 }
+        foreach ($p in $projects) {
+          Write-Host "Building $p"
+          dotnet build $p --no-restore --configuration Release
+        }
+
     - name: Test
       env:
         AUDIT_HMAC_KEY: ${{ secrets.AUDIT_HMAC_KEY }}
