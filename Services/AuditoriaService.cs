@@ -136,13 +136,14 @@ namespace ClinicaLongevidadApp.Services
                 // Include metadata columns so the UI detail panel can show Rol/Area/SesionId/Equipo/VersionApp
                 if (limit > 0)
                 {
-                    cmd.CommandText = "SELECT Id, EventId, Fechahora, UsuarioAdmin, Accion, Modulo, UsuarioAfectado, Resultado, Detalles, Tipo, KeyVersion, KeyVersionEnc, Rol, Area, SesionId, Equipo, VersionApp FROM Auditoria ORDER BY Fechahora DESC LIMIT @max";
+                    // Include DetallesPlain and DetallesEnc so callers can observe/decrypt encrypted payloads when available
+                    cmd.CommandText = "SELECT Id, EventId, Fechahora, UsuarioAdmin, Accion, Modulo, UsuarioAfectado, Resultado, Detalles, DetallesPlain, DetallesEnc, Tipo, KeyVersion, KeyVersionEnc, Rol, Area, SesionId, Equipo, VersionApp FROM Auditoria ORDER BY Fechahora DESC LIMIT @max";
                     cmd.Parameters.AddWithValue("@max", limit);
                 }
                 else
                 {
                     // limit <= 0 means no LIMIT (return all rows)
-                    cmd.CommandText = "SELECT Id, EventId, Fechahora, UsuarioAdmin, Accion, Modulo, UsuarioAfectado, Resultado, Detalles, Tipo, KeyVersion, KeyVersionEnc, Rol, Area, SesionId, Equipo, VersionApp FROM Auditoria ORDER BY Fechahora DESC";
+                    cmd.CommandText = "SELECT Id, EventId, Fechahora, UsuarioAdmin, Accion, Modulo, UsuarioAfectado, RESULTADO, Detalles, DetallesPlain, DetallesEnc, Tipo, KeyVersion, KeyVersionEnc, Rol, Area, SesionId, Equipo, VersionApp FROM Auditoria ORDER BY Fechahora DESC";
                 }
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())
@@ -181,15 +182,89 @@ namespace ClinicaLongevidadApp.Services
                     m.Modulo = reader.IsDBNull(5) ? string.Empty : reader.GetString(5);
                     m.UsuarioAfectado = reader.IsDBNull(6) ? string.Empty : reader.GetString(6);
                     m.Resultado = reader.IsDBNull(7) ? string.Empty : reader.GetString(7);
-                    m.Detalles = reader.IsDBNull(8) ? string.Empty : reader.GetString(8);
-                    m.Tipo = reader.IsDBNull(9) ? string.Empty : reader.GetString(9);
-                    m.KeyVersion = reader.IsDBNull(10) ? string.Empty : reader.GetString(10);
-                    m.KeyVersionEnc = reader.IsDBNull(11) ? string.Empty : reader.GetString(11);
-                    m.Rol = reader.IsDBNull(12) ? string.Empty : reader.GetString(12);
-                    m.Area = reader.IsDBNull(13) ? string.Empty : reader.GetString(13);
-                    m.SesionId = reader.IsDBNull(14) ? string.Empty : reader.GetString(14);
-                    m.Equipo = reader.IsDBNull(15) ? string.Empty : reader.GetString(15);
-                    m.VersionApp = reader.IsDBNull(16) ? string.Empty : reader.GetString(16);
+                    // Columns: 8=Detalles (legacy), 9=DetallesPlain, 10=DetallesEnc, 11=Tipo, 12=KeyVersion, 13=KeyVersionEnc, 14=Rol, 15=Area, 16=SesionId, 17=Equipo, 18=VersionApp
+                    var detallesLegacy = reader.IsDBNull(8) ? string.Empty : reader.GetString(8);
+                    var detallesPlainCol = reader.IsDBNull(9) ? string.Empty : reader.GetString(9);
+                    var detallesEncCol = reader.IsDBNull(10) ? string.Empty : reader.GetString(10);
+
+                    m.Tipo = reader.IsDBNull(11) ? string.Empty : reader.GetString(11);
+                    m.KeyVersion = reader.IsDBNull(12) ? string.Empty : reader.GetString(12);
+                    m.KeyVersionEnc = reader.IsDBNull(13) ? string.Empty : reader.GetString(13);
+                    m.Rol = reader.IsDBNull(14) ? string.Empty : reader.GetString(14);
+                    m.Area = reader.IsDBNull(15) ? string.Empty : reader.GetString(15);
+                    m.SesionId = reader.IsDBNull(16) ? string.Empty : reader.GetString(16);
+                    m.Equipo = reader.IsDBNull(17) ? string.Empty : reader.GetString(17);
+                    m.VersionApp = reader.IsDBNull(18) ? string.Empty : reader.GetString(18);
+
+                    // Prefer explicit plain column, then legacy Detalles.
+                    // If legacy Detalles appears to be a base64 blob (older storage or inconsistent writes),
+                    // attempt to decrypt it as DetallesEnc so callers get the plaintext when possible.
+                    m.Detalles = !string.IsNullOrWhiteSpace(detallesPlainCol) ? detallesPlainCol : detallesLegacy;
+                    if (string.IsNullOrWhiteSpace(m.Detalles) && !string.IsNullOrWhiteSpace(detallesEncCol))
+                    {
+                        try
+                        {
+                            byte[]? encKey = null;
+                            if (!string.IsNullOrWhiteSpace(m.KeyVersionEnc))
+                                encKey = _keyProvider?.GetEncryptionKeyByVersion(m.KeyVersionEnc);
+                            if (encKey == null || encKey.Length == 0)
+                                encKey = _keyProvider?.GetEncryptionKey();
+
+                            if (encKey != null && encKey.Length > 0)
+                            {
+                                var combined = Convert.FromBase64String(detallesEncCol);
+                                var nonce = new byte[12];
+                                var tag = new byte[16];
+                                var cipher = new byte[combined.Length - nonce.Length - tag.Length];
+                                Buffer.BlockCopy(combined, 0, nonce, 0, nonce.Length);
+                                Buffer.BlockCopy(combined, nonce.Length, tag, 0, tag.Length);
+                                Buffer.BlockCopy(combined, nonce.Length + tag.Length, cipher, 0, cipher.Length);
+                                var plain = new byte[cipher.Length];
+                                using (var aesg = new System.Security.Cryptography.AesGcm(encKey))
+                                {
+                                    aesg.Decrypt(nonce, cipher, tag, plain);
+                                }
+                                m.Detalles = Encoding.UTF8.GetString(plain);
+                            }
+                        }
+                        catch
+                        {
+                            // leave Detalles empty if decryption fails
+                        }
+                    }
+                    else if (string.IsNullOrWhiteSpace(detallesPlainCol) && !string.IsNullOrWhiteSpace(detallesLegacy))
+                    {
+                        // Heuristic: if legacy Detalles looks like base64, try to decrypt it as if it were DetallesEnc
+                        try
+                        {
+                            // quick base64 check
+                            byte[] maybe = Convert.FromBase64String(detallesLegacy);
+                            // attempt decryption using configured key
+                            byte[]? encKey = null;
+                            if (!string.IsNullOrWhiteSpace(m.KeyVersionEnc))
+                                encKey = _keyProvider?.GetEncryptionKeyByVersion(m.KeyVersionEnc);
+                            if (encKey == null || encKey.Length == 0)
+                                encKey = _keyProvider?.GetEncryptionKey();
+
+                            if (encKey != null && encKey.Length > 0 && maybe.Length > 28)
+                            {
+                                var combined = maybe;
+                                var nonce = new byte[12];
+                                var tag = new byte[16];
+                                var cipher = new byte[combined.Length - nonce.Length - tag.Length];
+                                Buffer.BlockCopy(combined, 0, nonce, 0, nonce.Length);
+                                Buffer.BlockCopy(combined, nonce.Length, tag, 0, tag.Length);
+                                Buffer.BlockCopy(combined, nonce.Length + tag.Length, cipher, 0, cipher.Length);
+                                var plain = new byte[cipher.Length];
+                                using (var aesg = new System.Security.Cryptography.AesGcm(encKey))
+                                {
+                                    aesg.Decrypt(nonce, cipher, tag, plain);
+                                }
+                                m.Detalles = Encoding.UTF8.GetString(plain);
+                            }
+                        }
+                        catch { /* ignore - leave legacy value as-is */ }
+                    }
 
                     // If metadata columns are empty, attempt to extract from JSON stored in Detalles
                     try
@@ -457,7 +532,8 @@ namespace ClinicaLongevidadApp.Services
                         Buffer.BlockCopy(tag, 0, combined, nonce.Length, tag.Length);
                         Buffer.BlockCopy(cipher, 0, combined, nonce.Length + tag.Length, cipher.Length);
                         detallesEnc = Convert.ToBase64String(combined);
-                        detallesPlain = null; // do not store plain if encrypted
+                        // Keep DetallesPlain for diagnostic/tests while storing encrypted blob in DetallesEnc.
+                        // Note: in production deployments you may prefer to avoid storing plaintext alongside the encrypted blob.
                         keyVerEnc = _keyProvider!.GetEncryptionKeyVersion();
                     }
                     catch
@@ -535,6 +611,7 @@ namespace ClinicaLongevidadApp.Services
                 {
                     // Avoid dumping full payload or sensitive details to console/logs in normal operation.
                     Console.WriteLine($"[AuditoriaService] Inserting event. Resultado={resultadoStr}, DetallesEncPresent={(detallesEnc != null)}, EventId={evento.EventId}");
+                    Console.WriteLine($"[AuditoriaService] DetailsLengths: Plain={(detallesPlain?.Length ?? 0)}, Enc={(detallesEnc?.Length ?? 0)}, LegacyForPayload={(detallesForPayload?.Length ?? 0)}");
                     Console.WriteLine($"[AuditoriaService] PrevHashLength={(prevHash?.Length ?? 0)}, HashLength={hash?.Length ?? 0}, SignatureLength={signature?.Length ?? 0}");
                 }
                 catch { }
@@ -545,10 +622,11 @@ namespace ClinicaLongevidadApp.Services
                 cmd.Parameters.AddWithValue("@m", evento.Modulo ?? string.Empty);
                 cmd.Parameters.AddWithValue("@ua", evento.UsuarioAfectado ?? string.Empty);
                 cmd.Parameters.AddWithValue("@r", resultadoStr);
-                // Store plain detalles in legacy 'Detalles' column when available; keep DetallesPlain/DetallesEnc explicit
-                // Store legacy 'Detalles' column with the value used for payload (prefer encrypted blob when present)
-                cmd.Parameters.AddWithValue("@d", (object?)detallesForPayload ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@dp", (object?)detallesPlain ?? DBNull.Value);
+                // Do NOT persist plaintext details. Store the value used for payload in legacy 'Detalles'
+                // (this will be the encrypted blob when encryption is enabled) and leave DetallesPlain NULL.
+                var legacyDetalles = (object?)detallesForPayload ?? DBNull.Value;
+                cmd.Parameters.AddWithValue("@d", legacyDetalles);
+                cmd.Parameters.AddWithValue("@dp", DBNull.Value);
                 cmd.Parameters.AddWithValue("@de", (object?)detallesEnc ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@t", evento.Tipo ?? string.Empty);
                 cmd.Parameters.AddWithValue("@rol", evento.Rol ?? string.Empty);

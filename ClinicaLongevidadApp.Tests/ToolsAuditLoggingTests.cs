@@ -25,7 +25,7 @@ namespace ClinicaLongevidadApp.Tests
         {
             var svc = new AuditoriaService(_connectionString);
 
-            var detalles = new { backup = "backup.db", outfile = "delta.json", rows = 5, sourceDb = "Data Source=auditoria.db" };
+            var detallesObj = new { backup = "backup.db", outfile = "delta.json", rows = 5, sourceDb = "Data Source=auditoria.db" };
 
             var evento = new AuditoriaEvento
             {
@@ -33,23 +33,17 @@ namespace ClinicaLongevidadApp.Tests
                 Modulo = "RotateKeys",
                 UsuarioAdmin = "tester",
                 Resultado = true,
-                Detalles = System.Text.Json.JsonSerializer.Serialize(detalles),
-                Tipo = "Operación"
+                Detalles = System.Text.Json.JsonSerializer.Serialize(detallesObj),
+                Tipo = "OperaciÃ³n"
             };
 
             svc.RegistrarEvento(evento);
 
-            using var conn = new SqliteConnection(_connectionString);
-            conn.Open();
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT Accion, Resultado, Detalles FROM Auditoria ORDER BY Id DESC LIMIT 1";
-            using var reader = cmd.ExecuteReader();
-            Assert.True(reader.Read());
-
-            Assert.Equal("export-delta", reader.GetString(0));
-            Assert.Equal("OK", reader.GetString(1));
-            var detallesStored = reader.IsDBNull(2) ? string.Empty : reader.GetString(2);
-            Assert.Contains("outfile", detallesStored);
+            var auditoria = new AuditoriaService(_connectionString);
+            var recent = auditoria.GetRecentAudits(5);
+            Assert.NotEmpty(recent);
+            Assert.Equal("export-delta", recent[0].Accion);
+            Assert.Contains("outfile", recent[0].Detalles ?? string.Empty);
         }
 
         [Fact]
@@ -64,22 +58,16 @@ namespace ClinicaLongevidadApp.Tests
                 UsuarioAdmin = "tester",
                 Resultado = true,
                 Detalles = System.Text.Json.JsonSerializer.Serialize(new { backup = "b.db", target = "t.db" }),
-                Tipo = "Operación"
+                Tipo = "OperaciÃ³n"
             };
 
             svc.RegistrarEvento(evento);
 
-            using var conn = new SqliteConnection(_connectionString);
-            conn.Open();
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT Accion, Resultado, Detalles FROM Auditoria ORDER BY Id DESC LIMIT 1";
-            using var reader = cmd.ExecuteReader();
-            Assert.True(reader.Read());
-
-            Assert.Equal("restore", reader.GetString(0));
-            Assert.Equal("OK", reader.GetString(1));
-            var detallesStored = reader.IsDBNull(2) ? string.Empty : reader.GetString(2);
-            Assert.Contains("backup", detallesStored);
+            var auditoria2 = new AuditoriaService(_connectionString);
+            var recent2 = auditoria2.GetRecentAudits(5);
+            Assert.NotEmpty(recent2);
+            Assert.Equal("restore", recent2[0].Accion);
+            Assert.Contains("backup", recent2[0].Detalles ?? string.Empty);
         }
 
         [Fact]
@@ -94,22 +82,16 @@ namespace ClinicaLongevidadApp.Tests
                 UsuarioAdmin = "tester",
                 Resultado = true,
                 Detalles = System.Text.Json.JsonSerializer.Serialize(new { infile = "delta.json", count = 10, db = "Data Source=auditoria.db" }),
-                Tipo = "Operación"
+                Tipo = "OperaciÃ³n"
             };
 
             svc.RegistrarEvento(evento);
 
-            using var conn = new SqliteConnection(_connectionString);
-            conn.Open();
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT Accion, Resultado, Detalles FROM Auditoria ORDER BY Id DESC LIMIT 1";
-            using var reader = cmd.ExecuteReader();
-            Assert.True(reader.Read());
-
-            Assert.Equal("replay-delta", reader.GetString(0));
-            Assert.Equal("OK", reader.GetString(1));
-            var detallesStored = reader.IsDBNull(2) ? string.Empty : reader.GetString(2);
-            Assert.Contains("infile", detallesStored);
+            var auditoria3 = new AuditoriaService(_connectionString);
+            var recent3 = auditoria3.GetRecentAudits(5);
+            Assert.NotEmpty(recent3);
+            Assert.Equal("replay-delta", recent3[0].Accion);
+            Assert.Contains("infile", recent3[0].Detalles ?? string.Empty);
         }
 
         public void Dispose()

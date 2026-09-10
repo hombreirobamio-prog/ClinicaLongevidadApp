@@ -52,6 +52,14 @@ namespace ClinicaLongevidadApp.Services
         public static void Guardar(Festivo festivo)
         {
             ArgumentNullException.ThrowIfNull(festivo);
+            // Authorization: require Administración role when enforcement is enabled
+            try { Console.WriteLine($"[FestivoService] Enforcement={AuthorizationHelper.EnforcementEnabled()}, CurrentRole='{Sesion.RolActual}'"); } catch { }
+            try { Console.WriteLine($"[FestivoService] Enforcement={AuthorizationHelper.EnforcementEnabled()}, CurrentRole='{Sesion.RolActual}'"); } catch { }
+            if (AuthorizationHelper.EnforcementEnabled() && !string.Equals(Sesion.RolActual ?? string.Empty, "Administración", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("[FestivoService] Unauthorized - throwing");
+                throw new UnauthorizedAccessException("Operación no autorizada para el rol actual.");
+            }
             using var connection = GetConnection();
 
             festivo.Fecha = festivo.Fecha.Date;
@@ -62,17 +70,71 @@ namespace ClinicaLongevidadApp.Services
             if (festivo.Id == 0)
             {
                 connection.Insert(festivo);
+                try
+                {
+                    App.AuditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
+                    {
+                        UsuarioAdmin = Services.Sesion.UsuarioActual ?? "Sistema",
+                        Accion = "Festivo.Crear",
+                        Modulo = "Festivos",
+                        UsuarioAfectado = festivo.Nombre ?? string.Empty,
+                        Resultado = true,
+                        FechaHora = DateTime.Now,
+                        Detalles = AuditoriaDetallesHelper.CrearJson(("Id", festivo.Id), ("Fecha", festivo.Fecha), ("Nombre", festivo.Nombre), ("Tipo", festivo.Tipo)),
+                        Rol = Services.Sesion.RolActual,
+                        Area = Services.Sesion.AreaActual
+                    });
+                }
+                catch { }
             }
             else
             {
                 connection.Update(festivo);
+                try
+                {
+                    App.AuditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
+                    {
+                        UsuarioAdmin = Services.Sesion.UsuarioActual ?? "Sistema",
+                        Accion = "Festivo.Actualizar",
+                        Modulo = "Festivos",
+                        UsuarioAfectado = festivo.Nombre ?? string.Empty,
+                        Resultado = true,
+                        FechaHora = DateTime.Now,
+                        Detalles = AuditoriaDetallesHelper.CrearJson(("Id", festivo.Id), ("Fecha", festivo.Fecha), ("Nombre", festivo.Nombre), ("Tipo", festivo.Tipo)),
+                        Rol = Services.Sesion.RolActual,
+                        Area = Services.Sesion.AreaActual
+                    });
+                }
+                catch { }
             }
         }
 
         public static void Eliminar(int id)
         {
+            // Authorization: require Administración role when enforcement is enabled
+            if (AuthorizationHelper.EnforcementEnabled() && !string.Equals(Sesion.RolActual ?? string.Empty, "Administración", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new UnauthorizedAccessException("Operación no autorizada para el rol actual.");
+            }
+
             using var connection = GetConnection();
             connection.Delete<Festivo>(id);
+            try
+            {
+                App.AuditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
+                {
+                    UsuarioAdmin = Services.Sesion.UsuarioActual ?? "Sistema",
+                    Accion = "Festivo.Eliminar",
+                    Modulo = "Festivos",
+                    UsuarioAfectado = id.ToString(),
+                    Resultado = true,
+                    FechaHora = DateTime.Now,
+                    Detalles = AuditoriaDetallesHelper.CrearJson(("Id", id)),
+                    Rol = Services.Sesion.RolActual,
+                    Area = Services.Sesion.AreaActual
+                });
+            }
+            catch { }
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -28,6 +28,8 @@
     <Page Remove="tools\**\*" />
   </ItemGroup>
 
+  <!-- tools/CheckAdmin is a separate tool project and should not be compiled into the main application. -->
+
   <!-- Test and tools sources are excluded from main build by default -->
 
   <!-- Test assembly initializer should not be compiled into the main application. -->
@@ -37,6 +39,7 @@
     <None Include=".github\workflows\dotnet-build-test.yml" />
     <None Include="ClinicaLongevidadApp.Tests\ClinicaLongevidadApp.Tests.csproj" />
     <None Include="ClinicaLongevidadApp.Tests\README.md" />
+    <None Include="tools\CheckAdmin\CheckAdmin.csproj" />
     <None Include="tools\RotateKeys\README.md" />
     <None Include="tools\RotateKeys\RotateKeys.csproj" />
     <!-- tools project is excluded from main build to avoid multiple entry points -->

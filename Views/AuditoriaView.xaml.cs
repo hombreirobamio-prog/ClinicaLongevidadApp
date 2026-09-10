@@ -1,3 +1,4 @@
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -18,6 +19,19 @@ namespace ClinicaLongevidadApp.Views
                 new MouseWheelEventHandler(
                     AuditoriaDataGrid_PreviewMouseWheel),
                 true);
+        }
+
+        private void BtnGenerarDiagnostico_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Delegate permission check to App.ShowAuditAdminWindow which already enforces admin-only
+                App.ShowAuditAdminWindow();
+            }
+            catch (Exception ex)
+            {
+                try { MessageBox.Show("Error abriendo administración de auditoría: " + ex.Message, "Generar diagnóstico", MessageBoxButton.OK, MessageBoxImage.Error); } catch { }
+            }
         }
 
         private void AuditoriaView_Unloaded(object? sender, RoutedEventArgs e)
@@ -59,10 +73,22 @@ namespace ClinicaLongevidadApp.Views
             e.Handled = true;
         }
 
-        private void BtnRecentAudit_Click(object sender, RoutedEventArgs e)
+        private async void BtnRecentAudit_Click(object sender, RoutedEventArgs e)
         {
             try
             {
+                // Prefer showing the last 10 inside the main panel if ViewModel is present
+                if (this.DataContext is ViewModels.AuditoriaViewModel vm)
+                {
+                    try
+                    {
+                        await vm.CargarUltimosAsync(10);
+                        return;
+                    }
+                    catch { /* fall back to opening auxiliary window */ }
+                }
+
+                // Fallback: open the separate RecentAuditWindow that shows 10
                 string? conn = null;
                 try { conn = Application.Current.Properties["AuditConnectionString"] as string; } catch { }
                 if (string.IsNullOrWhiteSpace(conn))

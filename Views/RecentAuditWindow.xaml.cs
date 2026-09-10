@@ -22,7 +22,8 @@ namespace ClinicaLongevidadApp.Views
         {
             try
             {
-                var rows = _svc.GetRecentAudits(200);
+                // Request all recent audits (no limit) so admin window shows full history
+                var rows = _svc.GetRecentAudits(0);
                 Grid.ItemsSource = rows;
             }
             catch { }
