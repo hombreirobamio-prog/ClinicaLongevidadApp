@@ -60,6 +60,8 @@ namespace ClinicaLongevidadApp.Services
         public static void Guardar(Cita cita)
         {
             ArgumentNullException.ThrowIfNull(cita);
+            // Authorization: require Recepcion or Administración role when enforcement is enabled
+            try { AuthorizationHelper.EnsureRole("Recepcion", "Administración"); } catch { throw; }
 
             using var connection = GetConnection();
 
@@ -67,10 +69,44 @@ namespace ClinicaLongevidadApp.Services
             {
                 cita.FechaCreacion = DateTime.Now;
                 connection.Insert(cita);
+                // Auditar creación de cita
+                try
+                {
+                    App.AuditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
+                    {
+                        UsuarioAdmin = Services.Sesion.UsuarioActual ?? "Sistema",
+                        Accion = "Cita.Crear",
+                        Modulo = "Citas",
+                        UsuarioAfectado = cita.PacienteNombre ?? string.Empty,
+                        Resultado = true,
+                        FechaHora = DateTime.Now,
+                        Detalles = AuditoriaDetallesHelper.CrearJson(("Id", cita.Id), ("PacienteId", cita.PacienteId), ("PacienteNombre", cita.PacienteNombre), ("Fecha", cita.Fecha), ("Hora", cita.Hora), ("Profesional", cita.Profesional), ("Estado", cita.Estado)),
+                        Rol = Services.Sesion.RolActual,
+                        Area = Services.Sesion.AreaActual
+                    });
+                }
+                catch { }
             }
             else
             {
                 connection.Update(cita);
+                // Auditar actualización de cita
+                try
+                {
+                    App.AuditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
+                    {
+                        UsuarioAdmin = Services.Sesion.UsuarioActual ?? "Sistema",
+                        Accion = "Cita.Actualizar",
+                        Modulo = "Citas",
+                        UsuarioAfectado = cita.PacienteNombre ?? string.Empty,
+                        Resultado = true,
+                        FechaHora = DateTime.Now,
+                        Detalles = AuditoriaDetallesHelper.CrearJson(("Id", cita.Id), ("PacienteId", cita.PacienteId), ("PacienteNombre", cita.PacienteNombre), ("Fecha", cita.Fecha), ("Hora", cita.Hora), ("Profesional", cita.Profesional), ("Estado", cita.Estado)),
+                        Rol = Services.Sesion.RolActual,
+                        Area = Services.Sesion.AreaActual
+                    });
+                }
+                catch { }
             }
         }
 
