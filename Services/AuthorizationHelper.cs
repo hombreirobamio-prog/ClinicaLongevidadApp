@@ -12,7 +12,6 @@ namespace ClinicaLongevidadApp.Services
             try
             {
                 var v = Environment.GetEnvironmentVariable("AUDIT_ENFORCE_AUTH");
-                Console.WriteLine($"[AuthorizationHelper] AUDIT_ENFORCE_AUTH='{v}'");
                 return string.Equals(v, "1", StringComparison.OrdinalIgnoreCase);
             }
             catch
@@ -25,11 +24,7 @@ namespace ClinicaLongevidadApp.Services
         {
             if (!EnforcementEnabled()) return;
             var current = Sesion.RolActual ?? string.Empty;
-            try
-            {
-                Console.WriteLine($"[AuthorizationHelper] Enforcement enabled. CurrentRole='{current}' Allowed=[{string.Join(',', allowedRoles ?? new string[0])}]");
-            }
-            catch { }
+            // no console diagnostics here
             if (allowedRoles == null || allowedRoles.Length == 0) return;
             if (!allowedRoles.Any(r => string.Equals(r ?? string.Empty, current, StringComparison.OrdinalIgnoreCase)))
             {

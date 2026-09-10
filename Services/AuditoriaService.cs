@@ -92,15 +92,7 @@ namespace ClinicaLongevidadApp.Services
                     );";
                 cmd.ExecuteNonQuery();
 
-                // Verify what was stored immediately for diagnostics
-                try
-                {
-                    using var checkCmd2 = conn.CreateCommand();
-                    checkCmd2.CommandText = "SELECT Resultado FROM Auditoria ORDER BY Id DESC LIMIT 1";
-                    var stored = checkCmd2.ExecuteScalar();
-                    Console.WriteLine($"[AuditoriaService] After insert, stored Resultado={stored}");
-                }
-                catch { }
+                // no console diagnostics here
 
                 IntentarAgregarColumna(conn, "Detalles", "TEXT");
                 IntentarAgregarColumna(conn, "DetallesPlain", "TEXT");
@@ -225,25 +217,7 @@ namespace ClinicaLongevidadApp.Services
                     catch { }
                     list.Add(m);
                 }
-                // Diagnostic: write a small debug dump to local appdata for investigation
-                try
-                {
-                    var baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "logs");
-                    Directory.CreateDirectory(baseDir);
-                    var dbgPath = Path.Combine(baseDir, "AuditDebug.txt");
-                    using var sw = new StreamWriter(dbgPath, append: true, encoding: Encoding.UTF8);
-                    sw.WriteLine($"--- GetRecentAudits debug ({DateTime.Now:O}) Conn='{_connectionString}' Limit={limit} Rows={list.Count}");
-                    var max = Math.Min(20, list.Count);
-                    for (int i = 0; i < max; i++)
-                    {
-                        var r = list[i];
-                        var detallesShort = (r.Detalles ?? string.Empty).Replace('\r',' ').Replace('\n',' ');
-                        if (detallesShort.Length > 400) detallesShort = detallesShort.Substring(0, 400) + "...";
-                        sw.WriteLine($"Id={r.Id}\tFecha={r.FechaHora:O}\tUsr={r.UsuarioAdmin}\tAcc={r.Accion}\tMod={r.Modulo}\tUsrAf={r.UsuarioAfectado}\tRes={r.Resultado}\tTipo={r.Tipo}\tHmacVer={r.KeyVersion}\tEncVer={r.KeyVersionEnc}\tRol={r.Rol}\tArea={r.Area}\tSesion={r.SesionId}\tEquipo={r.Equipo}\tVerApp={r.VersionApp}\tDetalles={detallesShort}");
-                    }
-                    sw.WriteLine();
-                }
-                catch { }
+                // no debug file writes in GetRecentAudits
             }
             catch { }
             return list;
@@ -539,15 +513,7 @@ namespace ClinicaLongevidadApp.Services
                 cmd.CommandText = @"INSERT INTO Auditoria (UsuarioAdmin, Accion, Fechahora, Modulo, UsuarioAfectado, Resultado, Detalles, DetallesPlain, DetallesEnc, Tipo, Rol, Area, SesionId, Equipo, VersionApp, EventId, PrevHash, Hash, Signature, KeyVersion, KeyVersionEnc)
                                     VALUES (@u, @a, @f, @m, @ua, @r, @d, @dp, @de, @t, @rol, @area, @ses, @eq, @ver, @eid, @prev, @hash, @sig, @kver, @kverenc);";
 
-                // Diagnostics: write concise stored values to console to help tests debug signature/hash issues.
-                try
-                {
-                    // Avoid dumping full payload or sensitive details to console/logs in normal operation.
-                    Console.WriteLine($"[AuditoriaService] Inserting event. Resultado={resultadoStr}, DetallesEncPresent={(detallesEnc != null)}, EventId={evento.EventId}");
-                    Console.WriteLine($"[AuditoriaService] DetailsLengths: Plain={(detallesPlain?.Length ?? 0)}, Enc={(detallesEnc?.Length ?? 0)}, LegacyForPayload={(detallesForPayload?.Length ?? 0)}");
-                    Console.WriteLine($"[AuditoriaService] PrevHashLength={(prevHash?.Length ?? 0)}, HashLength={hash?.Length ?? 0}, SignatureLength={signature?.Length ?? 0}");
-                }
-                catch { }
+                // no console diagnostics during insert
 
                 cmd.Parameters.AddWithValue("@u", evento.UsuarioAdmin ?? string.Empty);
                 cmd.Parameters.AddWithValue("@a", evento.Accion ?? string.Empty);
