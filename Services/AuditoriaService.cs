@@ -16,6 +16,9 @@ namespace ClinicaLongevidadApp.Services
 {
     public class AuditoriaService
     {
+        // Indicates whether the service initialized successfully (DB migrations, table creation, etc.)
+        public bool IsInitialized { get; private set; } = false;
+
         private readonly string _connectionString;
         private readonly IKeyProvider _keyProvider;
         private static readonly string SessionIdActual = Guid.NewGuid().ToString("N");
@@ -26,56 +29,55 @@ namespace ClinicaLongevidadApp.Services
         public AuditoriaService(string connectionString, IKeyProvider? keyProvider = null, IAuditExporter? exporter = null, IWebhookForwarder? forwarder = null)
         {
             _connectionString = connectionString;
-            // If a key provider was passed use it. Otherwise, prefer Azure Key Vault when configured,
-            // fall back to local environment provider for development/testing.
-            if (keyProvider is not null)
+            try
             {
-                _keyProvider = keyProvider;
-            }
-
-
-            else
-            {
-                var kvUri = Environment.GetEnvironmentVariable("KEYVAULT_URI");
-                if (!string.IsNullOrWhiteSpace(kvUri))
+                // If a key provider was passed use it. Otherwise, prefer Azure Key Vault when configured,
+                // fall back to local environment provider for development/testing.
+                if (keyProvider is not null)
                 {
-                    try
-                    {
-                        _keyProvider = new AzureKeyVaultKeyProvider();
-                    }
-                    catch
-                    {
-                        // If Azure provider cannot be constructed, fall back to local provider
-                        _keyProvider = new LocalKeyProvider();
-                    }
+                    _keyProvider = keyProvider;
                 }
                 else
                 {
-                    _keyProvider = new LocalKeyProvider();
+                    var kvUri = Environment.GetEnvironmentVariable("KEYVAULT_URI");
+                    if (!string.IsNullOrWhiteSpace(kvUri))
+                    {
+                        try
+                        {
+                            _keyProvider = new AzureKeyVaultKeyProvider();
+                        }
+                        catch
+                        {
+                            // If Azure provider cannot be constructed, fall back to local provider
+                            _keyProvider = new LocalKeyProvider();
+                        }
+                    }
+                    else
+                    {
+                        _keyProvider = new LocalKeyProvider();
+                    }
                 }
-            }
-            _exporter = exporter;
-            _forwarder = forwarder;
 
-            // If no forwarder provided, auto-configure one when AUDIT_WEBHOOK_URL is present.
-            if (_forwarder is null)
-            {
-                var wh = Environment.GetEnvironmentVariable("AUDIT_WEBHOOK_URL");
-                if (!string.IsNullOrWhiteSpace(wh))
+                _exporter = exporter;
+                _forwarder = forwarder;
+
+                // If no forwarder provided, auto-configure one when AUDIT_WEBHOOK_URL is present.
+                if (_forwarder is null)
                 {
-                    try
+                    var wh = Environment.GetEnvironmentVariable("AUDIT_WEBHOOK_URL");
+                    if (!string.IsNullOrWhiteSpace(wh))
                     {
-                        _forwarder = new WebhookForwarder(_keyProvider);
-                    }
-                    catch
-                    {
-                        _forwarder = null; // best-effort
+                        try
+                        {
+                            _forwarder = new WebhookForwarder(_keyProvider);
+                        }
+                        catch
+                        {
+                            _forwarder = null; // best-effort
+                        }
                     }
                 }
-            }
 
-            try
-            {
                 using var conn = new Microsoft.Data.Sqlite.SqliteConnection(_connectionString);
                 conn.Open();
 
@@ -109,10 +111,14 @@ namespace ClinicaLongevidadApp.Services
                 IntentarAgregarColumna(conn, "Signature", "TEXT");
                 IntentarAgregarColumna(conn, "KeyVersion", "TEXT");
                 IntentarAgregarColumna(conn, "KeyVersionEnc", "TEXT");
+
+                // Initialization succeeded
+                IsInitialized = true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error inicializando AuditoriaService: " + ex);
+                try { LogService.Error("AuditoriaService", "Error inicializando AuditoriaService: " + ex); } catch { }
+                IsInitialized = false;
             }
         }
 
