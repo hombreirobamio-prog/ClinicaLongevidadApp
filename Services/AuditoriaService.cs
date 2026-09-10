@@ -196,75 +196,8 @@ namespace ClinicaLongevidadApp.Services
                     m.Equipo = reader.IsDBNull(17) ? string.Empty : reader.GetString(17);
                     m.VersionApp = reader.IsDBNull(18) ? string.Empty : reader.GetString(18);
 
-                    // Prefer explicit plain column, then legacy Detalles.
-                    // If legacy Detalles appears to be a base64 blob (older storage or inconsistent writes),
-                    // attempt to decrypt it as DetallesEnc so callers get the plaintext when possible.
+                    // Prefer explicit plain column, otherwise present legacy Detalles as-is (may be encrypted blob).
                     m.Detalles = !string.IsNullOrWhiteSpace(detallesPlainCol) ? detallesPlainCol : detallesLegacy;
-                    if (string.IsNullOrWhiteSpace(m.Detalles) && !string.IsNullOrWhiteSpace(detallesEncCol))
-                    {
-                        try
-                        {
-                            byte[]? encKey = null;
-                            if (!string.IsNullOrWhiteSpace(m.KeyVersionEnc))
-                                encKey = _keyProvider?.GetEncryptionKeyByVersion(m.KeyVersionEnc);
-                            if (encKey == null || encKey.Length == 0)
-                                encKey = _keyProvider?.GetEncryptionKey();
-
-                            if (encKey != null && encKey.Length > 0)
-                            {
-                                var combined = Convert.FromBase64String(detallesEncCol);
-                                var nonce = new byte[12];
-                                var tag = new byte[16];
-                                var cipher = new byte[combined.Length - nonce.Length - tag.Length];
-                                Buffer.BlockCopy(combined, 0, nonce, 0, nonce.Length);
-                                Buffer.BlockCopy(combined, nonce.Length, tag, 0, tag.Length);
-                                Buffer.BlockCopy(combined, nonce.Length + tag.Length, cipher, 0, cipher.Length);
-                                var plain = new byte[cipher.Length];
-                                using (var aesg = new System.Security.Cryptography.AesGcm(encKey))
-                                {
-                                    aesg.Decrypt(nonce, cipher, tag, plain);
-                                }
-                                m.Detalles = Encoding.UTF8.GetString(plain);
-                            }
-                        }
-                        catch
-                        {
-                            // leave Detalles empty if decryption fails
-                        }
-                    }
-                    else if (string.IsNullOrWhiteSpace(detallesPlainCol) && !string.IsNullOrWhiteSpace(detallesLegacy))
-                    {
-                        // Heuristic: if legacy Detalles looks like base64, try to decrypt it as if it were DetallesEnc
-                        try
-                        {
-                            // quick base64 check
-                            byte[] maybe = Convert.FromBase64String(detallesLegacy);
-                            // attempt decryption using configured key
-                            byte[]? encKey = null;
-                            if (!string.IsNullOrWhiteSpace(m.KeyVersionEnc))
-                                encKey = _keyProvider?.GetEncryptionKeyByVersion(m.KeyVersionEnc);
-                            if (encKey == null || encKey.Length == 0)
-                                encKey = _keyProvider?.GetEncryptionKey();
-
-                            if (encKey != null && encKey.Length > 0 && maybe.Length > 28)
-                            {
-                                var combined = maybe;
-                                var nonce = new byte[12];
-                                var tag = new byte[16];
-                                var cipher = new byte[combined.Length - nonce.Length - tag.Length];
-                                Buffer.BlockCopy(combined, 0, nonce, 0, nonce.Length);
-                                Buffer.BlockCopy(combined, nonce.Length, tag, 0, tag.Length);
-                                Buffer.BlockCopy(combined, nonce.Length + tag.Length, cipher, 0, cipher.Length);
-                                var plain = new byte[cipher.Length];
-                                using (var aesg = new System.Security.Cryptography.AesGcm(encKey))
-                                {
-                                    aesg.Decrypt(nonce, cipher, tag, plain);
-                                }
-                                m.Detalles = Encoding.UTF8.GetString(plain);
-                            }
-                        }
-                        catch { /* ignore - leave legacy value as-is */ }
-                    }
 
                     // If metadata columns are empty, attempt to extract from JSON stored in Detalles
                     try

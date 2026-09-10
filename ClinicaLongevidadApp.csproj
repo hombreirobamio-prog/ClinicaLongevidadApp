@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -28,6 +28,10 @@
     <Page Remove="tools\**\*" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="tools\AuditDecrypt\Program.cs" />
+  </ItemGroup>
+
   <!-- tools/CheckAdmin is a separate tool project and should not be compiled into the main application. -->
 
   <!-- Test and tools sources are excluded from main build by default -->
@@ -39,6 +43,7 @@
     <None Include=".github\workflows\dotnet-build-test.yml" />
     <None Include="ClinicaLongevidadApp.Tests\ClinicaLongevidadApp.Tests.csproj" />
     <None Include="ClinicaLongevidadApp.Tests\README.md" />
+    <None Include="tools\AuditDecrypt\AuditDecrypt.csproj" />
     <None Include="tools\CheckAdmin\CheckAdmin.csproj" />
     <None Include="tools\RotateKeys\README.md" />
     <None Include="tools\RotateKeys\RotateKeys.csproj" />
