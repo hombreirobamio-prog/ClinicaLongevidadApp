@@ -76,10 +76,19 @@ namespace ClinicaLongevidadApp
 
             AuditoriaService = new AuditoriaService(connectionString, keyProvider, exporter, forwarder);
             // Start persistent forward queue worker to guarantee forwarding durability
+            // This is opt-in: enable by setting AUDIT_FORWARD_ENABLED=1 in the environment.
             try
             {
-                var forwardQueueWorker = new AuditForwardQueueWorker(connectionString, forwarder, exporter, 30);
-                Current.Properties["AuditForwardQueueWorker"] = forwardQueueWorker;
+                var forwardEnabled = string.Equals(Environment.GetEnvironmentVariable("AUDIT_FORWARD_ENABLED"), "1", StringComparison.OrdinalIgnoreCase);
+                if (forwardEnabled && (forwarder != null || exporter != null))
+                {
+                    var forwardQueueWorker = new AuditForwardQueueWorker(connectionString, forwarder, exporter, 30);
+                    Current.Properties["AuditForwardQueueWorker"] = forwardQueueWorker;
+                }
+                else
+                {
+                    LogService.Info("App", "Audit forward queue worker not started (opt-in disabled or no forwarder/exporter configured)");
+                }
             }
             catch (Exception ex)
             {
@@ -112,70 +121,79 @@ namespace ClinicaLongevidadApp
             var keyRotationService = new KeyRotationService(rotationProvider, AuditoriaService);
             Current.Properties["KeyRotationService"] = keyRotationService;
 
-            // Start integrity worker
+            // Start integrity worker (opt-in). Enable with AUDIT_INTEGRITY_ENABLED=1
             try
             {
-                var integrityWorker = new AuditoriaIntegrityWorker(AuditoriaService, TimeSpan.FromMinutes(60));
-
-                // Subscribe to integrity failure events to escalate (webhook/export/log).
-                integrityWorker.OnIntegrityFailure += async (errors) =>
+                var integrityEnabled = string.Equals(Environment.GetEnvironmentVariable("AUDIT_INTEGRITY_ENABLED"), "1", StringComparison.OrdinalIgnoreCase);
+                if (integrityEnabled && AuditoriaService != null)
                 {
-                    try
+                    var integrityWorker = new AuditoriaIntegrityWorker(AuditoriaService, TimeSpan.FromMinutes(60));
+
+                    // Subscribe to integrity failure events to escalate (webhook/export/log).
+                    integrityWorker.OnIntegrityFailure += async (errors) =>
                     {
-                        string eventId = Guid.NewGuid().ToString("N");
-                        var payloadObj = new
-                        {
-                            EventId = eventId,
-                            TimestampUtc = DateTime.UtcNow,
-                            Machine = Environment.MachineName,
-                            AppVersion = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty,
-                            HmacKeyVersion = keyProvider?.GetHmacKeyVersion() ?? string.Empty,
-                            EncKeyVersion = keyProvider?.GetEncryptionKeyVersion() ?? string.Empty,
-                            Errors = errors
-                        };
-
-                        string json = JsonSerializer.Serialize(payloadObj);
-
-                        // Compute signature using key provider if available
-                        string signature = string.Empty;
                         try
                         {
-                            var key = keyProvider?.GetHmacKey();
-                            if (key != null && key.Length > 0)
+                            string eventId = Guid.NewGuid().ToString("N");
+                            var payloadObj = new
                             {
-                                using var hmac = new HMACSHA256(key);
-                                var sig = hmac.ComputeHash(Encoding.UTF8.GetBytes(json ?? string.Empty));
-                                signature = Convert.ToHexString(sig);
+                                EventId = eventId,
+                                TimestampUtc = DateTime.UtcNow,
+                                Machine = Environment.MachineName,
+                                AppVersion = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty,
+                                HmacKeyVersion = keyProvider?.GetHmacKeyVersion() ?? string.Empty,
+                                EncKeyVersion = keyProvider?.GetEncryptionKeyVersion() ?? string.Empty,
+                                Errors = errors
+                            };
+
+                            string json = JsonSerializer.Serialize(payloadObj);
+
+                            // Compute signature using key provider if available
+                            string signature = string.Empty;
+                            try
+                            {
+                                var key = keyProvider?.GetHmacKey();
+                                if (key != null && key.Length > 0)
+                                {
+                                    using var hmac = new HMACSHA256(key);
+                                    var sig = hmac.ComputeHash(Encoding.UTF8.GetBytes(json ?? string.Empty));
+                                    signature = Convert.ToHexString(sig);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                LogService.Warning("App", "Failed to compute HMAC for integrity failure payload: " + ex.Message);
+                            }
+
+                            // Log a concise error (avoid dumping sensitive payload in logs)
+                            LogService.Error("App", $"Audit integrity failure detected ({errors.Count}) - eventId={eventId}");
+
+                            // Forward to webhook if available
+                            if (forwarder != null)
+                            {
+                                try { await forwarder.ForwardEventAsync(json!, signature); } catch (Exception ex) { LogService.Error("App", "Error forwarding integrity alert", ex); }
+                            }
+
+                            // Export to blob storage if configured
+                            if (exporter != null)
+                            {
+                                try { await exporter.ExportEventAsync(eventId, json!, signature); } catch (Exception ex) { LogService.Error("App", "Error exporting integrity alert", ex); }
                             }
                         }
                         catch (Exception ex)
                         {
-                            LogService.Warning("App", "Failed to compute HMAC for integrity failure payload: " + ex.Message);
+                            LogService.Error("App", "Error handling integrity failure", ex);
                         }
+                    };
 
-                        LogService.Error("App", $"Audit integrity failure detected ({errors.Count}): {string.Join("; ", errors)}");
-
-                        // Forward to webhook if available
-                        if (forwarder != null)
-                        {
-                            try { await forwarder.ForwardEventAsync(json!, signature); } catch (Exception ex) { LogService.Error("App", "Error forwarding integrity alert", ex); }
-                        }
-
-                        // Export to blob storage if configured
-                        if (exporter != null)
-                        {
-                            try { await exporter.ExportEventAsync(eventId, json!, signature); } catch (Exception ex) { LogService.Error("App", "Error exporting integrity alert", ex); }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        LogService.Error("App", "Error handling integrity failure", ex);
-                    }
-                };
-
-                integrityWorker.Start();
-                // store in App properties for shutdown
-                Current.Properties["AuditoriaIntegrityWorker"] = integrityWorker;
+                    integrityWorker.Start();
+                    // store in App properties for shutdown
+                    Current.Properties["AuditoriaIntegrityWorker"] = integrityWorker;
+                }
+                else
+                {
+                    LogService.Info("App", "AuditoriaIntegrityWorker not started (opt-in disabled or AuditoriaService missing)");
+                }
             }
             catch (Exception ex)
             {

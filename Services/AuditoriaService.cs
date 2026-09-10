@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -31,6 +32,8 @@ namespace ClinicaLongevidadApp.Services
             {
                 _keyProvider = keyProvider;
             }
+
+
             else
             {
                 var kvUri = Environment.GetEnvironmentVariable("KEYVAULT_URI");
@@ -121,6 +124,198 @@ namespace ClinicaLongevidadApp.Services
             }
         }
 
+        // Return recent audit rows as models for UI consumption
+        public List<Models.AuditoriaModel> GetRecentAudits(int limit = 50)
+        {
+            var list = new List<Models.AuditoriaModel>();
+            try
+            {
+                using var conn = new SqliteConnection(_connectionString);
+                conn.Open();
+                using var cmd = conn.CreateCommand();
+                // Include metadata columns so the UI detail panel can show Rol/Area/SesionId/Equipo/VersionApp
+                if (limit > 0)
+                {
+                    // Include DetallesPlain and DetallesEnc so callers can observe/decrypt encrypted payloads when available
+                    cmd.CommandText = "SELECT Id, EventId, Fechahora, UsuarioAdmin, Accion, Modulo, UsuarioAfectado, Resultado, Detalles, DetallesPlain, DetallesEnc, Tipo, KeyVersion, KeyVersionEnc, Rol, Area, SesionId, Equipo, VersionApp FROM Auditoria ORDER BY Fechahora DESC LIMIT @max";
+                    cmd.Parameters.AddWithValue("@max", limit);
+                }
+                else
+                {
+                    // limit <= 0 means no LIMIT (return all rows)
+                    cmd.CommandText = "SELECT Id, EventId, Fechahora, UsuarioAdmin, Accion, Modulo, UsuarioAfectado, RESULTADO, Detalles, DetallesPlain, DetallesEnc, Tipo, KeyVersion, KeyVersionEnc, Rol, Area, SesionId, Equipo, VersionApp FROM Auditoria ORDER BY Fechahora DESC";
+                }
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    var m = new Models.AuditoriaModel();
+                    m.Id = reader.IsDBNull(0) ? 0 : reader.GetInt32(0);
+                    m.EventId = reader.IsDBNull(1) ? string.Empty : reader.GetString(1);
+                    var fh = reader.IsDBNull(2) ? string.Empty : reader.GetString(2);
+                    // Robust parsing: prefer ISO roundtrip, treat as UTC when appropriate and convert to local time
+                    try
+                    {
+                        DateTime dt;
+                        if (!string.IsNullOrWhiteSpace(fh) && DateTime.TryParseExact(fh, "o", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out dt))
+                        {
+                            m.FechaHora = dt.Kind == DateTimeKind.Utc ? dt.ToLocalTime() : dt;
+                        }
+                        else if (!string.IsNullOrWhiteSpace(fh) && DateTime.TryParse(fh, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out dt))
+                        {
+                            m.FechaHora = dt.ToLocalTime();
+                        }
+                        else if (!string.IsNullOrWhiteSpace(fh) && DateTime.TryParse(fh, out dt))
+                        {
+                            m.FechaHora = dt;
+                        }
+                        else
+                        {
+                            m.FechaHora = DateTime.MinValue;
+                        }
+                    }
+                    catch
+                    {
+                        m.FechaHora = DateTime.MinValue;
+                    }
+                    m.UsuarioAdmin = reader.IsDBNull(3) ? string.Empty : reader.GetString(3);
+                    m.Accion = reader.IsDBNull(4) ? string.Empty : reader.GetString(4);
+                    m.Modulo = reader.IsDBNull(5) ? string.Empty : reader.GetString(5);
+                    m.UsuarioAfectado = reader.IsDBNull(6) ? string.Empty : reader.GetString(6);
+                    m.Resultado = reader.IsDBNull(7) ? string.Empty : reader.GetString(7);
+                    // Columns: 8=Detalles (legacy), 9=DetallesPlain, 10=DetallesEnc, 11=Tipo, 12=KeyVersion, 13=KeyVersionEnc, 14=Rol, 15=Area, 16=SesionId, 17=Equipo, 18=VersionApp
+                    var detallesLegacy = reader.IsDBNull(8) ? string.Empty : reader.GetString(8);
+                    var detallesPlainCol = reader.IsDBNull(9) ? string.Empty : reader.GetString(9);
+                    var detallesEncCol = reader.IsDBNull(10) ? string.Empty : reader.GetString(10);
+
+                    m.Tipo = reader.IsDBNull(11) ? string.Empty : reader.GetString(11);
+                    m.KeyVersion = reader.IsDBNull(12) ? string.Empty : reader.GetString(12);
+                    m.KeyVersionEnc = reader.IsDBNull(13) ? string.Empty : reader.GetString(13);
+                    m.Rol = reader.IsDBNull(14) ? string.Empty : reader.GetString(14);
+                    m.Area = reader.IsDBNull(15) ? string.Empty : reader.GetString(15);
+                    m.SesionId = reader.IsDBNull(16) ? string.Empty : reader.GetString(16);
+                    m.Equipo = reader.IsDBNull(17) ? string.Empty : reader.GetString(17);
+                    m.VersionApp = reader.IsDBNull(18) ? string.Empty : reader.GetString(18);
+
+                    // Prefer explicit plain column, then legacy Detalles.
+                    // If legacy Detalles appears to be a base64 blob (older storage or inconsistent writes),
+                    // attempt to decrypt it as DetallesEnc so callers get the plaintext when possible.
+                    m.Detalles = !string.IsNullOrWhiteSpace(detallesPlainCol) ? detallesPlainCol : detallesLegacy;
+                    if (string.IsNullOrWhiteSpace(m.Detalles) && !string.IsNullOrWhiteSpace(detallesEncCol))
+                    {
+                        try
+                        {
+                            byte[]? encKey = null;
+                            if (!string.IsNullOrWhiteSpace(m.KeyVersionEnc))
+                                encKey = _keyProvider?.GetEncryptionKeyByVersion(m.KeyVersionEnc);
+                            if (encKey == null || encKey.Length == 0)
+                                encKey = _keyProvider?.GetEncryptionKey();
+
+                            if (encKey != null && encKey.Length > 0)
+                            {
+                                var combined = Convert.FromBase64String(detallesEncCol);
+                                var nonce = new byte[12];
+                                var tag = new byte[16];
+                                var cipher = new byte[combined.Length - nonce.Length - tag.Length];
+                                Buffer.BlockCopy(combined, 0, nonce, 0, nonce.Length);
+                                Buffer.BlockCopy(combined, nonce.Length, tag, 0, tag.Length);
+                                Buffer.BlockCopy(combined, nonce.Length + tag.Length, cipher, 0, cipher.Length);
+                                var plain = new byte[cipher.Length];
+                                using (var aesg = new System.Security.Cryptography.AesGcm(encKey))
+                                {
+                                    aesg.Decrypt(nonce, cipher, tag, plain);
+                                }
+                                m.Detalles = Encoding.UTF8.GetString(plain);
+                            }
+                        }
+                        catch
+                        {
+                            // leave Detalles empty if decryption fails
+                        }
+                    }
+                    else if (string.IsNullOrWhiteSpace(detallesPlainCol) && !string.IsNullOrWhiteSpace(detallesLegacy))
+                    {
+                        // Heuristic: if legacy Detalles looks like base64, try to decrypt it as if it were DetallesEnc
+                        try
+                        {
+                            // quick base64 check
+                            byte[] maybe = Convert.FromBase64String(detallesLegacy);
+                            // attempt decryption using configured key
+                            byte[]? encKey = null;
+                            if (!string.IsNullOrWhiteSpace(m.KeyVersionEnc))
+                                encKey = _keyProvider?.GetEncryptionKeyByVersion(m.KeyVersionEnc);
+                            if (encKey == null || encKey.Length == 0)
+                                encKey = _keyProvider?.GetEncryptionKey();
+
+                            if (encKey != null && encKey.Length > 0 && maybe.Length > 28)
+                            {
+                                var combined = maybe;
+                                var nonce = new byte[12];
+                                var tag = new byte[16];
+                                var cipher = new byte[combined.Length - nonce.Length - tag.Length];
+                                Buffer.BlockCopy(combined, 0, nonce, 0, nonce.Length);
+                                Buffer.BlockCopy(combined, nonce.Length, tag, 0, tag.Length);
+                                Buffer.BlockCopy(combined, nonce.Length + tag.Length, cipher, 0, cipher.Length);
+                                var plain = new byte[cipher.Length];
+                                using (var aesg = new System.Security.Cryptography.AesGcm(encKey))
+                                {
+                                    aesg.Decrypt(nonce, cipher, tag, plain);
+                                }
+                                m.Detalles = Encoding.UTF8.GetString(plain);
+                            }
+                        }
+                        catch { /* ignore - leave legacy value as-is */ }
+                    }
+
+                    // If metadata columns are empty, attempt to extract from JSON stored in Detalles
+                    try
+                    {
+                        if (string.IsNullOrWhiteSpace(m.Rol) || string.IsNullOrWhiteSpace(m.Area) || string.IsNullOrWhiteSpace(m.SesionId) || string.IsNullOrWhiteSpace(m.Equipo) || string.IsNullOrWhiteSpace(m.VersionApp))
+                        {
+                            var txt = m.Detalles ?? string.Empty;
+                            if (!string.IsNullOrWhiteSpace(txt) && txt.TrimStart().StartsWith("{"))
+                            {
+                                using var doc = JsonDocument.Parse(txt);
+                                var root = doc.RootElement;
+                                if (string.IsNullOrWhiteSpace(m.Rol) && root.TryGetProperty("Rol", out var pRol) && pRol.ValueKind == JsonValueKind.String)
+                                    m.Rol = pRol.GetString() ?? m.Rol;
+                                if (string.IsNullOrWhiteSpace(m.Area) && root.TryGetProperty("Area", out var pArea) && pArea.ValueKind == JsonValueKind.String)
+                                    m.Area = pArea.GetString() ?? m.Area;
+                                if (string.IsNullOrWhiteSpace(m.SesionId) && root.TryGetProperty("SesionId", out var pSes) && pSes.ValueKind == JsonValueKind.String)
+                                    m.SesionId = pSes.GetString() ?? m.SesionId;
+                                if (string.IsNullOrWhiteSpace(m.Equipo) && root.TryGetProperty("Equipo", out var pEq) && pEq.ValueKind == JsonValueKind.String)
+                                    m.Equipo = pEq.GetString() ?? m.Equipo;
+                                if (string.IsNullOrWhiteSpace(m.VersionApp) && root.TryGetProperty("VersionApp", out var pVer) && pVer.ValueKind == JsonValueKind.String)
+                                    m.VersionApp = pVer.GetString() ?? m.VersionApp;
+                            }
+                        }
+                    }
+                    catch { }
+                    list.Add(m);
+                }
+                // Diagnostic: write a small debug dump to local appdata for investigation
+                try
+                {
+                    var baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "logs");
+                    Directory.CreateDirectory(baseDir);
+                    var dbgPath = Path.Combine(baseDir, "AuditDebug.txt");
+                    using var sw = new StreamWriter(dbgPath, append: true, encoding: Encoding.UTF8);
+                    sw.WriteLine($"--- GetRecentAudits debug ({DateTime.Now:O}) Conn='{_connectionString}' Limit={limit} Rows={list.Count}");
+                    var max = Math.Min(20, list.Count);
+                    for (int i = 0; i < max; i++)
+                    {
+                        var r = list[i];
+                        var detallesShort = (r.Detalles ?? string.Empty).Replace('\r',' ').Replace('\n',' ');
+                        if (detallesShort.Length > 400) detallesShort = detallesShort.Substring(0, 400) + "...";
+                        sw.WriteLine($"Id={r.Id}\tFecha={r.FechaHora:O}\tUsr={r.UsuarioAdmin}\tAcc={r.Accion}\tMod={r.Modulo}\tUsrAf={r.UsuarioAfectado}\tRes={r.Resultado}\tTipo={r.Tipo}\tHmacVer={r.KeyVersion}\tEncVer={r.KeyVersionEnc}\tRol={r.Rol}\tArea={r.Area}\tSesion={r.SesionId}\tEquipo={r.Equipo}\tVerApp={r.VersionApp}\tDetalles={detallesShort}");
+                    }
+                    sw.WriteLine();
+                }
+                catch { }
+            }
+            catch { }
+            return list;
+        }
+
         public string GenerateIntegrityDiagnosticReport()
         {
             try
@@ -192,6 +387,85 @@ namespace ClinicaLongevidadApp.Services
             }
         }
 
+        /// <summary>
+        /// Quick diagnostics: writes summary and CSV of problematic rows (empty Hash/Signature or obvious issues)
+        /// into LocalAppData\ClinicaLongevidadApp\logs and returns the directory path.
+        /// </summary>
+        public string GenerateQuickDiagnostics()
+        {
+            try
+            {
+                var baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "logs");
+                Directory.CreateDirectory(baseDir);
+                var ts = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                var summaryPath = Path.Combine(baseDir, $"IntegrityQuickSummary_{ts}.txt");
+                var csvPath = Path.Combine(baseDir, $"IntegrityProblemRows_{ts}.csv");
+
+                using var conn = new SqliteConnection(_connectionString);
+                conn.Open();
+
+                long total = 0;
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(1) FROM Auditoria";
+                    var v = cmd.ExecuteScalar();
+                    total = v == null || v == DBNull.Value ? 0 : Convert.ToInt64(v);
+                }
+
+                long emptyHash = 0;
+                long emptySig = 0;
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(1) FROM Auditoria WHERE Hash IS NULL OR Hash = ''";
+                    var v = cmd.ExecuteScalar();
+                    emptyHash = v == null || v == DBNull.Value ? 0 : Convert.ToInt64(v);
+                }
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(1) FROM Auditoria WHERE Signature IS NULL OR Signature = ''";
+                    var v = cmd.ExecuteScalar();
+                    emptySig = v == null || v == DBNull.Value ? 0 : Convert.ToInt64(v);
+                }
+
+                using (var sw = new StreamWriter(summaryPath, false, Encoding.UTF8))
+                {
+                    sw.WriteLine($"Integrity quick diagnostics generated at {DateTime.Now:O}");
+                    sw.WriteLine($"ConnectionString={_connectionString}");
+                    sw.WriteLine($"Total rows={total}");
+                    sw.WriteLine($"Rows with empty Hash={emptyHash}");
+                    sw.WriteLine($"Rows with empty Signature={emptySig}");
+                    sw.WriteLine();
+                    sw.WriteLine("First problematic rows exported to CSV (if any):");
+                    sw.WriteLine(csvPath);
+                }
+
+                // Export problematic rows to CSV
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT Id, Fechahora, UsuarioAdmin, Accion, Modulo, UsuarioAfectado, Resultado, Detalles, DetallesEnc, PrevHash, Hash, Signature, KeyVersion, KeyVersionEnc, Rol, Area, SesionId, Equipo, VersionApp FROM Auditoria WHERE Hash IS NULL OR Hash = '' OR Signature IS NULL OR Signature = '' ORDER BY Id";
+                    using var reader = cmd.ExecuteReader();
+                    using var sw = new StreamWriter(csvPath, false, Encoding.UTF8);
+                    // header
+                    sw.WriteLine("Id;FechaHora;UsuarioAdmin;Accion;Modulo;UsuarioAfectado;Resultado;Detalles;DetallesEnc;PrevHash;Hash;Signature;KeyVersion;KeyVersionEnc;Rol;Area;SesionId;Equipo;VersionApp");
+                    while (reader.Read())
+                    {
+                        string Get(int i) => reader.IsDBNull(i) ? string.Empty : reader.GetValue(i)?.ToString()?.Replace("\r"," ").Replace("\n"," ");
+                        var parts = new string[] {
+                            Get(0), Get(1), Get(2), Get(3), Get(4), Get(5), Get(6), Get(7), Get(8), Get(9), Get(10), Get(11), Get(12), Get(13), Get(14), Get(15), Get(16), Get(17), Get(18)
+                        };
+                        sw.WriteLine(string.Join(";", parts));
+                    }
+                }
+
+                return baseDir;
+            }
+            catch (Exception ex)
+            {
+                try { LogService.Error("AuditoriaService", "GenerateQuickDiagnostics failed", ex); } catch { }
+                return string.Empty;
+            }
+        }
+
             private void IntentarAgregarColumna(Microsoft.Data.Sqlite.SqliteConnection conn, string columnName, string type)
         {
             try
@@ -258,7 +532,8 @@ namespace ClinicaLongevidadApp.Services
                         Buffer.BlockCopy(tag, 0, combined, nonce.Length, tag.Length);
                         Buffer.BlockCopy(cipher, 0, combined, nonce.Length + tag.Length, cipher.Length);
                         detallesEnc = Convert.ToBase64String(combined);
-                        detallesPlain = null; // do not store plain if encrypted
+                        // Keep DetallesPlain for diagnostic/tests while storing encrypted blob in DetallesEnc.
+                        // Note: in production deployments you may prefer to avoid storing plaintext alongside the encrypted blob.
                         keyVerEnc = _keyProvider!.GetEncryptionKeyVersion();
                     }
                     catch
@@ -331,12 +606,13 @@ namespace ClinicaLongevidadApp.Services
                 cmd.CommandText = @"INSERT INTO Auditoria (UsuarioAdmin, Accion, Fechahora, Modulo, UsuarioAfectado, Resultado, Detalles, DetallesPlain, DetallesEnc, Tipo, Rol, Area, SesionId, Equipo, VersionApp, EventId, PrevHash, Hash, Signature, KeyVersion, KeyVersionEnc)
                                     VALUES (@u, @a, @f, @m, @ua, @r, @d, @dp, @de, @t, @rol, @area, @ses, @eq, @ver, @eid, @prev, @hash, @sig, @kver, @kverenc);";
 
-                // Diagnostics: write stored values to console to help tests debug signature/hash issues.
+                // Diagnostics: write concise stored values to console to help tests debug signature/hash issues.
                 try
                 {
-                    Console.WriteLine($"[AuditoriaService] Inserting event. Resultado={resultadoStr}, DetallesPlainPresent={(detallesPlain != null)}, DetallesEncPresent={(detallesEnc != null)}");
-                    Console.WriteLine($"[AuditoriaService] PayloadJson={payloadJson}");
-                    Console.WriteLine($"[AuditoriaService] PrevHash={prevHash}, Hash={hash}, Signature={signature}");
+                    // Avoid dumping full payload or sensitive details to console/logs in normal operation.
+                    Console.WriteLine($"[AuditoriaService] Inserting event. Resultado={resultadoStr}, DetallesEncPresent={(detallesEnc != null)}, EventId={evento.EventId}");
+                    Console.WriteLine($"[AuditoriaService] DetailsLengths: Plain={(detallesPlain?.Length ?? 0)}, Enc={(detallesEnc?.Length ?? 0)}, LegacyForPayload={(detallesForPayload?.Length ?? 0)}");
+                    Console.WriteLine($"[AuditoriaService] PrevHashLength={(prevHash?.Length ?? 0)}, HashLength={hash?.Length ?? 0}, SignatureLength={signature?.Length ?? 0}");
                 }
                 catch { }
 
@@ -346,10 +622,11 @@ namespace ClinicaLongevidadApp.Services
                 cmd.Parameters.AddWithValue("@m", evento.Modulo ?? string.Empty);
                 cmd.Parameters.AddWithValue("@ua", evento.UsuarioAfectado ?? string.Empty);
                 cmd.Parameters.AddWithValue("@r", resultadoStr);
-                // Store plain detalles in legacy 'Detalles' column when available; keep DetallesPlain/DetallesEnc explicit
-                // Store legacy 'Detalles' column with the value used for payload (prefer encrypted blob when present)
-                cmd.Parameters.AddWithValue("@d", (object?)detallesForPayload ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@dp", (object?)detallesPlain ?? DBNull.Value);
+                // Do NOT persist plaintext details. Store the value used for payload in legacy 'Detalles'
+                // (this will be the encrypted blob when encryption is enabled) and leave DetallesPlain NULL.
+                var legacyDetalles = (object?)detallesForPayload ?? DBNull.Value;
+                cmd.Parameters.AddWithValue("@d", legacyDetalles);
+                cmd.Parameters.AddWithValue("@dp", DBNull.Value);
                 cmd.Parameters.AddWithValue("@de", (object?)detallesEnc ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@t", evento.Tipo ?? string.Empty);
                 cmd.Parameters.AddWithValue("@rol", evento.Rol ?? string.Empty);
