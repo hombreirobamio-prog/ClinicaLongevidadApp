@@ -63,3 +63,49 @@ Notas finales
 
 ---
 Generado y guardado automáticamente para referencia.
+
+## Plan para auditoría (auditor-ready)
+
+Objetivo: disponer de un subsistema de auditoría que pueda ser revisado por un auditor externo y que demuestre integridad, trazabilidad y controles de acceso claros.
+
+1) Qué ya está hecho
+  - `AuditoriaService` con hash encadenado, firma HMAC y cifrado AES‑GCM opcional para `Detalles`.
+  - `AuditoriaView` / `AuditoriaViewModel` con filtros básicos y export CSV.
+  - Tests automatizados existentes y nuevos tests de `VerifyIntegrity()` en `ClinicaLongevidadApp.Tests`.
+  - `tools/AuditDecrypt` añadido para que administradores inspeccionen filas cifradas.
+  - CI actualizado para compilar `tools/*` y ejecutar tests automáticamente.
+
+2) Qué falta / pendiente (prioridad)
+  - Seguridad de claves: configurar Key Vault en staging/producción y usar `KEYVAULT_URI`.
+  - Rotación de claves: implementar flujo de rotación, versionado y backfill seguro.
+  - Evitar persistir `DetallesPlain` en producción; detectar filas existentes y decidir migración.
+  - Forzar (o garantizar) que todas las operaciones críticas llaman a `RegistrarEvento(...)`.
+  - Añadir job CI que ejecute `VerifyIntegrity()` y falle si detecta inconsistencias.
+  - Revisar que los logs no expongan PII/`Detalles` en entornos no seguros.
+
+3) Tareas operativas concretas
+  - Crear `feature/key-rotation`: scaffolding para `RotateKeys` tool y providers KeyVault/Local.
+  - Script `tools/db-audit-inspect` que exporte filas con `DetallesPlain` y genere CSV/JSON.
+  - Habilitar en CI los secrets `AUDIT_HMAC_KEY` (obligatorio) y `AUDIT_ENC_KEY` (opcional) para validar rutas cifradas.
+  - Documentar playbook de auditoría: pasos para generar `IntegrityReport`, interpretación y artefactos a entregar.
+
+4) Criterios de aceptación para auditoría
+  - Todas las filas contienen `PrevHash`, `Hash` y `Signature` verificables.
+  - KeyVersion/KeyVersionEnc se registran y son trazables por cada inserción.
+  - `DetallesPlain` no contiene PII en producción (o está vacío) y existe un plan de migración si procede.
+  - Existencia de herramientas administrativas reproducibles (`AuditDecrypt`, `RotateKeys` scaffold) y logs que demuestren quién las ejecutó.
+  - CI produce artefactos (tests, coverage, integrity checks) que pueden adjuntarse al paquete para auditoría.
+
+5) Artefactos a conservar y entregar al auditor
+  - `IntegrityReport_<ts>_id<N>.json` generado por `GenerateIntegrityDiagnosticReport()`.
+  - `IntegrityQuickSummary_*.txt` y `IntegrityProblemRows_*.csv` desde `GenerateQuickDiagnostics()`.
+  - Historial de versiones de claves (KeyVersion) y registro de rotaciones.
+  - Logs de la ejecución de tools y de la CI (build/test/integrity job).
+
+6) Próximo paso recomendado (acciones inmediatas)
+  - (HOY) Mergear `chore/audit-hardening` para consolidar tests y cambios opt‑in.
+  - Crear `feature/key-rotation` y PR con scaffold de rotación + guía de uso de Key Vault.
+  - Añadir CI job que ejecute `VerifyIntegrity()` y publique `IntegrityReport` como artefacto.
+
+---
+Actualizado por: GitHub Copilot en la rama `chore/audit-hardening`.
