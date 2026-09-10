@@ -45,19 +45,53 @@ namespace RotateKeysTool
                 }
                 else if (mode == "apply")
                 {
-                    Console.WriteLine("Apply mode will attempt to persist changes. This scaffold will persist keys to Key Vault when configured.");
-                    // In a real implementation the new key material would be loaded from a secure source (Key Vault) or generated.
-                    var dummyKey = new byte[32];
+                    if (string.IsNullOrWhiteSpace(version))
+                    {
+                        Console.WriteLine("Provide a new version identifier for apply.");
+                        return 2;
+                    }
+
+                    // Determine key material: prefer arg[3] if present, otherwise read from STDIN.
+                    string? keyB64 = null;
+                    if (args.Length > 3 && !string.IsNullOrWhiteSpace(args[3]))
+                    {
+                        keyB64 = args[3];
+                    }
+                    else
+                    {
+                        Console.WriteLine("Reading Base64 key from stdin. Send EOF (Ctrl+Z + Enter on Windows) when done.");
+                        keyB64 = Console.In.ReadToEnd();
+                        if (!string.IsNullOrWhiteSpace(keyB64)) keyB64 = keyB64.Trim();
+                    }
+
+                    if (string.IsNullOrWhiteSpace(keyB64))
+                    {
+                        Console.WriteLine("No key material provided. Use: apply <hmac|enc> <new-version> <base64-key> or pipe the key to stdin.");
+                        return 2;
+                    }
+
+                    byte[] keyBytes;
+                    try
+                    {
+                        keyBytes = Convert.FromBase64String(keyB64);
+                    }
+                    catch (FormatException)
+                    {
+                        Console.WriteLine("Provided key is not valid Base64.");
+                        return 3;
+                    }
+
+                    Console.WriteLine("Apply mode: persisting provided key to Key Vault (if configured).\nThis operation will store the secret in Key Vault and will NOT re-encrypt existing DB rows.");
 
                     if (type == "hmac")
                     {
-                        var plan = await svc.ApplyRotateHmacKeyAsync(dummyKey, version ?? "v-new");
+                        var plan = await svc.ApplyRotateHmacKeyAsync(keyBytes, version);
                         PrintPlan(plan);
                         return 0;
                     }
                     else
                     {
-                        var plan = await svc.ApplyRotateEncryptionKeyAsync(dummyKey, version ?? "v-new");
+                        var plan = await svc.ApplyRotateEncryptionKeyAsync(keyBytes, version);
                         PrintPlan(plan);
                         return 0;
                     }
