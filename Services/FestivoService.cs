@@ -53,11 +53,8 @@ namespace ClinicaLongevidadApp.Services
         {
             ArgumentNullException.ThrowIfNull(festivo);
             // Authorization: require Administración role when enforcement is enabled
-            try { Console.WriteLine($"[FestivoService] Enforcement={AuthorizationHelper.EnforcementEnabled()}, CurrentRole='{Sesion.RolActual}'"); } catch { }
-            try { Console.WriteLine($"[FestivoService] Enforcement={AuthorizationHelper.EnforcementEnabled()}, CurrentRole='{Sesion.RolActual}'"); } catch { }
             if (AuthorizationHelper.EnforcementEnabled() && !string.Equals(Sesion.RolActual ?? string.Empty, "Administración", StringComparison.OrdinalIgnoreCase))
             {
-                Console.WriteLine("[FestivoService] Unauthorized - throwing");
                 throw new UnauthorizedAccessException("Operación no autorizada para el rol actual.");
             }
             using var connection = GetConnection();
