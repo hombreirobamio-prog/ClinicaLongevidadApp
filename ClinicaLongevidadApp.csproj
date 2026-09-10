@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -29,8 +29,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="tools\AuditDecrypt\Program.cs" />
   </ItemGroup>
+  <!-- Tools source files must not be compiled into the main WPF application. The individual tool projects
+       are built separately (see tools/*/*.csproj). Any accidental Compile Include for tool sources
+       will cause duplicate entry-point errors when building the app or solution. -->
 
   <!-- tools/CheckAdmin is a separate tool project and should not be compiled into the main application. -->
 
