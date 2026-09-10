@@ -27,9 +27,6 @@
     <None Remove="tools\**\*" />
     <Page Remove="tools\**\*" />
   </ItemGroup>
-
-  <ItemGroup>
-  </ItemGroup>
   <!-- Tools source files must not be compiled into the main WPF application. The individual tool projects
        are built separately (see tools/*/*.csproj). Any accidental Compile Include for tool sources
        will cause duplicate entry-point errors when building the app or solution. -->
@@ -46,9 +43,7 @@
     <None Include="ClinicaLongevidadApp.Tests\ClinicaLongevidadApp.Tests.csproj" />
     <None Include="ClinicaLongevidadApp.Tests\README.md" />
     <None Include="tools\AuditDecrypt\AuditDecrypt.csproj" />
-    <None Include="tools\CheckAdmin\CheckAdmin.csproj" />
-    <None Include="tools\RotateKeys\README.md" />
-    <None Include="tools\RotateKeys\RotateKeys.csproj" />
+    <None Include="tools\AuditDecrypt\README.md" />
     <!-- tools project is excluded from main build to avoid multiple entry points -->
   </ItemGroup>
 
