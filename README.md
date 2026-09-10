@@ -74,6 +74,34 @@ Estado actual:
 - Migración completada de flujos activos a `RegistrarEvento(...)`.
 - Sin usos restantes de `App.AuditoriaService?.Registrar(...)` en código activo.
 
+### Generar diagnósticos de integridad (administradores)
+
+Para auditores y administradores la aplicación dispone de un flujo profesional para generar diagnósticos de integridad de la cadena de auditoría. Resumen:
+
+- Requisito: el usuario debe tener rol/área de `Administración` (el acceso está restringido a Administradores).
+- Desde la UI (recomendado):
+  - Iniciar sesión seleccionando el área `Administración` y entrar con una cuenta con rol `Administración`.
+  - Navegar a `Administración` → `Abrir Auditoría` (o usar el botón `Generar diagnóstico` en la vista `Auditoría` si está visible para administradores).
+  - Pulsar `Generar diagnóstico`. La aplicación ejecuta comprobaciones rápidas y un informe de integridad completo.
+
+- Salida y ubicación de ficheros:
+  - Informes rápidos y logs: `%LocalAppData%\ClinicaLongevidadApp\logs` (ej. `AuditDebug.txt`, `IntegrityQuickSummary_*.txt`).
+  - Informe de integridad completo (JSON): `%ProgramData%\ClinicaLongevidadApp\AuditIntegrityReports\IntegrityReport_<timestamp>_id<N>.json`.
+  - CSVs con filas problemáticas (si se detectan): junto al informe JSON o en la carpeta de logs.
+
+- CLI / herramienta auxiliar (solo lectura):
+  - Hay una herramienta de comprobación incluida en `tools/CheckAdmin`. Para ejecutarla desde el repositorio:
+    ```
+    dotnet run --project tools/CheckAdmin "C:\Users\<usuario>\AppData\Local\ClinicaLongevidad.db"
+    ```
+  - La herramienta devuelve si el usuario `admin` existe y un resumen básico; es útil para automatizar comprobaciones de estado.
+
+- Buenas prácticas tras un diagnóstico:
+  1. No modificar la base de datos de producción directamente. Hacer copia de la BD antes de cualquier reparación.
+  2. Clasificar problemas (hash faltante, firma inválida, desalineado de PrevHash) y priorizar por impacto.
+  3. Preparar un plan de recuperación sobre copia: backfill de hashes o marcar filas como `suspect` para análisis manual.
+  4. Mantener artefactos generados con marca de tiempo para auditoría y trazabilidad.
+
 ### Convención actual de `Detalles` (JSON)
 Claves estándar actuales:
 - `PacienteId`
@@ -271,3 +299,85 @@ Notas adicionales
 - Si quieres que incluya cambios adicionales (doble clic, confirmaciones, tests), indícalo y lo implemento.
 
 -- GitHub Copilot (resumen automático)
+
+## Resumen de la sesión (actual)
+
+- Fecha: 2026-09-07
+- Estado: la aplicación compila y el panel `Auditoría` muestra registros al pulsar `Actualizar`.
+
+Qué tenemos
+- `AuditoriaService` con integridad (hash encadenado), firma HMAC y cifrado AES-GCM para `Detalles` cuando hay clave.
+- `GetRecentAudits(...)` implementado y expuesto para la UI.
+- `AuditoriaViewModel` con `ListaAuditoria` y `ActualizarCommand` que llena el `DataGrid` del panel principal.
+- `RecentAuditWindow` sigue disponible como fallback.
+
+Qué hicimos hoy
+- Movida la implementación de `GetRecentAudits` fuera del constructor para restaurar la sintaxis y evitar errores de compilación.
+- Añadida propiedad `EventId` a `Models/AuditoriaModel` para ajustar el contrato con la consulta.
+- Modificado `BtnRecentAudit_Click` para que, por defecto, ejecute `ActualizarCommand` del ViewModel y solo abra la ventana auxiliar si no hay ViewModel.
+
+Pendiente / siguientes pasos
+- Probar en ejecución: arrancar la app, abrir `Auditoría` desde el dashboard y pulsar `Últimos movimientos` (debe rellenar el panel sin abrir ventana).
+- Si la vista queda vacía: comprobar que la vista se instancia con `DataContext = new AuditoriaViewModel(App.AuditoriaService)` y que `Application.Current.Properties["AuditConnectionString"]` está configurada.
+- Mejoras opcionales: paginación, aplicar filtros en `GetRecentAudits`, exportar CSV e integrar tests para la consulta de recientes.
+
+Acciones recomendadas antes de cerrar sesión
+- `git add README.md` + `git commit -m "docs: resumen de sesión 2026-09-07 — auditoría"` + `git push` para preservar el estado.
+
+---
+
+#### Sesión de cierre
+- Fecha: 08/09/2026
+- Módulos tocados: Auditoría (`AuditoriaService`, `AuditoriaViewModel`, `AuditoriaView`), rotación de claves (providers locales), helpers y logs diagnósticos.
+- Objetivo de la sesión: estabilizar el panel de `Auditoría` y comprobar rotación y lectura de claves HMAC/ENC en entorno local.
+
+#### Hecho
+- `GetRecentAudits(...)` amplió la consulta para incluir `Rol`, `Area`, `SesionId`, `Equipo`, `VersionApp` y rellena metadata desde `Detalles` JSON cuando las columnas están vacías.
+- `AuditoriaViewModel`:
+  - Añadidos `AplicarFiltrosCommand` / `LimpiarFiltrosCommand` y lógica cliente para filtros (texto, usuario, módulo, fechas, `PacienteId`/`CitaId`/`SesionId`).
+  - Añadidos `RotateHmacCommand` y `RotateEncCommand` y verificación (`VerifyIntegrity`) tras rotación.
+  - Añadido `CargarUltimosAsync(limit)` para mostrar N últimos en el panel.
+- `AuditoriaView`:
+  - `Últimos movimientos` carga los 10 últimos dentro del panel cuando es posible; hay fallback a `RecentAuditWindow`.
+  - `DetalleRegistroFormateado` incluye metadata y formatea JSON.
+- Rotación local: `LocalKeyRotationProvider` persiste claves en `%LocalAppData%\ClinicaLongevidadApp\keys`, crea identificador de versión y establece variables de entorno en `Process` y (opcional) `User` para desarrollo.
+- Añadido volcado diagnóstico: `%LocalAppData%\ClinicaLongevidadApp\logs\AuditDebug.txt`.
+
+#### Pendiente / problemas conocidos
+- Algunos filtros no funcionan correctamente en todos los casos; la implementación cliente está en su sitio pero requiere pruebas y probablemente desplazar parte del filtrado a consultas SQL para grandes volúmenes.
+- La rotación local escribe variables a nivel `User` para comodidad en desarrollo; discutir política de persistencia (recomiendo `Process` solo o Key Vault en producción).
+- Mejorar feedback UI y logging para operaciones largas (rotación, verify) y añadir tests automatizados para filtros.
+
+#### Siguiente paso recomendado
+1. Ejecutar pruebas manuales sobre `Filtrar`, `Actualizar`, `Últimos movimientos` y `Exportar CSV`; revisar `%LocalAppData%/.../AuditDebug.txt` si hay inconsistencias.
+2. Decidir política de persistencia de claves locales y, si procede, restringir a `Process` o usar Azure Key Vault.
+3. Si el volumen de datos crece, mover filtros pesados a la consulta SQL e implementar paginación.
+
+Mañana seguimos con las pruebas y ajustes de filtros. Cierro sesión.
+
+## Pruebas locales: opción `FORCE_ADMIN` (opt-in)
+
+Se ha añadido en la rama `feature/force-admin` una ayuda para pruebas localmente que permite forzar
+la sesión como `Administración` sin pasar por el flujo de login. Esto es estrictamente para pruebas
+locales y debe activarse de forma explícita.
+
+Uso:
+
+- PowerShell:
+  - `$env:FORCE_ADMIN='1'; dotnet run --project ClinicaLongevidadApp.csproj --configuration Debug --no-launch-profile`
+- CMD:
+  - `set FORCE_ADMIN=1 && dotnet run --project ClinicaLongevidadApp.csproj --configuration Debug --no-launch-profile`
+
+Comportamiento:
+
+- Si `FORCE_ADMIN=1` está presente en el entorno al arrancar la aplicación, `App` establece `Sesion.RolActual`
+  y `Sesion.AreaActual` a `Administración` para facilitar pruebas de las vistas y comandos restringidos.
+- La lógica está contenida en `App.xaml.cs` en la rama `feature/force-admin` y no está aplicada en `master`.
+
+Advertencias de seguridad:
+
+- No aplicar esta variable en entornos compartidos ni en producción.
+- Revisar y aprobar mediante PR antes de considerar mantener la opción en el repositorio principal.
+
+Si quieres, creo el PR automáticamente con esta documentación y la rama `feature/force-admin` listos para revisión.
+
