@@ -19,6 +19,12 @@ namespace RotateKeysTool
             var version = args.Length > 2 ? args[2] : null;
 
             var svc = new KeyRotationService();
+            var connArgIndex = Array.FindIndex(args, a => a.Equals("--db", StringComparison.OrdinalIgnoreCase));
+            string? dbPath = null;
+            if (connArgIndex >= 0 && args.Length > connArgIndex + 1)
+            {
+                dbPath = args[connArgIndex + 1];
+            }
 
             try
             {
@@ -100,6 +106,45 @@ namespace RotateKeysTool
                 {
                     PrintUsage();
                     return 2;
+                }
+                }
+                else if (mode == "backfill")
+                {
+                    // backfill preview/apply --db <path> [--batch N] [--dryrun]
+                    var action = args.Length > 1 ? args[1].ToLowerInvariant() : "preview";
+                    if (dbPath is null)
+                    {
+                        Console.WriteLine("Provide database with --db <path>");
+                        return 2;
+                    }
+
+                    var backfillSvc = new BackfillService($"Data Source={dbPath}");
+                    if (action == "preview")
+                    {
+                        var cnt = await backfillSvc.PreviewBackfillCountAsync();
+                        Console.WriteLine($"Backfill preview: {cnt} rows would be processed.");
+                        return 0;
+                    }
+                    else if (action == "apply")
+                    {
+                        var dryRun = true;
+                        var batch = 100;
+                        for (int i = 2; i < args.Length; i++)
+                        {
+                            if (args[i] == "--dryrun") dryRun = true;
+                            if (args[i] == "--force") dryRun = false;
+                            if (args[i] == "--batch" && i + 1 < args.Length && int.TryParse(args[i + 1], out var b)) { batch = b; }
+                        }
+
+                        var result = await backfillSvc.ApplyBackfillAsync(batch, dryRun: dryRun);
+                        Console.WriteLine($"Backfill processed={result.Processed} created={result.Created} skipped={result.Skipped} (dryRun={dryRun})");
+                        return 0;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Unknown backfill action. Use preview or apply.");
+                        return 2;
+                    }
                 }
             }
             catch (NotImplementedException nie)
