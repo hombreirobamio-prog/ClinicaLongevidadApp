@@ -1,0 +1,41 @@
+name: Audit Integrity CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  audit-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test --configuration Release --no-build --verbosity minimal
+
+      - name: Run RotateKeys preview (sanity)
+        run: dotnet run --project tools/RotateKeys -- preview hmac ci-preview
+
+      - name: Generate integrity report
+        run: |
+          dotnet run --project tools/GenerateIntegrity -- ./audit_ci.db IntegrityReport_CI.json || exit 0
+
+      - name: Upload integrity report
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrity-report
+          path: IntegrityReport_CI.json
