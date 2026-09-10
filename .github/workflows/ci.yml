@@ -20,7 +20,15 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: Restore
-      run: dotnet restore
+      run: |
+        dotnet restore
+        Write-Host "Looking for tools projects to restore..."
+        $projects = Get-ChildItem -Path tools -Recurse -Filter *.csproj -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
+        if (-not $projects) { Write-Host "No tools projects found."; exit 0 }
+        foreach ($p in $projects) {
+          Write-Host "Restoring $p"
+          dotnet restore $p
+        }
 
     - name: Build
       run: dotnet build --no-restore --configuration Release
