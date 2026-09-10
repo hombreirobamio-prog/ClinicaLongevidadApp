@@ -2,6 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:ClinicaLongevidadApp.Views"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
         Title="Clínica Longevidad"
         Height="600"
         Width="1000"
@@ -14,6 +17,7 @@
             <MenuItem Header="Administración">
                 <MenuItem x:Name="MenuItemAuditAdmin" Header="Abrir Auditoría" Click="MenuItemAuditAdmin_Click" Visibility="Collapsed" />
                 <MenuItem x:Name="MenuItemRecentAudit" Header="Últimos movimientos" Click="MenuItemRecentAudit_Click" Visibility="Collapsed" />
+                <MenuItem x:Name="MenuItemAuditDiagnostics" Header="Generar diagnóstico" Click="MenuItemAuditDiagnostics_Click" Visibility="Collapsed" />
                 <MenuItem x:Name="MenuItemDebugAdmin" Header="Toggle Admin (dev)" Click="MenuItemDebugAdmin_Click" Visibility="Collapsed" />
             </MenuItem>
         </Menu>

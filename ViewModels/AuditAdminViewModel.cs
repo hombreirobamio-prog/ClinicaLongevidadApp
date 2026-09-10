@@ -10,6 +10,7 @@ namespace ClinicaLongevidadApp.ViewModels
     public class AuditAdminViewModel : INotifyPropertyChanged
     {
         private readonly AuditAdminService _service;
+        private readonly string _connectionString;
 
         public ObservableCollection<AuditQueueRowDto> Pending { get; } = new();
         public ObservableCollection<AuditQueueRowDto> DeadLetter { get; } = new();
@@ -17,6 +18,7 @@ namespace ClinicaLongevidadApp.ViewModels
         public ICommand RefreshCommand { get; }
         public ICommand RequeueCommand { get; }
         public ICommand DeleteCommand { get; }
+        public ICommand GenerateDiagnosticsCommand { get; }
 
         private AuditQueueRowDto? _selectedDead;
         public AuditQueueRowDto? SelectedDead
@@ -27,10 +29,12 @@ namespace ClinicaLongevidadApp.ViewModels
 
         public AuditAdminViewModel(string connectionString)
         {
+            _connectionString = connectionString;
             _service = new AuditAdminService(connectionString);
             RefreshCommand = new RelayCommand(async _ => await RefreshAsync());
             RequeueCommand = new RelayCommand(async _ => await RequeueSelectedAsync(), _ => SelectedDead != null);
             DeleteCommand = new RelayCommand(async _ => await DeleteSelectedAsync(), _ => SelectedDead != null);
+            GenerateDiagnosticsCommand = new RelayCommand(async _ => await GenerateDiagnosticsAsync());
         }
 
         public async Task RefreshAsync()
@@ -64,6 +68,35 @@ namespace ClinicaLongevidadApp.ViewModels
             var id = SelectedDead.Id;
             var ok = await Task.Run(() => _service.DeleteDeadLetter(id));
             if (ok) await RefreshAsync();
+        }
+
+        private async Task GenerateDiagnosticsAsync()
+        {
+            try
+            {
+                await Task.Run(() =>
+                {
+                    var svc = new AuditoriaService(_connectionString);
+                    var quick = svc.GenerateQuickDiagnostics();
+                    var report = svc.GenerateIntegrityDiagnosticReport();
+                    App.Current.Dispatcher.Invoke(() =>
+                    {
+                        try
+                        {
+                            var sb = new System.Text.StringBuilder();
+                            sb.AppendLine("Diagnóstico completado.");
+                            if (!string.IsNullOrWhiteSpace(quick)) sb.AppendLine("Ficheros rápidos escritos en: " + quick);
+                            if (!string.IsNullOrWhiteSpace(report)) sb.AppendLine("Informe de integridad escrito en: " + report);
+                            System.Windows.MessageBox.Show(sb.ToString(), "Audit Diagnostics", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                        }
+                        catch { }
+                    });
+                });
+            }
+            catch (Exception ex)
+            {
+                try { System.Windows.MessageBox.Show("Error generando diagnósticos: " + ex.Message, "Audit Diagnostics", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error); } catch { }
+            }
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

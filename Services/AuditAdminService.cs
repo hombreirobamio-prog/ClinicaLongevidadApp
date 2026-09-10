@@ -83,8 +83,15 @@ namespace ClinicaLongevidadApp.Services
                 using var conn = new SqliteConnection(_connectionString);
                 conn.Open();
                 using var cmd = conn.CreateCommand();
-                cmd.CommandText = "SELECT Id, EventId, Fechahora, UsuarioAdmin, Accion, Modulo, UsuarioAfectado, Resultado FROM Auditoria ORDER BY Fechahora DESC LIMIT @max";
-                cmd.Parameters.AddWithValue("@max", limit);
+                if (limit > 0)
+                {
+                    cmd.CommandText = "SELECT Id, EventId, Fechahora, UsuarioAdmin, Accion, Modulo, UsuarioAfectado, Resultado FROM Auditoria ORDER BY Fechahora DESC LIMIT @max";
+                    cmd.Parameters.AddWithValue("@max", limit);
+                }
+                else
+                {
+                    cmd.CommandText = "SELECT Id, EventId, Fechahora, UsuarioAdmin, Accion, Modulo, UsuarioAfectado, Resultado FROM Auditoria ORDER BY Fechahora DESC";
+                }
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {

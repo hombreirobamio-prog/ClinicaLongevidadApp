@@ -25,8 +25,17 @@ namespace ClinicaLongevidadApp.Tests
 
                 if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(encEnv)))
                 {
-                    var enc = Convert.ToBase64String(Encoding.UTF8.GetBytes("encryptionkey1234567890123456"));
+                    // Use a 32-byte key (AES-256) encoded as base64 for tests to ensure AES-GCM encryption/decryption works.
+                    var key32 = "0123456789ABCDEF0123456789ABCDEF"; // 32 chars => 32 bytes in UTF8
+                    var enc = Convert.ToBase64String(Encoding.UTF8.GetBytes(key32));
                     Environment.SetEnvironmentVariable(encEnv, enc);
+                }
+
+                // Enable authorization enforcement for tests by default (opt-in for app runtime)
+                const string authEnv = "AUDIT_ENFORCE_AUTH";
+                if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(authEnv)))
+                {
+                    Environment.SetEnvironmentVariable(authEnv, "1");
                 }
             }
             catch

@@ -1,4 +1,4 @@
-﻿using ClinicaLongevidadApp.Models;
+using ClinicaLongevidadApp.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -31,6 +31,8 @@ namespace ClinicaLongevidadApp.Services
         public static void Guardar(Usuario usuario)
         {
             ArgumentNullException.ThrowIfNull(usuario);
+            // Authorization: require Administración role when enforcement is enabled
+            try { AuthorizationHelper.EnsureRole("Administración"); } catch { throw; }
 
             using var connection = GetConnection();
 
@@ -49,17 +51,69 @@ namespace ClinicaLongevidadApp.Services
             {
                 usuario.FechaCreacion = DateTime.Now;
                 connection.Insert(usuario);
+                // Auditar creación de usuario (no incluir PasswordHash)
+                try
+                {
+                    App.AuditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
+                    {
+                        UsuarioAdmin = Services.Sesion.UsuarioActual ?? "Sistema",
+                        Accion = "Usuario.Crear",
+                        Modulo = "Usuarios",
+                        UsuarioAfectado = usuario.NombreUsuario ?? string.Empty,
+                        Resultado = true,
+                        FechaHora = DateTime.Now,
+                        Detalles = AuditoriaDetallesHelper.CrearJson(("Id", usuario.Id), ("NombreCompleto", usuario.NombreCompleto), ("Email", usuario.Email), ("Activo", usuario.Activo), ("Rol", usuario.Rol), ("Area", usuario.Area)),
+                        Rol = Services.Sesion.RolActual,
+                        Area = Services.Sesion.AreaActual
+                    });
+                }
+                catch { }
             }
             else
             {
                 connection.Update(usuario);
+                // Auditar actualización de usuario (no incluir PasswordHash)
+                try
+                {
+                    App.AuditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
+                    {
+                        UsuarioAdmin = Services.Sesion.UsuarioActual ?? "Sistema",
+                        Accion = "Usuario.Actualizar",
+                        Modulo = "Usuarios",
+                        UsuarioAfectado = usuario.NombreUsuario ?? string.Empty,
+                        Resultado = true,
+                        FechaHora = DateTime.Now,
+                        Detalles = AuditoriaDetallesHelper.CrearJson(("Id", usuario.Id), ("NombreCompleto", usuario.NombreCompleto), ("Email", usuario.Email), ("Activo", usuario.Activo), ("Rol", usuario.Rol), ("Area", usuario.Area)),
+                        Rol = Services.Sesion.RolActual,
+                        Area = Services.Sesion.AreaActual
+                    });
+                }
+                catch { }
             }
         }
 
         public static void Eliminar(int id)
         {
+            // Authorization: require Administración role when enforcement is enabled
+            AuthorizationHelper.EnsureRole("Administración");
             using var connection = GetConnection();
             connection.Delete<Usuario>(id);
+            try
+            {
+                App.AuditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
+                {
+                    UsuarioAdmin = Services.Sesion.UsuarioActual ?? "Sistema",
+                    Accion = "Usuario.Eliminar",
+                    Modulo = "Usuarios",
+                    UsuarioAfectado = id.ToString(),
+                    Resultado = true,
+                    FechaHora = DateTime.Now,
+                    Detalles = AuditoriaDetallesHelper.CrearJson(("Id", id)),
+                    Rol = Services.Sesion.RolActual,
+                    Area = Services.Sesion.AreaActual
+                });
+            }
+            catch { }
         }
 
         public static Usuario? ObtenerPorNombre(string nombreUsuario)
@@ -90,6 +144,24 @@ namespace ClinicaLongevidadApp.Services
             if (usuarioEncontrado is null ||
                 !usuarioEncontrado.Activo)
             {
+                // Registrar intento de login fallido
+                try
+                {
+                    App.AuditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
+                    {
+                        UsuarioAdmin = Services.Sesion.UsuarioActual ?? "Sistema",
+                        Accion = "Usuario.Login",
+                        Modulo = "Usuarios",
+                        UsuarioAfectado = usuario ?? string.Empty,
+                        Resultado = false,
+                        FechaHora = DateTime.Now,
+                        Detalles = AuditoriaDetallesHelper.CrearJson(("Razon", usuarioEncontrado is null ? "NoEncontrado" : "Inactivo")),
+                        Rol = Services.Sesion.RolActual,
+                        Area = Services.Sesion.AreaActual
+                    });
+                }
+                catch { }
+
                 return false;
             }
 
@@ -107,6 +179,9 @@ namespace ClinicaLongevidadApp.Services
                 ?? throw new InvalidOperationException(
                     "Usuario no encontrado.");
 
+            // Authorization: allow admin or the user themselves to reset password when enforcement is enabled
+            AuthorizationHelper.EnsureAdminOrSelf(usuario.NombreUsuario ?? string.Empty);
+
             string nuevaContraseña =
                 PasswordGenerator.GenerarTemporal();
 
@@ -114,6 +189,23 @@ namespace ClinicaLongevidadApp.Services
                 PasswordSecurity.HashPassword(nuevaContraseña);
 
             connection.Update(usuario);
+
+            try
+            {
+                App.AuditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
+                {
+                    UsuarioAdmin = Services.Sesion.UsuarioActual ?? "Sistema",
+                    Accion = "Usuario.RestablecerContraseña",
+                    Modulo = "Usuarios",
+                    UsuarioAfectado = usuario.NombreUsuario ?? string.Empty,
+                    Resultado = true,
+                    FechaHora = DateTime.Now,
+                    Detalles = AuditoriaDetallesHelper.CrearJson(("Id", usuario.Id), ("Nota", "Contraseña temporal generada (no registrada por seguridad)")),
+                    Rol = Services.Sesion.RolActual,
+                    Area = Services.Sesion.AreaActual
+                });
+            }
+            catch { }
 
             return nuevaContraseña;
         }

@@ -18,6 +18,13 @@ namespace ClinicaLongevidadApp.Services
         {
             var v = Environment.GetEnvironmentVariable(HmacEnv);
             if (string.IsNullOrEmpty(v)) return null;
+            // Try base64 decode first (rotation writes base64). Fall back to raw UTF8 bytes.
+            try
+            {
+                var maybe = Convert.FromBase64String(v);
+                if (maybe.Length > 0) return maybe;
+            }
+            catch { }
             return Encoding.UTF8.GetBytes(v);
         }
 

@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 
 namespace ClinicaLongevidadApp.Models
 {
     public class AuditoriaModel
     {
         public int Id { get; set; }
+        public string EventId { get; set; } = "";
 
         public string UsuarioAdmin { get; set; } = "";
         public string Accion { get; set; } = "";
