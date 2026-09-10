@@ -10,75 +10,120 @@ namespace ClinicaLongevidadApp.Services.KeyRotation
     /// </summary>
     public class KeyRotationService
     {
+        private readonly KeyVaultKeyProvider _kvProvider = new KeyVaultKeyProvider();
+
         /// <summary>
         /// Return the currently active HMAC key version identifier.
         /// </summary>
-        public Task<string?> GetCurrentHmacKeyVersionAsync()
+        public async Task<string?> GetCurrentHmacKeyVersionAsync()
         {
-            // TODO: read current HMAC key version from configured provider/store
-            return Task.FromResult<string?>(null);
+            if (_kvProvider.IsConfigured)
+            {
+                return await _kvProvider.GetLatestHmacKeyVersionAsync();
+            }
+
+            return null;
         }
 
         /// <summary>
         /// Preview plan for rotating the HMAC key.
         /// Returns a RotationPlan describing the changes that would be applied.
         /// </summary>
-        public Task<RotationPlan> PreviewRotateHmacKeyAsync(string newVersion)
+        public async Task<RotationPlan> PreviewRotateHmacKeyAsync(string newVersion)
         {
+            var oldVersion = _kvProvider.IsConfigured ? await _kvProvider.GetLatestHmacKeyVersionAsync() : null;
+
             // TODO: implement discovery of affected rows, estimate re-encryption/backfill cost
             var plan = new RotationPlan
             {
                 KeyType = RotationKeyType.Hmac,
+                OldVersion = oldVersion,
                 NewVersion = newVersion,
                 AffectedRowCountEstimate = 0,
                 Notes = "Preview only: no changes applied. Implement discovery logic to populate AffectedRowCountEstimate."
             };
 
-            return Task.FromResult(plan);
+            return plan;
         }
 
         /// <summary>
-        /// Apply rotation for HMAC key. This method currently throws NotImplementedException to avoid accidental use.
+        /// Apply rotation for HMAC key. This method currently persists the new key to Key Vault when configured and returns a plan.
+        /// It does not perform re-encryption/backfill of existing rows — that must be implemented separately.
         /// </summary>
-        public Task<RotationPlan> ApplyRotateHmacKeyAsync(byte[] newHmacKey, string newVersion)
+        public async Task<RotationPlan> ApplyRotateHmacKeyAsync(byte[] newHmacKey, string newVersion)
         {
-            // TODO: validate, persist new key material, atomically update version metadata, trigger backfill if needed.
-            throw new NotImplementedException("Key rotation apply is not implemented. Use preview to inspect the plan.");
+            var oldVersion = _kvProvider.IsConfigured ? await _kvProvider.GetLatestHmacKeyVersionAsync() : null;
+            string? createdVersion = null;
+
+            if (_kvProvider.IsConfigured)
+            {
+                // Persist new key material to Key Vault and record the resulting secret version.
+                createdVersion = await _kvProvider.SetHmacKeyAsync(newHmacKey, newVersion);
+            }
+            else
+            {
+                throw new InvalidOperationException("Key Vault is not configured (KEYVAULT_URI missing). Aborting apply to avoid storing keys insecurely.");
+            }
+
+            var plan = new RotationPlan
+            {
+                KeyType = RotationKeyType.Hmac,
+                OldVersion = oldVersion,
+                NewVersion = createdVersion ?? newVersion,
+                AffectedRowCountEstimate = 0,
+                Notes = "Apply persisted new HMAC key in Key Vault. Backfill/re-encryption not performed by this scaffold."
+            };
+
+            return plan;
         }
 
         /// <summary>
         /// Rotate the encryption key (AES-GCM) to a new key/version.
         /// Implement safe re-encryption/backfill procedures when required.
         /// </summary>
-        public Task RotateEncryptionKeyAsync(byte[] newEncKey, string newVersion)
+        public async Task RotateEncryptionKeyAsync(byte[] newEncKey, string newVersion)
         {
-            // TODO: rotate AES-GCM encryption key, record key version and support re-encryption/backfill
-            throw new NotImplementedException("Encryption key rotation not implemented. This is a scaffold.");
+            var oldVersion = _kvProvider.IsConfigured ? await _kvProvider.GetLatestEncryptionKeyVersionAsync() : null;
+            string? createdVersion = null;
+
+            if (_kvProvider.IsConfigured)
+            {
+                createdVersion = await _kvProvider.SetEncryptionKeyAsync(newEncKey, newVersion);
+            }
+            else
+            {
+                throw new InvalidOperationException("Key Vault is not configured (KEYVAULT_URI missing). Aborting apply to avoid storing keys insecurely.");
+            }
+
+            var plan = new RotationPlan
+            {
+                KeyType = RotationKeyType.Encryption,
+                OldVersion = oldVersion,
+                NewVersion = createdVersion ?? newVersion,
+                AffectedRowCountEstimate = 0,
+                Notes = "Apply persisted new encryption key in Key Vault. Backfill/re-encryption not performed by this scaffold."
+            };
+
+            return plan;
         }
 
         /// <summary>
         /// Preview plan for rotating the encryption key.
         /// </summary>
-        public Task<RotationPlan> PreviewRotateEncryptionKeyAsync(string newVersion)
+        public async Task<RotationPlan> PreviewRotateEncryptionKeyAsync(string newVersion)
         {
+            var oldVersion = _kvProvider.IsConfigured ? await _kvProvider.GetLatestEncryptionKeyVersionAsync() : null;
+
             var plan = new RotationPlan
             {
                 KeyType = RotationKeyType.Encryption,
+                OldVersion = oldVersion,
                 NewVersion = newVersion,
                 AffectedRowCountEstimate = 0,
                 Notes = "Preview only: no changes applied. Implement discovery logic to populate AffectedRowCountEstimate."
             };
 
-            return Task.FromResult(plan);
-        }
-
-        /// <summary>
-        /// Apply rotation for encryption key.
-        /// </summary>
-        public Task<RotationPlan> ApplyRotateEncryptionKeyAsync(byte[] newEncKey, string newVersion)
-        {
-            // TODO: rotate AES-GCM encryption key, record key version and support re-encryption/backfill
-            throw new NotImplementedException("Encryption key rotation not implemented. This is a scaffold.");
+            return plan;
         }
     }
 
