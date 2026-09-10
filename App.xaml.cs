@@ -75,12 +75,29 @@ namespace ClinicaLongevidadApp
             }
 
             AuditoriaService = new AuditoriaService(connectionString, keyProvider, exporter, forwarder);
+
+            // Enforce Key Vault in production/staging when explicitly required.
+            // If REQUIRE_KEYVAULT=1 is set, fail fast when KEYVAULT_URI is not configured.
+            var requireKv = string.Equals(Environment.GetEnvironmentVariable("REQUIRE_KEYVAULT"), "1", StringComparison.OrdinalIgnoreCase);
+            var envName = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? string.Empty;
+            var isProdEnv = string.Equals(envName, "Production", StringComparison.OrdinalIgnoreCase);
+            if (requireKv || isProdEnv)
+            {
+                if (string.IsNullOrWhiteSpace(vaultUri))
+                {
+                    var msg = "Key Vault is required in this environment but KEYVAULT_URI is not configured. Aborting startup.";
+                    try { MessageBox.Show(msg, "Configuration error", MessageBoxButton.OK, MessageBoxImage.Error); } catch { }
+                    LogService.Error("App", msg);
+                    Shutdown();
+                    return;
+                }
+            }
             // Start persistent forward queue worker to guarantee forwarding durability
             // This is opt-in: enable by setting AUDIT_FORWARD_ENABLED=1 in the environment.
             try
             {
                 var forwardEnabled = string.Equals(Environment.GetEnvironmentVariable("AUDIT_FORWARD_ENABLED"), "1", StringComparison.OrdinalIgnoreCase);
-                if (forwardEnabled && (forwarder != null || exporter != null))
+                if (forwardEnabled && (forwarder != null || exporter != null) && AuditoriaService?.IsInitialized == true)
                 {
                     var forwardQueueWorker = new AuditForwardQueueWorker(connectionString, forwarder, exporter, 30);
                     Current.Properties["AuditForwardQueueWorker"] = forwardQueueWorker;
@@ -125,7 +142,7 @@ namespace ClinicaLongevidadApp
             try
             {
                 var integrityEnabled = string.Equals(Environment.GetEnvironmentVariable("AUDIT_INTEGRITY_ENABLED"), "1", StringComparison.OrdinalIgnoreCase);
-                if (integrityEnabled && AuditoriaService != null)
+                if (integrityEnabled && AuditoriaService?.IsInitialized == true)
                 {
                     var integrityWorker = new AuditoriaIntegrityWorker(AuditoriaService, TimeSpan.FromMinutes(60));
 
