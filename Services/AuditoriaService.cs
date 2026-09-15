@@ -40,6 +40,10 @@ namespace ClinicaLongevidadApp.Services
                 else
                 {
                     var kvUri = Environment.GetEnvironmentVariable("KEYVAULT_URI");
+                    var requireKv = string.Equals(Environment.GetEnvironmentVariable("REQUIRE_KEYVAULT"), "1", StringComparison.OrdinalIgnoreCase);
+                    var envName = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? string.Empty;
+                    var isProd = string.Equals(envName, "Production", StringComparison.OrdinalIgnoreCase);
+
                     if (!string.IsNullOrWhiteSpace(kvUri))
                     {
                         try
@@ -48,12 +52,21 @@ namespace ClinicaLongevidadApp.Services
                         }
                         catch
                         {
-                            // If Azure provider cannot be constructed, fall back to local provider
+                            // If Azure provider cannot be constructed and Key Vault is required for this env, fail fast
+                            if (requireKv || isProd)
+                            {
+                                throw new InvalidOperationException("Azure Key Vault provider could not be initialized and Key Vault is required in this environment.");
+                            }
+                            // Otherwise fall back to local provider for development/testing
                             _keyProvider = new LocalKeyProvider();
                         }
                     }
                     else
                     {
+                        if (requireKv || isProd)
+                        {
+                            throw new InvalidOperationException("KEYVAULT_URI is not configured but Key Vault is required in this environment.");
+                        }
                         _keyProvider = new LocalKeyProvider();
                     }
                 }
