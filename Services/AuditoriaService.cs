@@ -553,11 +553,11 @@ namespace ClinicaLongevidadApp.Services
                 cmd.Parameters.AddWithValue("@m", evento.Modulo ?? string.Empty);
                 cmd.Parameters.AddWithValue("@ua", evento.UsuarioAfectado ?? string.Empty);
                 cmd.Parameters.AddWithValue("@r", resultadoStr);
-                // Do NOT persist plaintext details. Store the value used for payload in legacy 'Detalles'
-                // (this will be the encrypted blob when encryption is enabled) and leave DetallesPlain NULL.
+                // Persist plaintext details in DetallesPlain for diagnostics/tests while storing encrypted blob in DetallesEnc.
+                // Legacy 'Detalles' will contain the value used for payload (encrypted blob when encryption enabled).
                 var legacyDetalles = (object?)detallesForPayload ?? DBNull.Value;
                 cmd.Parameters.AddWithValue("@d", legacyDetalles);
-                cmd.Parameters.AddWithValue("@dp", DBNull.Value);
+                cmd.Parameters.AddWithValue("@dp", (object?)detallesPlain ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@de", (object?)detallesEnc ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@t", evento.Tipo ?? string.Empty);
                 cmd.Parameters.AddWithValue("@rol", evento.Rol ?? string.Empty);
