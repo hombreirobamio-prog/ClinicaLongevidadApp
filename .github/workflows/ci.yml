@@ -25,12 +25,14 @@ jobs:
     - name: Restore tools projects
       shell: pwsh
       run: |
+        if (-not (Test-Path tools)) { Write-Error "Expected tools directory was not found."; exit 1 }
         Write-Host "Looking for tools projects..."
         $projects = Get-ChildItem -Path tools -Recurse -Filter *.csproj -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
-        if (-not $projects) { Write-Host "No tools projects found."; exit 0 }
+        if (-not $projects) { Write-Error "No tools projects found under tools."; exit 1 }
         foreach ($p in $projects) {
           Write-Host "Restoring $p"
           dotnet restore $p
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         }
 
     - name: Build
@@ -39,12 +41,14 @@ jobs:
     - name: Build tools projects
       shell: pwsh
       run: |
+        if (-not (Test-Path tools)) { Write-Error "Expected tools directory was not found."; exit 1 }
         Write-Host "Looking for tools projects..."
         $projects = Get-ChildItem -Path tools -Recurse -Filter *.csproj -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
-        if (-not $projects) { Write-Host "No tools projects found."; exit 0 }
+        if (-not $projects) { Write-Error "No tools projects found under tools."; exit 1 }
         foreach ($p in $projects) {
           Write-Host "Building $p"
           dotnet build $p --no-restore --configuration Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         }
 
     - name: Test
