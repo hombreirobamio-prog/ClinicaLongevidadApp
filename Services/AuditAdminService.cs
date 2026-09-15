@@ -23,6 +23,18 @@ namespace ClinicaLongevidadApp.Services
         public string Modulo { get; set; } = string.Empty;
         public string UsuarioAfectado { get; set; } = string.Empty;
         public string Resultado { get; set; } = string.Empty;
+        // Additional metadata columns so the admin service can provide full rows for the UI
+        public string Detalles { get; set; } = string.Empty;
+        public string DetallesPlain { get; set; } = string.Empty;
+        public string DetallesEnc { get; set; } = string.Empty;
+        public string Tipo { get; set; } = string.Empty;
+        public string Rol { get; set; } = string.Empty;
+        public string Area { get; set; } = string.Empty;
+        public string SesionId { get; set; } = string.Empty;
+        public string Equipo { get; set; } = string.Empty;
+        public string VersionApp { get; set; } = string.Empty;
+        public string KeyVersion { get; set; } = string.Empty;
+        public string KeyVersionEnc { get; set; } = string.Empty;
     }
 
         public (int Pending, int DeadLetter) GetCounts()
@@ -83,14 +95,15 @@ namespace ClinicaLongevidadApp.Services
                 using var conn = new SqliteConnection(_connectionString);
                 conn.Open();
                 using var cmd = conn.CreateCommand();
+                // Include metadata columns so admin read paths can populate the full model used by the UI
                 if (limit > 0)
                 {
-                    cmd.CommandText = "SELECT Id, EventId, Fechahora, UsuarioAdmin, Accion, Modulo, UsuarioAfectado, Resultado FROM Auditoria ORDER BY Fechahora DESC LIMIT @max";
+                    cmd.CommandText = "SELECT Id, EventId, Fechahora, UsuarioAdmin, Accion, Modulo, UsuarioAfectado, Resultado, Detalles, DetallesPlain, DetallesEnc, Tipo, Rol, Area, SesionId, Equipo, VersionApp, KeyVersion, KeyVersionEnc FROM Auditoria ORDER BY Fechahora DESC LIMIT @max";
                     cmd.Parameters.AddWithValue("@max", limit);
                 }
                 else
                 {
-                    cmd.CommandText = "SELECT Id, EventId, Fechahora, UsuarioAdmin, Accion, Modulo, UsuarioAfectado, Resultado FROM Auditoria ORDER BY Fechahora DESC";
+                    cmd.CommandText = "SELECT Id, EventId, Fechahora, UsuarioAdmin, Accion, Modulo, UsuarioAfectado, Resultado, Detalles, DetallesPlain, DetallesEnc, Tipo, Rol, Area, SesionId, Equipo, VersionApp, KeyVersion, KeyVersionEnc FROM Auditoria ORDER BY Fechahora DESC";
                 }
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())
@@ -104,7 +117,18 @@ namespace ClinicaLongevidadApp.Services
                         Accion = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
                         Modulo = reader.IsDBNull(5) ? string.Empty : reader.GetString(5),
                         UsuarioAfectado = reader.IsDBNull(6) ? string.Empty : reader.GetString(6),
-                        Resultado = reader.IsDBNull(7) ? string.Empty : reader.GetString(7)
+                        Resultado = reader.IsDBNull(7) ? string.Empty : reader.GetString(7),
+                        Detalles = reader.IsDBNull(8) ? string.Empty : reader.GetString(8),
+                        DetallesPlain = reader.IsDBNull(9) ? string.Empty : reader.GetString(9),
+                        DetallesEnc = reader.IsDBNull(10) ? string.Empty : reader.GetString(10),
+                        Tipo = reader.IsDBNull(11) ? string.Empty : reader.GetString(11),
+                        Rol = reader.IsDBNull(12) ? string.Empty : reader.GetString(12),
+                        Area = reader.IsDBNull(13) ? string.Empty : reader.GetString(13),
+                        SesionId = reader.IsDBNull(14) ? string.Empty : reader.GetString(14),
+                        Equipo = reader.IsDBNull(15) ? string.Empty : reader.GetString(15),
+                        VersionApp = reader.IsDBNull(16) ? string.Empty : reader.GetString(16),
+                        KeyVersion = reader.IsDBNull(17) ? string.Empty : reader.GetString(17),
+                        KeyVersionEnc = reader.IsDBNull(18) ? string.Empty : reader.GetString(18)
                     });
                 }
             }
