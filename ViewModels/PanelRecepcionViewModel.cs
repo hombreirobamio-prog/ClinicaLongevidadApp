@@ -1,4 +1,4 @@
-﻿using ClinicaLongevidadApp.Core;
+using ClinicaLongevidadApp.Core;
 using ClinicaLongevidadApp.Models;
 using ClinicaLongevidadApp.Services;
 using System;
@@ -1659,11 +1659,11 @@ namespace ClinicaLongevidadApp.ViewModels
                     Pacientes.Add(paciente);
                 }
 
-                LogService.Info("FiltrarPacientes", $"Filtrado completado: {Pacientes.Count} pacientes encontrados");
+                AuditLogHelper.Info("FiltrarPacientes", $"Filtrado completado: {Pacientes.Count} pacientes encontrados");
             }
             catch (Exception ex)
             {
-                LogService.Error("FiltrarPacientes", "Error al filtrar pacientes", ex);
+                AuditLogHelper.Error("FiltrarPacientes", "Error al filtrar pacientes", ex);
             }
         }
 
@@ -1690,11 +1690,11 @@ namespace ClinicaLongevidadApp.ViewModels
                 FechaAlta = paciente.FechaAlta;
                 OnPropertyChanged(nameof(RequiereRegularizarProteccionDatos));
                 ActualizarFichaPaciente();
-                LogService.Info("CargarPaciente", $"Paciente cargado: {paciente.Id}");
+                AuditLogHelper.Info("CargarPaciente", $"Paciente cargado: {paciente.Id}");
             }
             catch (Exception ex)
             {
-                LogService.Error("CargarPaciente", "Error al cargar paciente", ex);
+                AuditLogHelper.Error("CargarPaciente", "Error al cargar paciente", ex);
             }
         }
 
@@ -1765,7 +1765,7 @@ namespace ClinicaLongevidadApp.ViewModels
                 LimpiarFormulario();
 
                 MostrarInformacion("Datos del paciente", "Los datos del paciente se han guardado correctamente.");
-                LogService.Info("GuardarDatos", $"Datos guardados para paciente: {_pacienteActual?.Id}");
+                AuditLogHelper.Info("GuardarDatos", $"Datos guardados para paciente: {_pacienteActual?.Id}");
 
                 // Registrar auditoría posterior al guardado
                 try
@@ -1789,7 +1789,7 @@ namespace ClinicaLongevidadApp.ViewModels
             }
             catch (Exception ex)
             {
-                LogService.Error("GuardarDatos", "Error al guardar datos del paciente", ex);
+                AuditLogHelper.Error("GuardarDatos", "Error al guardar datos del paciente", ex);
                 MostrarError("Datos del paciente", $"No se pudieron guardar los datos: {ex.Message}");
             }
         }
@@ -1828,11 +1828,11 @@ namespace ClinicaLongevidadApp.ViewModels
 
                 NotificarCambioEdicionCita();
                 CommandManager.InvalidateRequerySuggested();
-                LogService.Info("IniciarEdicionProximaCita", $"Iniciada edición de próxima cita: {cita.Id}");
+                AuditLogHelper.Info("IniciarEdicionProximaCita", $"Iniciada edición de próxima cita: {cita.Id}");
             }
             catch (Exception ex)
             {
-                LogService.Error("IniciarEdicionProximaCita", "Error al iniciar edición de próxima cita", ex);
+                AuditLogHelper.Error("IniciarEdicionProximaCita", "Error al iniciar edición de próxima cita", ex);
                 MostrarError("Editar cita", $"Error: {ex.Message}");
             }
         }
@@ -1980,7 +1980,7 @@ namespace ClinicaLongevidadApp.ViewModels
                 Profesionales?.Clear();
                 ProfesionalesFiltro?.Clear();
 
-                LogService.Info("PanelRecepcionViewModel", "ViewModel disposto correctamente");
+                AuditLogHelper.Info("PanelRecepcionViewModel", "ViewModel disposto correctamente");
             }
 
             _disposed = true;
