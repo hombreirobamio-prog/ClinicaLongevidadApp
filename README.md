@@ -1,5 +1,7 @@
 # ClinicaLongevidadApp
 
+> Nota: al reanudar, lea `docs/BACKFILL_SESSION_SUMMARY.md` para el contexto de la última sesión.
+
 <!-- CI and Coverage badges: replace {owner}/{repo} with your repository -->
 ![CI](https://github.com/{owner}/{repo}/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://codecov.io/gh/{owner}/{repo}/branch/main/graph/badge.svg)
@@ -380,4 +382,56 @@ Advertencias de seguridad:
 - Revisar y aprobar mediante PR antes de considerar mantener la opción en el repositorio principal.
 
 Si quieres, creo el PR automáticamente con esta documentación y la rama `feature/force-admin` listos para revisión.
+
+## Cierre de sesión (GitHub)
+
+- Fecha: 2026-09-11
+
+- Objetivo: dejar un resumen claro de lo realizado en la sesión y las tareas pendientes antes de cerrar la sesión del repositorio.
+
+### Hecho
+- Restaurado el botón/admin de diagnóstico en la vista de Auditoría y añadidos los comandos de backup en `AuditoriaViewModel`.
+- Mejorada la lógica de `Services/BackupService.cs`: uso de backup online de SQLite (`BackupDatabase`), configuración de `PRAGMA busy_timeout`, y fallback a copia de fichero.
+- Añadido logging en `BackupService` (usa `Services/LogService`) para registrar inicio, éxito y fallos de los backups.
+- Ajustes en `tools/GenerateIntegrity` (TFM y paquetes) y ejecución de diagnóstico de integridad (genera `IntegrityReport_local.json`).
+- Proyecto compila correctamente después de los cambios.
+
+### Pendiente (inmediato)
+- Probar el backup en runtime: ejecutar la acción "Copia ahora" desde la UI de Auditoría o invocar `BackupService.CreateBackup(...)` con la connection string usada en `Application.Current.Properties["AuditConnectionString"]` y confirmar que se crea el `.db` de backup.
+- Si el backup falla: inspeccionar procesos que bloqueen la DB y revisar la cadena de conexión usada por la UI.
+- Ejecutar la suite de tests local (`dotnet test`) y revisar logs generados en `%LocalAppData%\ClinicaLongevidadApp\Logs`.
+
+### Falta (trabajo a medio plazo)
+- Decidir y documentar la política de persistencia/rotación de claves HMAC/ENC (Local vs Key Vault) y aplicar en `KeyRotation` providers.
+- Plan de backfill/append-only para corregir filas históricas sin `Hash`/`Signature` — preparar script sobre copia de la BD y pruebas en entorno no productivo.
+- Mejorar feedback UI (toasts/snackbars) y añadir logging más detallado/rotación de logs.
+
+### Nota final
+Antes de cualquier intervención en la tabla `Auditoria` en producción, realizar copia de seguridad válida y comprobada y documentar el proceso. Para la próxima sesión: primero validar backups y logs, luego proceder con el plan de remediación de integridad si procede.
+
+## Audit hardening — environment variables & runtime notes
+
+Breve referencia para desarrolladores/operadores. Leer antes de modificar auditoría o activar workers en entornos compartidos.
+
+- `KEYVAULT_URI`: prefer Azure Key Vault for HMAC/encryption keys when set.
+- `REQUIRE_KEYVAULT=1`: fail startup if `KEYVAULT_URI` is not set (use to enforce Key Vault in production/staging).
+- `AUDIT_FORWARD_ENABLED=1`: enable forward queue worker (opt-in).
+- `AUDIT_INTEGRITY_ENABLED=1`: enable integrity worker (opt-in).
+- `AUDIT_INCLUDE_DETAILS_IN_REPORTS=1`: include `Detalles` in integrity reports (disabled by default).
+- `AUDIT_INCLUDE_DETAILS_IN_DIAGNOSTICS=1`: include `Detalles` in quick diagnostics CSV (disabled by default).
+- `AUDIT_INCLUDE_DETAILS_IN_LOGS=1`: allow writing `Detalles` into application logs (disabled by default).
+- `AUDIT_ALLOW_PLAINTEXT_DETAILS=1`: permit persisting `DetallesPlain` in Production (disabled by default; avoid in prod).
+- `AUDIT_HMAC_KEY`, `AUDIT_ENC_KEY`: local-only keys for `LocalKeyProvider` (development/testing only).
+- `FORCE_ADMIN=1`: development helper to force admin session for local testing (do not use in shared environments).
+
+Quick run (development):
+
+- Force admin and run:
+  - PowerShell: `$env:FORCE_ADMIN='1'; dotnet run --project ClinicaLongevidadApp.csproj --configuration Debug`
+- Enable workers locally:
+  - PowerShell: `$env:AUDIT_FORWARD_ENABLED='1'; $env:AUDIT_INTEGRITY_ENABLED='1'; dotnet run --project ClinicaLongevidadApp.csproj --configuration Debug`
+
+Notes:
+- Reports and diagnostics redact `Detalles` by default to avoid leaking sensitive payloads; enable inclusion only in trusted environments.
+- The audit table is protected by SQLite triggers to enforce append-only behavior (UPDATE/DELETE are aborted).
 
