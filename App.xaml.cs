@@ -74,7 +74,21 @@ namespace ClinicaLongevidadApp
                 try { forwarder = new WebhookForwarder(keyProvider); } catch { forwarder = null; }
             }
 
-            AuditoriaService = new AuditoriaService(connectionString, keyProvider, exporter, forwarder);
+            try
+            {
+                AuditoriaService = new AuditoriaService(connectionString, keyProvider, exporter, forwarder);
+                if (AuditoriaService != null && !AuditoriaService.IsInitialized)
+                {
+                    LogService.Error("App", "AuditoriaService failed to initialize correctly; auditing disabled for this session.");
+                    AuditoriaService = null; // avoid using a partially-initialized instance
+                }
+            }
+            catch (Exception ex)
+            {
+                // Fail-safe: do not allow exceptions during audit service construction to stop the app.
+                try { LogService.Error("App", "Exception while creating AuditoriaService", ex); } catch { }
+                AuditoriaService = null;
+            }
 
             // Enforce Key Vault in production/staging when explicitly required.
             // If REQUIRE_KEYVAULT=1 is set, fail fast when KEYVAULT_URI is not configured.
