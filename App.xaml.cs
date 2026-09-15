@@ -111,14 +111,25 @@ namespace ClinicaLongevidadApp
             try
             {
                 var forwardEnabled = string.Equals(Environment.GetEnvironmentVariable("AUDIT_FORWARD_ENABLED"), "1", StringComparison.OrdinalIgnoreCase);
-                if (forwardEnabled && (forwarder != null || exporter != null) && AuditoriaService?.IsInitialized == true)
+                LogService.Info("App", $"AUDIT_FORWARD_ENABLED={(forwardEnabled ? "1" : "0")}");
+
+                if (!forwardEnabled)
                 {
-                    var forwardQueueWorker = new AuditForwardQueueWorker(connectionString, forwarder, exporter, 30);
-                    Current.Properties["AuditForwardQueueWorker"] = forwardQueueWorker;
+                    LogService.Info("App", "Audit forward queue worker disabled by AUDIT_FORWARD_ENABLED flag");
+                }
+                else if (AuditoriaService == null || AuditoriaService.IsInitialized == false)
+                {
+                    LogService.Warning("App", "Audit forward queue worker not started because AuditoriaService is not available or failed to initialize");
+                }
+                else if (forwarder == null && exporter == null)
+                {
+                    LogService.Info("App", "Audit forward queue worker not started because no forwarder or exporter is configured (AUDIT_WEBHOOK_URL or storage connection missing)");
                 }
                 else
                 {
-                    LogService.Info("App", "Audit forward queue worker not started (opt-in disabled or no forwarder/exporter configured)");
+                    var forwardQueueWorker = new AuditForwardQueueWorker(connectionString, forwarder, exporter, 30);
+                    Current.Properties["AuditForwardQueueWorker"] = forwardQueueWorker;
+                    LogService.Info("App", "Audit forward queue worker started (opt-in enabled and forwarder/exporter available)");
                 }
             }
             catch (Exception ex)
@@ -156,7 +167,17 @@ namespace ClinicaLongevidadApp
             try
             {
                 var integrityEnabled = string.Equals(Environment.GetEnvironmentVariable("AUDIT_INTEGRITY_ENABLED"), "1", StringComparison.OrdinalIgnoreCase);
-                if (integrityEnabled && AuditoriaService?.IsInitialized == true)
+                LogService.Info("App", $"AUDIT_INTEGRITY_ENABLED={(integrityEnabled ? "1" : "0")}");
+
+                if (!integrityEnabled)
+                {
+                    LogService.Info("App", "AuditoriaIntegrityWorker disabled by AUDIT_INTEGRITY_ENABLED flag");
+                }
+                else if (AuditoriaService == null || !AuditoriaService.IsInitialized)
+                {
+                    LogService.Warning("App", "AuditoriaIntegrityWorker not started because AuditoriaService is not available or failed to initialize");
+                }
+                else
                 {
                     var integrityWorker = new AuditoriaIntegrityWorker(AuditoriaService, TimeSpan.FromMinutes(60));
 
@@ -220,10 +241,7 @@ namespace ClinicaLongevidadApp
                     integrityWorker.Start();
                     // store in App properties for shutdown
                     Current.Properties["AuditoriaIntegrityWorker"] = integrityWorker;
-                }
-                else
-                {
-                    LogService.Info("App", "AuditoriaIntegrityWorker not started (opt-in disabled or AuditoriaService missing)");
+                    LogService.Info("App", "AuditoriaIntegrityWorker started (opt-in enabled)");
                 }
             }
             catch (Exception ex)
