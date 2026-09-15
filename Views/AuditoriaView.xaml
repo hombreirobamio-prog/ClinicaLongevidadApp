@@ -366,6 +366,17 @@
                             VerticalContentAlignment="Center"
                             Margin="5,5,0,5"/>
 
+                    <Button Content="Generar diagnóstico"
+                            Click="BtnGenerarDiagnostico_Click"
+                            Style="{StaticResource EstiloBotonSecundario}"
+                            Width="160"
+                            Height="50"
+                            Padding="0"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            Margin="5"
+                            Visibility="{Binding IsAdmin, Converter={StaticResource BoolToVis}}"/>
+
                     <Button Content="Rotar HMAC"
                             Command="{Binding RotateHmacCommand}"
                             Style="{StaticResource EstiloBotonSecundario}"

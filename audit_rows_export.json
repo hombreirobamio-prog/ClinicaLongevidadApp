@@ -1,0 +1,1287 @@
+﻿{
+  "Id": 466,
+  "FechaHora": "2026-09-04T01:19:06.5018956\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u0022eb0b04fd8a64459283a63d2b666c7670\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "",
+  "DetallesEnc": ""
+}
+{
+  "Id": 467,
+  "FechaHora": "2026-09-04T01:32:33.2407113\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002292756dfdd94245f7964eba645524a6df\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "",
+  "DetallesEnc": ""
+}
+{
+  "Id": 468,
+  "FechaHora": "2026-09-04T01:33:05.6607342\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002292756dfdd94245f7964eba645524a6df\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "",
+  "DetallesEnc": ""
+}
+{
+  "Id": 469,
+  "FechaHora": "2026-09-04T01:38:35.2440818\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u0022f2ce68e800074a4b913e01d26133a777\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "",
+  "DetallesEnc": ""
+}
+{
+  "Id": 470,
+  "FechaHora": "2026-09-04T01:39:18.2457293\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u0022f2ce68e800074a4b913e01d26133a777\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "",
+  "DetallesEnc": ""
+}
+{
+  "Id": 471,
+  "FechaHora": "2026-09-04T19:27:39.0540168\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.FallidoCredenciales",
+  "Modulo": "Login",
+  "Resultado": "ERROR",
+  "Detalles": "{\u0022Rol\u0022:\u0022\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002222b5eaef40ba4a87ac336efa2a131e4d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022UsuarioIntentado\u0022:\u0022ADMIN\u0022}",
+  "DetallesPlain": "",
+  "DetallesEnc": ""
+}
+{
+  "Id": 472,
+  "FechaHora": "2026-09-04T19:27:51.0897433\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.FallidoCredenciales",
+  "Modulo": "Login",
+  "Resultado": "ERROR",
+  "Detalles": "{\u0022Rol\u0022:\u0022\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002222b5eaef40ba4a87ac336efa2a131e4d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022UsuarioIntentado\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "",
+  "DetallesEnc": ""
+}
+{
+  "Id": 473,
+  "FechaHora": "2026-09-04T19:27:58.2105347\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002222b5eaef40ba4a87ac336efa2a131e4d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "",
+  "DetallesEnc": ""
+}
+{
+  "Id": 474,
+  "FechaHora": "2026-09-04T19:50:53.2381306\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.BloqueoInactividad",
+  "Modulo": "Seguridad",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002222b5eaef40ba4a87ac336efa2a131e4d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022TimeoutMinutos\u0022:\u002210\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "",
+  "DetallesEnc": ""
+}
+{
+  "Id": 475,
+  "FechaHora": "2026-09-04T19:51:07.9268617\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.DesbloqueoInactividad",
+  "Modulo": "Seguridad",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002222b5eaef40ba4a87ac336efa2a131e4d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022,\u0022Motivo\u0022:\u0022\u0022}",
+  "DetallesPlain": "",
+  "DetallesEnc": ""
+}
+{
+  "Id": 476,
+  "FechaHora": "2026-09-04T20:35:38.8334007\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00229e849eb87d334f8c9cd15aa318f26745\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "",
+  "DetallesEnc": ""
+}
+{
+  "Id": 477,
+  "FechaHora": "2026-09-04T20:35:56.2596257\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00229e849eb87d334f8c9cd15aa318f26745\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "",
+  "DetallesEnc": ""
+}
+{
+  "Id": 478,
+  "FechaHora": "2026-09-04T20:36:08.1321552\u002B02:00",
+  "UsuarioAdmin": "recepcion",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022\u0022,\u0022Area\u0022:\u0022Recepci\\u00F3n\u0022,\u0022SesionId\u0022:\u00229e849eb87d334f8c9cd15aa318f26745\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022recepcion\u0022}",
+  "DetallesPlain": "",
+  "DetallesEnc": ""
+}
+{
+  "Id": 479,
+  "FechaHora": "2026-09-04T20:36:26.0091986\u002B02:00",
+  "UsuarioAdmin": "recepcion",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Recepci\\u00F3n\u0022,\u0022Area\u0022:\u0022Recepci\\u00F3n\u0022,\u0022SesionId\u0022:\u00229e849eb87d334f8c9cd15aa318f26745\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022recepcion\u0022}",
+  "DetallesPlain": "",
+  "DetallesEnc": ""
+}
+{
+  "Id": 480,
+  "FechaHora": "2026-09-05T13:14:38.2980613\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.FallidoCredenciales",
+  "Modulo": "Login",
+  "Resultado": "ERROR",
+  "Detalles": "{\u0022Rol\u0022:\u0022\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00229c0c124b141e4ac995be12c8ce5a2272\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022UsuarioIntentado\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "",
+  "DetallesEnc": ""
+}
+{
+  "Id": 481,
+  "FechaHora": "2026-09-05T13:14:48.1415088\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00229c0c124b141e4ac995be12c8ce5a2272\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "",
+  "DetallesEnc": ""
+}
+{
+  "Id": 482,
+  "FechaHora": "2026-09-05T13:27:14.1501660\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00229c0c124b141e4ac995be12c8ce5a2272\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "",
+  "DetallesEnc": ""
+}
+{
+  "Id": 483,
+  "FechaHora": "2026-09-05T13:29:41.3958401\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002237c368e342714547a28e009c7ec8fdbc\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "",
+  "DetallesEnc": ""
+}
+{
+  "Id": 484,
+  "FechaHora": "2026-09-05T13:40:53.8324288\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002237c368e342714547a28e009c7ec8fdbc\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "",
+  "DetallesEnc": ""
+}
+{
+  "Id": 485,
+  "FechaHora": "2026-09-05T14:00:07.0616525\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00222efb67fec70e48fe92e85a6116989f1d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00222efb67fec70e48fe92e85a6116989f1d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 486,
+  "FechaHora": "2026-09-05T14:04:41.1202759\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00222efb67fec70e48fe92e85a6116989f1d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00222efb67fec70e48fe92e85a6116989f1d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 487,
+  "FechaHora": "2026-09-05T14:04:52.9541296\u002B02:00",
+  "UsuarioAdmin": "recepcion",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Recepci\\u00F3n\u0022,\u0022Area\u0022:\u0022Recepci\\u00F3n\u0022,\u0022SesionId\u0022:\u00222efb67fec70e48fe92e85a6116989f1d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022recepcion\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Recepci\\u00F3n\u0022,\u0022Area\u0022:\u0022Recepci\\u00F3n\u0022,\u0022SesionId\u0022:\u00222efb67fec70e48fe92e85a6116989f1d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022recepcion\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 488,
+  "FechaHora": "2026-09-05T14:06:13.7661573\u002B02:00",
+  "UsuarioAdmin": "recepcion",
+  "Accion": "Paciente.Crear",
+  "Modulo": "Recepci\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Recepci\\u00F3n\u0022,\u0022Area\u0022:\u0022Recepci\\u00F3n\u0022,\u0022SesionId\u0022:\u00222efb67fec70e48fe92e85a6116989f1d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022PacienteId\u0022:\u00220\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Recepci\\u00F3n\u0022,\u0022Area\u0022:\u0022Recepci\\u00F3n\u0022,\u0022SesionId\u0022:\u00222efb67fec70e48fe92e85a6116989f1d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022PacienteId\u0022:\u00220\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 489,
+  "FechaHora": "2026-09-05T14:09:56.3982602\u002B02:00",
+  "UsuarioAdmin": "recepcion",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Recepci\\u00F3n\u0022,\u0022Area\u0022:\u0022Recepci\\u00F3n\u0022,\u0022SesionId\u0022:\u00222efb67fec70e48fe92e85a6116989f1d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022recepcion\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Recepci\\u00F3n\u0022,\u0022Area\u0022:\u0022Recepci\\u00F3n\u0022,\u0022SesionId\u0022:\u00222efb67fec70e48fe92e85a6116989f1d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022recepcion\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 490,
+  "FechaHora": "2026-09-05T14:10:08.6869815\u002B02:00",
+  "UsuarioAdmin": "recepcion",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Recepci\\u00F3n\u0022,\u0022Area\u0022:\u0022Recepci\\u00F3n\u0022,\u0022SesionId\u0022:\u00222efb67fec70e48fe92e85a6116989f1d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022recepcion\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Recepci\\u00F3n\u0022,\u0022Area\u0022:\u0022Recepci\\u00F3n\u0022,\u0022SesionId\u0022:\u00222efb67fec70e48fe92e85a6116989f1d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022recepcion\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 491,
+  "FechaHora": "2026-09-05T14:11:31.1017420\u002B02:00",
+  "UsuarioAdmin": "recepcion",
+  "Accion": "Paciente.Crear",
+  "Modulo": "Recepci\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Recepci\\u00F3n\u0022,\u0022Area\u0022:\u0022Recepci\\u00F3n\u0022,\u0022SesionId\u0022:\u00222efb67fec70e48fe92e85a6116989f1d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022PacienteId\u0022:\u00220\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Recepci\\u00F3n\u0022,\u0022Area\u0022:\u0022Recepci\\u00F3n\u0022,\u0022SesionId\u0022:\u00222efb67fec70e48fe92e85a6116989f1d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022PacienteId\u0022:\u00220\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 492,
+  "FechaHora": "2026-09-05T14:12:40.7979267\u002B02:00",
+  "UsuarioAdmin": "recepcion",
+  "Accion": "Cita.Crear",
+  "Modulo": "Recepci\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Recepci\\u00F3n\u0022,\u0022Area\u0022:\u0022Recepci\\u00F3n\u0022,\u0022SesionId\u0022:\u00222efb67fec70e48fe92e85a6116989f1d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022CitaId\u0022:\u002214\u0022,\u0022PacienteId\u0022:\u00226\u0022,\u0022Profesional\u0022:\u0022Pendiente de asignar\u0022,\u0022Fecha\u0022:\u00222026-09-07\u0022,\u0022Hora\u0022:\u002210:00\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Recepci\\u00F3n\u0022,\u0022Area\u0022:\u0022Recepci\\u00F3n\u0022,\u0022SesionId\u0022:\u00222efb67fec70e48fe92e85a6116989f1d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022CitaId\u0022:\u002214\u0022,\u0022PacienteId\u0022:\u00226\u0022,\u0022Profesional\u0022:\u0022Pendiente de asignar\u0022,\u0022Fecha\u0022:\u00222026-09-07\u0022,\u0022Hora\u0022:\u002210:00\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 493,
+  "FechaHora": "2026-09-05T14:13:50.1653185\u002B02:00",
+  "UsuarioAdmin": "recepcion",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Recepci\\u00F3n\u0022,\u0022Area\u0022:\u0022Recepci\\u00F3n\u0022,\u0022SesionId\u0022:\u00222efb67fec70e48fe92e85a6116989f1d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022recepcion\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Recepci\\u00F3n\u0022,\u0022Area\u0022:\u0022Recepci\\u00F3n\u0022,\u0022SesionId\u0022:\u00222efb67fec70e48fe92e85a6116989f1d\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022recepcion\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 494,
+  "FechaHora": "2026-09-05T14:15:52.3898097\u002B02:00",
+  "UsuarioAdmin": "recepcion",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Recepci\\u00F3n\u0022,\u0022Area\u0022:\u0022Recepci\\u00F3n\u0022,\u0022SesionId\u0022:\u002248d19a11ac854bf1b3ccb17bd52995e3\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022recepcion\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Recepci\\u00F3n\u0022,\u0022Area\u0022:\u0022Recepci\\u00F3n\u0022,\u0022SesionId\u0022:\u002248d19a11ac854bf1b3ccb17bd52995e3\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022recepcion\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 495,
+  "FechaHora": "2026-09-05T14:17:43.6566260\u002B02:00",
+  "UsuarioAdmin": "recepcion",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Recepci\\u00F3n\u0022,\u0022Area\u0022:\u0022Recepci\\u00F3n\u0022,\u0022SesionId\u0022:\u002248d19a11ac854bf1b3ccb17bd52995e3\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022recepcion\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Recepci\\u00F3n\u0022,\u0022Area\u0022:\u0022Recepci\\u00F3n\u0022,\u0022SesionId\u0022:\u002248d19a11ac854bf1b3ccb17bd52995e3\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022recepcion\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 496,
+  "FechaHora": "2026-09-05T14:25:22.0869496\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00222a4006d835384c43bf9eb5af5a73d3a6\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00222a4006d835384c43bf9eb5af5a73d3a6\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 497,
+  "FechaHora": "2026-09-05T18:14:22.6961201\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00225578d0d3728b49c390307e87b468b9f8\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00225578d0d3728b49c390307e87b468b9f8\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 498,
+  "FechaHora": "2026-09-05T16:15:30.5168748Z",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.HMAC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00225578d0d3728b49c390307e87b468b9f8\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00225578d0d3728b49c390307e87b468b9f8\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 499,
+  "FechaHora": "2026-09-05T16:17:04.9877263Z",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.HMAC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00225578d0d3728b49c390307e87b468b9f8\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00225578d0d3728b49c390307e87b468b9f8\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 500,
+  "FechaHora": "2026-09-05T16:19:15.0242505Z",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.ENC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00225578d0d3728b49c390307e87b468b9f8\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00225578d0d3728b49c390307e87b468b9f8\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": "3Jd5lkWGqqpxjgsiYVIQxumRj0ITGrDudhsCSHVaNkomMQ7dKi8qO9by46AeaMzNszP8W9IaRE/8ZLrl1QdWI8/GgXwY\u002BnHs8Z8Hz\u002B6WxTKTlKfVtc\u002BjQHV458vMdXUaZqshiNkvrEJNoDB55ux7Wfg8f022TT1/mdL3L0L/YEECCasLb1XLHnvh3QYBEsaqQcs73LaCDyKpXvwIgsUnGoo/uw5c2v\u002BdxCerAA4BgAgZoB5BZfuIeUj\u002B64gJPNIQ"
+}
+{
+  "Id": 501,
+  "FechaHora": "2026-09-05T16:22:44.7069740Z",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.HMAC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00225578d0d3728b49c390307e87b468b9f8\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00225578d0d3728b49c390307e87b468b9f8\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": "QPiZDmksXtsYVNnDq1iB1HJP98UOy3z\u002B8qCJn7v4qGDLfwLiJqJ/DiM7iw5Hniup5\u002Ba6haY2GmN9YggJl4K7M4oSewsUDCBAXKZX/oE2HY0dNLaNkYpxzM9dWW5jC4oKegRTDt404ADu6sQs\u002B/Mn2YjU89rEcZyMeYDYlgyPklfGJZRrRHpiQvOLzLDb4UJzJrgd6Z0RB/grxxTmgceLo3FuFU8Mp1NFS2AAi6MIIgepwf95DYkgWY0q7oYNuLAf"
+}
+{
+  "Id": 502,
+  "FechaHora": "2026-09-05T18:24:50.3713295\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00225578d0d3728b49c390307e87b468b9f8\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00225578d0d3728b49c390307e87b468b9f8\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": "3yPutiHa53kl5763thHdigORGKPsMA8kBVovohr/rCW8Vb3q8Y3W9gKhEiJwsRwQlf5Ojc/eFHuTwiS0o8jvtMY0luCQViiEwj0NKH\u002Bk6l8GePxtpj7exWeD1PKEgXlg0L/OP84WiILiXgwWdFwgaI6AM/vyz65Kl8sizbT4e72TACAMHVyrIjVaVkJH5kO7f4tnoy\u002B3wRnfE3J9XaACBthZPQVBrYRYiy6n5LyfLalWANMZ4yskVfUca6Tlt2fn"
+}
+{
+  "Id": 503,
+  "FechaHora": "2026-09-05T18:26:20.3182268\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 504,
+  "FechaHora": "2026-09-05T16:26:30.8031658Z",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.HMAC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 505,
+  "FechaHora": "2026-09-05T16:27:17.9223460Z",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.ENC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": "sge9jv8MD9km8jg8E9EPceNK2hTL4sdCxVAl7i2gzG22EPxMrvUi43spgN\u002BZF356CHBKcteT4R93LCFKuxHhCV3V1zYZhmYilYPEJT6Ir4U0Ymy9DN4eIdIPyW71erABxc3O\u002BgWyZKSvtxV08p\u002BhZ4X4qWtJG2nkv6aBRPIUrLPVmGkrAcIYbydJT4zVMv/mpz9GVYBGsNCwjviwdospXdA5RlYSBeaMVe6yhBKNBEYNtORWUnd0rZky4mCaIZ7A"
+}
+{
+  "Id": 506,
+  "FechaHora": "2026-09-05T16:28:04.5517242Z",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.HMAC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": "FDpY3Tg61Rw8MtEYvKjE3z4EISCnhA/0ZUicFCiVEdlkYuGZLCnF/7fosRHgOoHz\u002B8hmTMmMwoZh8H78Uwql9fTsvxySm4JdU/IKV1Ml4G8AhE2F5S9yAhrW9qLw\u002BW5SZexRXhAgIyEPA6Xcsanji5Iu\u002BTBbiIFs/AX4paF7y8rzY4XYfkgX\u002BlSFhyc1SnpWLzGOhv0NgkvUddNK7Qh4xQ9SvK\u002B9DYRhlK3AQ49H/h3vYSENoTe4YY3pOB/6TeIv"
+}
+{
+  "Id": 507,
+  "FechaHora": "2026-09-05T16:28:34.9328636Z",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.HMAC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": "S3GcMk09Jlhl\u002BFpV4igvbJr6uGQ4sryY0Dg2jYrTurhlsqIAWzD063vkhvliqixp9UWsVtiRGua1YzuOl/yP69K0qHIS0g9FjR6J\u002BjYka8IGUWdy6/4wRt4wvNxEIlu3oAikY6zzuVYy7wotI2HyypG47gxKgc9JLPxJzv/PdFEU1b4MuE6PdjGeA/UzzC8sBkU8T519HOPmr2GsIDkMTVSvHHBMR\u002BVjvvMnr1TGcL0R3j6IdM/3l6RlJ6//eyBP"
+}
+{
+  "Id": 508,
+  "FechaHora": "2026-09-05T16:28:56.1051409Z",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.ENC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": "vNPUcfdvZTUysufc\u002B8N1/MfdzG/ACWrke/ZzQMosIwnG77hsDUkyGoI36gwkUtG0eUEkIfP5g\u002BE5UEmEUSAJgn4pWHJzae8edHK5KsDFrTIX\u002BCRUrxMO5DObZmR2HMdHctxEQaM4VMofO4hCFOkdvkORhiEmR1sOVETn2ZNi0TSdP/vac40jQIBjsm7XHk/1PJzV56jJ\u002BMKsllbX3QDNgruiYnxZZXmouQ8UVsioVBDMPRg5j6Ncahh4unL2O6fM"
+}
+{
+  "Id": 509,
+  "FechaHora": "2026-09-05T16:29:36.8942811Z",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.HMAC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": "2nKkt1rfX606h4YYFERx5WQ67eCwpN33UFCEhVR8lChgkcjqQLp4zGAC2yEMMqI2JoxXP8/NwqWxhdSelqJk6ScjeDZrexG7czff25BKV4R0Vl1A2qxlQKPSRMuhx6SzrUHgZChGvmPFrOf4dLjJrxTDs9pDknXrEQ9flORQWZhmU0Uy8VXgQOw0QuHC3z91/3cf6lv7P2ct/3fSrkAkTgSPFp8DuXt7Sf8mDiGDavlOmqk7GtPZFqZkzm\u002BDIokm"
+}
+{
+  "Id": 510,
+  "FechaHora": "2026-09-05T16:29:45.4885920Z",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.ENC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": "IbyRvnZto5CJC7krx9g2Rijqng4czbOAbRnJVvLRTYecClgnuCG4HDnFReXW11i8P9ry5TDn/zG\u002BslPczfi5XXbgzv91N/3RfPYHPx8WVIGX1nzAzWrxsq1uVKIVk1U6w8lXgdVFljTVdH/gcz2U0junghvxonxu20G\u002B2Mwz3O1ZD85qtk\u002Bxy6UFW2IaCLj\u002B6LOqQMIGl9/WpOMkfoe3/hUeb6Dv8N0QKPElXHsHPJsehLnECpjy/s/Z/dmbOqN8"
+}
+{
+  "Id": 511,
+  "FechaHora": "2026-09-05T18:34:02.3021224\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": "zCukSEZR6UZYPVWt95wOB5x/d91LuJ1308RcGRFz\u002B72g/xokvm1Nkt64nu0XSvitqJv\u002BosX2U8X/ceYRgXRPjOqtaqkCuWBMEvSL\u002B9R9R9B2L9iMZbu0VR8s8B15\u002Buh4pqgmtTYnUpMQ2RBoX0CvrIxTnFx744SykcmApmlRL/q0Ix2cgLcVcAf6G5EKKbGGry68CNVdcgMfpcy6t9M7Q7rk6nBooAksxqrH6WfblhyX0NPgGmXc3EfwBOli5EYO"
+}
+{
+  "Id": 512,
+  "FechaHora": "2026-09-05T18:34:48.3091830\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": "PNiH8WNJfxmQhsgFzfSbSzuoz1UMKwwmhhfLZjkgouaSrE\u002BJwuj/RL9U2iaC/40abvltzbL5xtW1XiQxw1BWYUwj/03Grf\u002Ba6FGVWonv25iKUiyac4\u002BJf4lZgVTsTUXZYmR0zItJmHBMjkM\u002B0uI/pv/Or/I44UiPwbbCN9XhSfysNkfYpQoPdLyfIntsNTn4/5f0ySkJoyyuXi4PWMW5PjUdFlhhtVcOPD6DuIAqKk7XJf9lYMPZNhIPX/Zf8OeP"
+}
+{
+  "Id": 513,
+  "FechaHora": "2026-09-05T16:34:59.2759307Z",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.HMAC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": "kSNVSDscJpsUQvSpdRh5EvzwQlTwZWftErH4HRoV6FLVaPtOLX7SIabDPMgGpzN45YxLfJ5A1HuEUhCmDgXe9XvgxE030QGsZqbFCNlzCS5lPBeA/4UR8H2fqlA9/jkNqNSHSsaDqv0RSL9iCuLWhMRszFkYPn8Ei2GkLlUdULdaZ3Ui5fp6Tdjg5LZMA7aq/4/VBnX6/AozsU3UpsiOAkGqV5x6rI53GltGcCIxjb/iAKkFQazZ7d1UC/648CjT"
+}
+{
+  "Id": 514,
+  "FechaHora": "2026-09-05T16:35:16.5016625Z",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.ENC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": "eQAQNQ6IR10QK3i4dC0bFO50F8Q8Y67Kn8PkKxJSw6VrueJRtVIIiEXcIACkXvTs9nRLibWE6tTJbGJjYgxAaMxZVDV\u002B8GQ9\u002BJy8IrjWyqf5MEWKntAzbzcmBiXXCnmLUY1\u002Bg/yDtBbhC\u002Bikkyo8otd6g3RnEOoZRYn86\u002BJvdmyCVQ81weYNzPZj9l3MVf1vFS6TzI1l5ZP0dnnlPtQZe/OlXJHbdsdedUVpxJPXZ72Cc2jnkDZKox05u3iNhsFL"
+}
+{
+  "Id": 515,
+  "FechaHora": "2026-09-05T18:36:21.8987687\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002293fe85d9ba574790bce28fe63976c210\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": "SlIhsJtgHNSHnNrKmK9b7JnJMHXzyTVqWVFsCy2UhUSotilTveZe8Bvr0XRDdzEgAfLiXdZCYQXaeBcsfEIsbEj\u002BMak4h4kdO6oDO59vuzyFnlBIuEnEbpa2TK3qehQKY\u002B51t\u002BnZfeQsGW72gNGNpEkMUvt3V2\u002BnIsdpf89qEDr\u002B9FGulfXuFU\u002BNGvJIArngX95Qq\u002BhBPrdDciTejJCAzs8ABgYuqEYihe4OslNH8BaarvTf3UGmWbilt2qkl3Mr"
+}
+{
+  "Id": 516,
+  "FechaHora": "2026-09-05T18:37:58.8892119\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u0022754df38a9d044b98aaae7294703b5aa7\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u0022754df38a9d044b98aaae7294703b5aa7\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 517,
+  "FechaHora": "2026-09-05T18:39:52.2740579\u002B02:00",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.HMAC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u0022754df38a9d044b98aaae7294703b5aa7\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u0022754df38a9d044b98aaae7294703b5aa7\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 518,
+  "FechaHora": "2026-09-05T18:39:59.5238266\u002B02:00",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.ENC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u0022754df38a9d044b98aaae7294703b5aa7\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u0022754df38a9d044b98aaae7294703b5aa7\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": "USe6FizzYiBjO/Ce2qvii0Vc8Gd8OY1kUtcFSN23dqna3BYMX9jRURwcN1pWOIxPscM17lWNY448HvyD\u002BLVl71gQF2PASZL12LxlvWBqv\u002BISntjAzqhw9tgvolIjoHZS/xkpQ3ZXuPBpFmf6o1HYoz\u002BJSU7unL08FhTtXMetSGxd88O1VoX3p1sFqxoySp4P2ijlZ4O3qLdnYioZoWv3p0eQrUSJmHnxCYGjJvxiDymTASsDLASvnNoI1muXbHr1"
+}
+{
+  "Id": 519,
+  "FechaHora": "2026-09-05T18:51:00.8930431\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002244f0581e7f3e4d31b7a625611f045076\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002244f0581e7f3e4d31b7a625611f045076\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 520,
+  "FechaHora": "2026-09-05T18:51:35.5347860\u002B02:00",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.HMAC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002244f0581e7f3e4d31b7a625611f045076\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002244f0581e7f3e4d31b7a625611f045076\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 521,
+  "FechaHora": "2026-09-05T18:51:42.8801456\u002B02:00",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.HMAC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002244f0581e7f3e4d31b7a625611f045076\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002244f0581e7f3e4d31b7a625611f045076\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 522,
+  "FechaHora": "2026-09-05T19:01:31.9319118\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002244f0581e7f3e4d31b7a625611f045076\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002244f0581e7f3e4d31b7a625611f045076\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 523,
+  "FechaHora": "2026-09-05T19:01:47.5257517\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.FallidoCredenciales",
+  "Modulo": "Login",
+  "Resultado": "ERROR",
+  "Detalles": "{\u0022Rol\u0022:\u0022\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002244f0581e7f3e4d31b7a625611f045076\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022UsuarioIntentado\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002244f0581e7f3e4d31b7a625611f045076\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022UsuarioIntentado\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 524,
+  "FechaHora": "2026-09-05T19:01:53.7069902\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002244f0581e7f3e4d31b7a625611f045076\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002244f0581e7f3e4d31b7a625611f045076\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 525,
+  "FechaHora": "2026-09-05T19:05:52.9237165\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.FallidoCredenciales",
+  "Modulo": "Login",
+  "Resultado": "ERROR",
+  "Detalles": "{\u0022Rol\u0022:\u0022\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u0022ec886f2e83824a33ab7d9cb458ec0407\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022UsuarioIntentado\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u0022ec886f2e83824a33ab7d9cb458ec0407\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022UsuarioIntentado\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 526,
+  "FechaHora": "2026-09-05T19:06:04.4715938\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u0022ec886f2e83824a33ab7d9cb458ec0407\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u0022ec886f2e83824a33ab7d9cb458ec0407\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 527,
+  "FechaHora": "2026-09-05T19:25:22.7319535\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002273a3851665064e7e9c4e5ddd1b019dda\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002273a3851665064e7e9c4e5ddd1b019dda\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 528,
+  "FechaHora": "2026-09-05T19:25:33.2402548\u002B02:00",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.HMAC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002273a3851665064e7e9c4e5ddd1b019dda\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002273a3851665064e7e9c4e5ddd1b019dda\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 529,
+  "FechaHora": "2026-09-05T19:25:36.5123882\u002B02:00",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.ENC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002273a3851665064e7e9c4e5ddd1b019dda\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002273a3851665064e7e9c4e5ddd1b019dda\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": "hKqkPaL0SaQZB0YyTxanYupBp0AAAnscFnYx3lFb6UlP9VQqz6aJZc6whxj7lrbshCGDTM94gY5kQOuxMTg4WEUiYbpbo/KQKlFBgAVuB\u002BKex\u002BoKxeROP/5B9KOXrA2RdrQIbSc4Qm0\u002BMQX2N28IhD30cEX7JfezAz5F04NGwkFRAOHRUUh5IU3cMZJx2gA2Rsr5gNcoaNePv5B//cR1xzFyCZzeV6\u002BUqIQNo42sg27H18602yrlWdz3cZHo5Iyv"
+}
+{
+  "Id": 530,
+  "FechaHora": "2026-09-05T19:30:45.1557123\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002273a3851665064e7e9c4e5ddd1b019dda\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u002273a3851665064e7e9c4e5ddd1b019dda\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": "SDrifg5K4DMe5Zm\u002BFI4yXwIHuBdyeACDWJkGCDpSqTu/0w/416YhPn0kHs5DGQ2hTo9FrJ8GQRkN9u/jR8INzOhjg7o/yZgidzNAVMosV46UvpxzVwoXTJLesqIuCqvPxeeOY0qhzjI12S3p5GpJndpSuvQCVIEcYoEnt6mSygpxgyzU8BiZDIhfLGXnWpoLPlanLi5f2A6dbGRQkMikyr3FmH23wmHbatK6ODrymGm0RLjepf\u002BUJfvTwR2YtM9z"
+}
+{
+  "Id": 531,
+  "FechaHora": "2026-09-05T19:37:02.7307333\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00221cd9da0893cd49b292905c78d267815e\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00221cd9da0893cd49b292905c78d267815e\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 532,
+  "FechaHora": "2026-09-05T19:37:11.4125687\u002B02:00",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.HMAC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00221cd9da0893cd49b292905c78d267815e\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00221cd9da0893cd49b292905c78d267815e\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 533,
+  "FechaHora": "2026-09-05T19:37:13.8959973\u002B02:00",
+  "UsuarioAdmin": "System",
+  "Accion": "KeyRotation.ENC",
+  "Modulo": "Auditor\u00EDa",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00221cd9da0893cd49b292905c78d267815e\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00221cd9da0893cd49b292905c78d267815e\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022KeySize\u0022:\u002232\u0022}",
+  "DetallesEnc": "MRq\u002BRigtJgjydpPJTQRye9OyQ5yybYPI1eXueEDuCbTKqH4qbfgGIj8mlmquTiVlFhMn88S3tFvmWszIYllw2hxU87vsuzg6DESQAvgunRprh5m2LBQbINPafZHwPMcSHMKBmeuK4wFj96BxbhTMe6eLkipyoaC\u002BoZK5F4RDqEDjoPO1ZJNLd\u002Bl3jZBBxpcL3/G8RJFKD3\u002BKdI9P82I92PgLwWLFg8VlxIpazTRAboK8Fu\u002B26AizpSjGu8XhOzAj"
+}
+{
+  "Id": 534,
+  "FechaHora": "2026-09-05T19:37:17.8174028\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00221cd9da0893cd49b292905c78d267815e\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00221cd9da0893cd49b292905c78d267815e\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": "0pdXxBnHa1DrPa01ld4v8\u002BVSBu2UiNaq6vjX5mJxBovo64WaUhp8vAfz8tZqbwJ7Z\u002Bl\u002BascVvVWo7JV\u002BR/XV7cGcGAkAgb6/\u002B98OXWRmirhnZfUBybaviOhYii8mtvCfzLp4L\u002BehBaQ9dyeDeBTrzbwnUXYLjbPwwCOqgcsUxpRg5zBOi4sQ2LYzPFfUbOSLcisxzVFuhp1gmXBlsHSLLsLbIEPPd/s4Nwi/Q1Bg\u002Bau/guGMK1RObpUhSiOZCzGE"
+}
+{
+  "Id": 535,
+  "FechaHora": "2026-09-07T00:24:52.3793929\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "true",
+  "Detalles": "",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 536,
+  "FechaHora": "2026-09-07T00:25:18.7883314\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "true",
+  "Detalles": "",
+  "DetallesPlain": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 537,
+  "FechaHora": "2026-09-07T17:44:31.2767187\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00225ab7370c78794471b2964a78b0826541\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00225ab7370c78794471b2964a78b0826541\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 538,
+  "FechaHora": "2026-09-07T17:46:26.8181117\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00225ab7370c78794471b2964a78b0826541\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Rol\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022SesionId\u0022:\u00225ab7370c78794471b2964a78b0826541\u0022,\u0022Equipo\u0022:\u0022DESKTOP-6TIG8MA\u0022,\u0022VersionApp\u0022:\u00220.0.0.0\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 539,
+  "FechaHora": "2026-09-07T22:15:28.4372606\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 540,
+  "FechaHora": "2026-09-07T22:16:01.7940434\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesPlain": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 541,
+  "FechaHora": "2026-09-07T22:19:46.9438707\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 542,
+  "FechaHora": "2026-09-07T22:24:36.7018530\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesPlain": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 543,
+  "FechaHora": "2026-09-07T22:33:55.5616949\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 544,
+  "FechaHora": "2026-09-07T22:34:10.4437606\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesPlain": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 545,
+  "FechaHora": "2026-09-07T22:36:27.6966780\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 546,
+  "FechaHora": "2026-09-07T22:37:56.1037281\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesPlain": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 547,
+  "FechaHora": "2026-09-07T22:43:19.1295538\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 548,
+  "FechaHora": "2026-09-07T22:44:29.7042399\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesPlain": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 549,
+  "FechaHora": "2026-09-07T22:45:07.3530007\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 550,
+  "FechaHora": "2026-09-07T23:11:55.1163886\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 551,
+  "FechaHora": "2026-09-07T23:16:51.6136996\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesPlain": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 552,
+  "FechaHora": "2026-09-07T23:19:29.6612865\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 553,
+  "FechaHora": "2026-09-08T00:25:50.9445730\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 554,
+  "FechaHora": "2026-09-08T00:30:45.8987725\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesPlain": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 555,
+  "FechaHora": "2026-09-08T00:31:36.4026486\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 556,
+  "FechaHora": "2026-09-08T00:32:59.1898721\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesPlain": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 557,
+  "FechaHora": "2026-09-08T17:56:42.0555222\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 558,
+  "FechaHora": "2026-09-08T18:00:29.0557123\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesPlain": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 559,
+  "FechaHora": "2026-09-08T18:03:08.7606151\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 560,
+  "FechaHora": "2026-09-08T18:07:16.1882829\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesPlain": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 561,
+  "FechaHora": "2026-09-08T18:07:25.5445231\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 562,
+  "FechaHora": "2026-09-08T18:07:51.3239098\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 563,
+  "FechaHora": "2026-09-08T18:11:29.3454947\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesPlain": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 564,
+  "FechaHora": "2026-09-08T18:13:10.3914896\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 565,
+  "FechaHora": "2026-09-08T18:15:04.6997496\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesPlain": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 566,
+  "FechaHora": "2026-09-08T18:15:56.6639192\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 567,
+  "FechaHora": "2026-09-08T18:20:31.7502380\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesPlain": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 568,
+  "FechaHora": "2026-09-08T18:20:53.5238899\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 569,
+  "FechaHora": "2026-09-08T18:31:26.7776915\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesPlain": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 570,
+  "FechaHora": "2026-09-08T18:32:07.9265285\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 572,
+  "FechaHora": "2026-09-08T18:38:44.3902311\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 576,
+  "FechaHora": "2026-09-08T20:07:58.9505547\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 577,
+  "FechaHora": "2026-09-08T20:09:00.2279321\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesPlain": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 578,
+  "FechaHora": "2026-09-08T20:12:24.7684691\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 579,
+  "FechaHora": "2026-09-08T20:14:39.1143723\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesPlain": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 580,
+  "FechaHora": "2026-09-08T20:15:14.1936406\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 581,
+  "FechaHora": "2026-09-08T20:17:22.3367883\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesPlain": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 582,
+  "FechaHora": "2026-09-08T20:19:20.5653815\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 583,
+  "FechaHora": "2026-09-08T20:22:57.7174583\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesPlain": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 584,
+  "FechaHora": "2026-09-08T20:24:28.8959589\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 585,
+  "FechaHora": "2026-09-08T20:31:11.6095770\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Sesion.Cerrar",
+  "Modulo": "Sesi\u00F3n",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesPlain": "{\u0022Usuario\u0022:\u0022admin\u0022,\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022}",
+  "DetallesEnc": ""
+}
+{
+  "Id": 586,
+  "FechaHora": "2026-09-08T20:33:06.1234880\u002B02:00",
+  "UsuarioAdmin": "admin",
+  "Accion": "Login.Correcto",
+  "Modulo": "Login",
+  "Resultado": "OK",
+  "Detalles": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesPlain": "{\u0022Area\u0022:\u0022Administraci\\u00F3n\u0022,\u0022Usuario\u0022:\u0022admin\u0022}",
+  "DetallesEnc": ""
+}

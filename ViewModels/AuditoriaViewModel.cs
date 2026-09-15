@@ -29,6 +29,51 @@ namespace ClinicaLongevidadApp.ViewModels
             set { _registroSeleccionado = value; OnPropertyChanged(nameof(RegistroSeleccionado)); OnPropertyChanged(nameof(DetalleRegistroFormateado)); }
         }
 
+        private void CopySesionId()
+        {
+            try
+            {
+                var text = RegistroSeleccionado?.SesionId ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(text)) return;
+                Application.Current.Dispatcher.Invoke(() => System.Windows.Clipboard.SetText(text));
+                ShowSnackbar("SesionId copiado al portapapeles");
+            }
+            catch { }
+        }
+
+        private void CopyKeyVersions()
+        {
+            try
+            {
+                var kv = (RegistroSeleccionado?.KeyVersion ?? string.Empty) + " / " + (RegistroSeleccionado?.KeyVersionEnc ?? string.Empty);
+                if (string.IsNullOrWhiteSpace(kv)) return;
+                Application.Current.Dispatcher.Invoke(() => System.Windows.Clipboard.SetText(kv));
+                ShowSnackbar("Versiones de clave copiadas al portapapeles");
+            }
+            catch { }
+        }
+
+        private void ShowSnackbar(string message, int seconds = 3)
+        {
+            try
+            {
+                SnackbarMessage = message;
+                SnackbarVisible = true;
+                if (_snackTimer == null)
+                {
+                    _snackTimer = new DispatcherTimer();
+                    _snackTimer.Tick += (s, e) =>
+                    {
+                        SnackbarVisible = false;
+                        _snackTimer?.Stop();
+                    };
+                }
+                _snackTimer.Interval = TimeSpan.FromSeconds(seconds);
+                _snackTimer.Start();
+            }
+            catch { }
+        }
+
         private async System.Threading.Tasks.Task ExportarCsvAsync()
         {
             try
@@ -96,6 +141,27 @@ namespace ClinicaLongevidadApp.ViewModels
                 try { MessageBox.Show("Error exportando CSV: " + ex.Message, "Exportar CSV", MessageBoxButton.OK, MessageBoxImage.Error); } catch { }
             }
         }
+
+        // Clipboard / snackbar helpers
+        public ICommand CopiarSesionIdCommand { get; }
+        public ICommand CopiarKeyVersionsCommand { get; }
+
+        private bool _snackbarVisible;
+        public bool SnackbarVisible
+        {
+            get => _snackbarVisible;
+            set { _snackbarVisible = value; OnPropertyChanged(nameof(SnackbarVisible)); }
+        }
+
+        private string _snackbarMessage = string.Empty;
+        public string SnackbarMessage
+        {
+            get => _snackbarMessage;
+            set { _snackbarMessage = value; OnPropertyChanged(nameof(SnackbarMessage)); }
+        }
+
+        private DispatcherTimer? _snackTimer;
+
 
         public async System.Threading.Tasks.Task CargarUltimosAsync(int limit)
         {
@@ -202,6 +268,11 @@ namespace ClinicaLongevidadApp.ViewModels
         public ICommand RotateHmacCommand { get; }
         public ICommand RotateEncCommand { get; }
         public ICommand ExportarCsvCommand { get; }
+        public ICommand BackupNowCommand { get; }
+        public ICommand ScheduleBackupCommand { get; }
+        public ICommand CancelBackupCommand { get; }
+
+        public string BackupTimeText { get; set; } = "02:00";
 
         public string MensajeError { get; set; } = string.Empty;
         public int Registros => ListaAuditoria.Count;
@@ -247,6 +318,8 @@ namespace ClinicaLongevidadApp.ViewModels
             }
         }
 
+        private Services.BackupService? _backupService;
+
         public AuditoriaViewModel(Services.AuditoriaService? auditoriaService)
         {
             _auditoriaService = auditoriaService;
@@ -274,13 +347,86 @@ namespace ClinicaLongevidadApp.ViewModels
             RotateEncCommand = new RelayCommand(async _ => await RotateEncAsync());
             ExportarCsvCommand = new RelayCommand(async _ => await ExportarCsvAsync());
 
+            BackupNowCommand = new RelayCommand(async _ => await BackupNowAsync());
+            ScheduleBackupCommand = new RelayCommand(_ => ScheduleBackup());
+            CancelBackupCommand = new RelayCommand(_ => CancelScheduledBackup());
+
+            CopiarSesionIdCommand = new RelayCommand(_ => CopySesionId());
+            CopiarKeyVersionsCommand = new RelayCommand(_ => CopyKeyVersions());
+
             // reflect current session admin status in the view model and update on session changes
             Sesion.SessionChanged += () => OnPropertyChanged(nameof(IsAdmin));
         }
 
         public void Cleanup()
         {
-            // Placeholder for cleanup actions (timers, subscriptions)
+            // cleanup backup service if scheduled
+            try { _backupService?.Dispose(); } catch { }
+        }
+
+        private async System.Threading.Tasks.Task BackupNowAsync()
+        {
+            try
+            {
+                string? conn = null;
+                try { conn = Application.Current.Properties["AuditConnectionString"] as string; } catch { }
+                conn ??= Environment.GetEnvironmentVariable("AUDIT_DB") ?? "Data Source=auditoria.db";
+
+                var svc = new Services.BackupService();
+                var path = await System.Threading.Tasks.Task.Run(() => svc.CreateBackup(conn));
+                MessageBox.Show($"Backup creado: {path}", "Copia de seguridad", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                try { MessageBox.Show("Error creando copia: " + ex.Message, "Copia de seguridad", MessageBoxButton.OK, MessageBoxImage.Error); } catch { }
+            }
+        }
+
+        private void ScheduleBackup()
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(BackupTimeText))
+                {
+                    MessageBox.Show("Introduce la hora en formato HH:mm", "Programar copia", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!TimeSpan.TryParseExact(BackupTimeText, "hh\\:mm", System.Globalization.CultureInfo.InvariantCulture, out var ts))
+                {
+                    // try general parse
+                    if (!TimeSpan.TryParse(BackupTimeText, out ts))
+                    {
+                        MessageBox.Show("Formato de hora inválido. Usa HH:mm.", "Programar copia", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+                }
+
+                string? conn = null;
+                try { conn = Application.Current.Properties["AuditConnectionString"] as string; } catch { }
+                conn ??= Environment.GetEnvironmentVariable("AUDIT_DB") ?? "Data Source=auditoria.db";
+
+                _backupService ??= new Services.BackupService();
+                var ok = _backupService.ScheduleDailyBackup(ts, conn);
+                if (ok) MessageBox.Show($"Backup programado a las {ts:hh\\:mm}", "Programar copia", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                try { MessageBox.Show("Error programando copia: " + ex.Message, "Programar copia", MessageBoxButton.OK, MessageBoxImage.Error); } catch { }
+            }
+        }
+
+        private void CancelScheduledBackup()
+        {
+            try
+            {
+                _backupService?.CancelScheduledBackup();
+                try { MessageBox.Show("Copia programada cancelada.", "Cancelar copia", MessageBoxButton.OK, MessageBoxImage.Information); } catch { }
+            }
+            catch (Exception ex)
+            {
+                try { MessageBox.Show("Error cancelando copia: " + ex.Message, "Cancelar copia", MessageBoxButton.OK, MessageBoxImage.Error); } catch { }
+            }
         }
 
         private static Services.IKeyRotationProvider? CreateRotationProvider()
