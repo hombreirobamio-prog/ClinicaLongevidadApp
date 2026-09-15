@@ -23,6 +23,7 @@ jobs:
       run: dotnet restore
 
     - name: Restore tools projects
+      shell: pwsh
       run: |
         Write-Host "Looking for tools projects..."
         $projects = Get-ChildItem -Path tools -Recurse -Filter *.csproj -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
@@ -36,6 +37,7 @@ jobs:
       run: dotnet build --no-restore --configuration Release
 
     - name: Build tools projects
+      shell: pwsh
       run: |
         Write-Host "Looking for tools projects..."
         $projects = Get-ChildItem -Path tools -Recurse -Filter *.csproj -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
