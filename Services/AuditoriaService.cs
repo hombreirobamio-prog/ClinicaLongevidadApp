@@ -130,7 +130,7 @@ END;";
                 }
                 catch (Exception ex)
                 {
-                    try { LogService.Warning("AuditoriaService", "Could not create append-only triggers: " + ex.Message); } catch { }
+                    try { AuditLogHelper.Warning("AuditoriaService", "Could not create append-only triggers: " + ex.Message); } catch { }
                 }
 
                 IntentarAgregarColumna(conn, "Detalles", "TEXT");
@@ -154,7 +154,7 @@ END;";
             }
             catch (Exception ex)
             {
-                try { LogService.Error("AuditoriaService", "Error inicializando AuditoriaService: " + ex); } catch { }
+                try { AuditLogHelper.Error("AuditoriaService", "Error inicializando AuditoriaService: " + ex.Message, ex); } catch { }
                 IsInitialized = false;
             }
         }
