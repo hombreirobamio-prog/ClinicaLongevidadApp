@@ -1,6 +1,7 @@
 namespace ClinicaLongevidadApp.Services.KeyRotation
 {
     using System;
+    using System.Security.Cryptography;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -11,6 +12,18 @@ namespace ClinicaLongevidadApp.Services.KeyRotation
     public class KeyRotationService
     {
         private readonly KeyVaultKeyProvider _kvProvider = new KeyVaultKeyProvider();
+
+        public static byte[] GenerateRandomKey(int bytes)
+        {
+            byte[] key = new byte[bytes];
+            RandomNumberGenerator.Fill(key);
+            return key;
+        }
+
+        public static string GenerateRandomKeyBase64(int bytes)
+        {
+            return Convert.ToBase64String(GenerateRandomKey(bytes));
+        }
 
         /// <summary>
         /// Return the currently active HMAC key version identifier.
@@ -78,10 +91,10 @@ namespace ClinicaLongevidadApp.Services.KeyRotation
         }
 
         /// <summary>
-        /// Rotate the encryption key (AES-GCM) to a new key/version.
-        /// Implement safe re-encryption/backfill procedures when required.
+        /// Apply rotation for the encryption key (AES-GCM). This method currently persists the new key to Key Vault when configured and returns a plan.
+        /// It does not perform re-encryption/backfill of existing rows — that must be implemented separately.
         /// </summary>
-        public async Task RotateEncryptionKeyAsync(byte[] newEncKey, string newVersion)
+        public async Task<RotationPlan> ApplyRotateEncryptionKeyAsync(byte[] newEncKey, string newVersion)
         {
             var oldVersion = _kvProvider.IsConfigured ? await _kvProvider.GetLatestEncryptionKeyVersionAsync() : null;
             string? createdVersion = null;

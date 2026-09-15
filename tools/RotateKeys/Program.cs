@@ -102,12 +102,6 @@ namespace RotateKeysTool
                         return 0;
                     }
                 }
-                else
-                {
-                    PrintUsage();
-                    return 2;
-                }
-                }
                 else if (mode == "backfill")
                 {
                     // backfill preview/apply --db <path> [--batch N] [--dryrun]
@@ -146,6 +140,11 @@ namespace RotateKeysTool
                         return 2;
                     }
                 }
+                else
+                {
+                    PrintUsage();
+                    return 2;
+                }
             }
             catch (NotImplementedException nie)
             {
@@ -163,8 +162,8 @@ namespace RotateKeysTool
         {
             Console.WriteLine("Rotation plan:");
             Console.WriteLine($"  KeyType: {plan.KeyType}");
-            Console.WriteLine($"  OldVersion: {plan.OldVersion ?? \"<unknown>\"}");
-            Console.WriteLine($"  NewVersion: {plan.NewVersion ?? \"<unknown>\"}");
+            Console.WriteLine($"  OldVersion: {plan.OldVersion ?? "<unknown>"}");
+            Console.WriteLine($"  NewVersion: {plan.NewVersion ?? "<unknown>"}");
             Console.WriteLine($"  AffectedRowCountEstimate: {plan.AffectedRowCountEstimate}");
             Console.WriteLine($"  Notes: {plan.Notes}");
         }

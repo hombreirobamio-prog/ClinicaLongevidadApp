@@ -41,5 +41,15 @@ namespace ClinicaLongevidadApp.Tests
             Assert.Equal("v-test-enc", plan.NewVersion);
             Assert.True(plan.AffectedRowCountEstimate >= 0);
         }
+
+        [Fact]
+        public async Task ApplyRotateEncryptionKey_WithoutKeyVault_Throws()
+        {
+            var svc = new KeyRotationService();
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => svc.ApplyRotateEncryptionKeyAsync(new byte[32], "v-test-enc"));
+
+            Assert.Contains("Key Vault is not configured", ex.Message);
+        }
     }
 }
