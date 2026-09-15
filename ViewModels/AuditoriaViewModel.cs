@@ -29,6 +29,68 @@ namespace ClinicaLongevidadApp.ViewModels
             set { _registroSeleccionado = value; OnPropertyChanged(nameof(RegistroSeleccionado)); OnPropertyChanged(nameof(DetalleRegistroFormateado)); }
         }
 
+        private void DumpAdminDebugCsv(IEnumerable<AuditAdminService.AuditRecentDto> rows)
+        {
+            try
+            {
+                var baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "logs");
+                Directory.CreateDirectory(baseDir);
+                var file = Path.Combine(baseDir, $"audit_debug_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
+
+                string Escape(string? s)
+                {
+                    if (s == null) return string.Empty;
+                    var v = s.Replace("\"", "\"\"");
+                    if (v.Contains(';') || v.Contains('"') || v.Contains('\n') || v.Contains('\r'))
+                        return '"' + v + '"';
+                    return v;
+                }
+
+                var sb = new StringBuilder();
+                sb.AppendLine("Id;EventId;FechaHora;UsuarioAdmin;Accion;Modulo;UsuarioAfectado;Resultado;Detalles;DetallesPlain;DetallesEnc;Tipo;Rol;Area;SesionId;Equipo;VersionApp;KeyVersion;KeyVersionEnc");
+                foreach (var r in rows)
+                {
+                    var line = string.Join(";", new string[] {
+                        (r.Id).ToString(),
+                        Escape(r.EventId),
+                        Escape(r.FechaHora),
+                        Escape(r.UsuarioAdmin),
+                        Escape(r.Accion),
+                        Escape(r.Modulo),
+                        Escape(r.UsuarioAfectado),
+                        Escape(r.Resultado),
+                        Escape(r.Detalles),
+                        Escape(r.DetallesPlain),
+                        Escape(r.DetallesEnc),
+                        Escape(r.Tipo),
+                        Escape(r.Rol),
+                        Escape(r.Area),
+                        Escape(r.SesionId),
+                        Escape(r.Equipo),
+                        Escape(r.VersionApp),
+                        Escape(r.KeyVersion),
+                        Escape(r.KeyVersionEnc)
+                    });
+                    sb.AppendLine(line);
+                }
+
+                File.WriteAllText(file, sb.ToString(), Encoding.UTF8);
+                ShowSnackbar($"Audit debug written: {file}", 5);
+            }
+            catch { }
+        }
+
+        private static bool IsBase64(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return false;
+            try
+            {
+                Span<byte> buffer = new byte[s.Length];
+                return Convert.TryFromBase64String(s, buffer, out _);
+            }
+            catch { return false; }
+        }
+
         private void CopySesionId()
         {
             try
@@ -177,23 +239,133 @@ namespace ClinicaLongevidadApp.ViewModels
                 else if (_adminService is not null)
                 {
                     var temp = await System.Threading.Tasks.Task.Run(() => _adminService.GetRecentAudits(limit));
-                    rows = temp.Select(r => new Models.AuditoriaModel
+                    try { DumpAdminDebugCsv(temp); } catch { }
+                    var kp = new LocalKeyProvider();
+                    var list = new List<Models.AuditoriaModel>(temp.Count);
+                    foreach (var r in temp)
                     {
-                        Id = r.Id,
-                        FechaHora = ParseFecha(r.FechaHora),
-                        UsuarioAdmin = r.UsuarioAdmin,
-                        Accion = r.Accion,
-                        Modulo = r.Modulo,
-                        UsuarioAfectado = r.UsuarioAfectado,
-                        Resultado = r.Resultado,
-                        Detalles = string.Empty
-                    }).ToList();
+                        var m = new Models.AuditoriaModel
+                        {
+                            Id = r.Id,
+                            EventId = r.EventId,
+                            FechaHora = ParseFecha(r.FechaHora),
+                            UsuarioAdmin = r.UsuarioAdmin,
+                            Accion = r.Accion,
+                            Modulo = r.Modulo,
+                            UsuarioAfectado = r.UsuarioAfectado,
+                            Resultado = r.Resultado,
+                            Tipo = r.Tipo ?? string.Empty,
+                            Rol = r.Rol ?? string.Empty,
+                            Area = r.Area ?? string.Empty,
+                            SesionId = r.SesionId ?? string.Empty,
+                            Equipo = r.Equipo ?? string.Empty,
+                            VersionApp = r.VersionApp ?? string.Empty,
+                            KeyVersion = r.KeyVersion ?? string.Empty,
+                            KeyVersionEnc = r.KeyVersionEnc ?? string.Empty
+                        };
+
+                        // Prefer explicit plain column
+                        var detallesPlain = string.IsNullOrWhiteSpace(r.DetallesPlain) ? string.Empty : r.DetallesPlain;
+                        var detallesLegacy = string.IsNullOrWhiteSpace(r.Detalles) ? string.Empty : r.Detalles;
+                        var detallesEnc = string.IsNullOrWhiteSpace(r.DetallesEnc) ? string.Empty : r.DetallesEnc;
+
+                        string finalDetalles = detallesPlain;
+
+                        if (string.IsNullOrWhiteSpace(finalDetalles))
+                        {
+                            // if legacy Detalles contains readable text (not base64), use it
+                            if (!string.IsNullOrWhiteSpace(detallesLegacy) && !IsBase64(detallesLegacy))
+                            {
+                                finalDetalles = detallesLegacy;
+                            }
+                            else if (!string.IsNullOrWhiteSpace(detallesEnc) || IsBase64(detallesLegacy))
+                            {
+                                var blob = !string.IsNullOrWhiteSpace(detallesEnc) ? detallesEnc : detallesLegacy;
+                                try
+                                {
+                                    var combined = Convert.FromBase64String(blob);
+                                    // Try to obtain encryption key by version, fall back to current provider key
+                                    byte[]? encKey = null;
+                                    try { encKey = kp.GetEncryptionKeyByVersion(r.KeyVersionEnc); } catch { encKey = null; }
+                                    encKey ??= kp.GetEncryptionKey();
+
+                                    if (encKey != null && encKey.Length > 0)
+                                    {
+                                        // Expect: nonce(12) | tag(16) | cipher
+                                        if (combined.Length > 28)
+                                        {
+                                            var nonce = new byte[12];
+                                            var tag = new byte[16];
+                                            var cipher = new byte[combined.Length - nonce.Length - tag.Length];
+                                            Buffer.BlockCopy(combined, 0, nonce, 0, nonce.Length);
+                                            Buffer.BlockCopy(combined, nonce.Length, tag, 0, tag.Length);
+                                            Buffer.BlockCopy(combined, nonce.Length + tag.Length, cipher, 0, cipher.Length);
+                                            var plain = new byte[cipher.Length];
+                                            try
+                                            {
+                                                using var aesg = new System.Security.Cryptography.AesGcm(encKey);
+                                                aesg.Decrypt(nonce, cipher, tag, plain);
+                                                finalDetalles = Encoding.UTF8.GetString(plain);
+                                            }
+                                            catch
+                                            {
+                                                // decryption failed - fallback to blob text
+                                                finalDetalles = blob;
+                                            }
+                                        }
+                                    }
+                                }
+                                catch
+                                {
+                                    finalDetalles = blob; // fallback
+                                }
+                            }
+                        }
+
+                        m.Detalles = finalDetalles ?? string.Empty;
+
+                        // If metadata fields are still empty, try to extract from the (possibly decrypted) Detalles JSON
+                        try
+                        {
+                            if ((!string.IsNullOrWhiteSpace(m.Detalles) && m.Detalles.TrimStart().StartsWith("{")) &&
+                                (string.IsNullOrWhiteSpace(m.Rol) || string.IsNullOrWhiteSpace(m.Area) || string.IsNullOrWhiteSpace(m.SesionId) || string.IsNullOrWhiteSpace(m.Equipo) || string.IsNullOrWhiteSpace(m.VersionApp)))
+                            {
+                                using var doc = JsonDocument.Parse(m.Detalles);
+                                var root = doc.RootElement;
+                                if (string.IsNullOrWhiteSpace(m.Rol) && root.TryGetProperty("Rol", out var pRol) && pRol.ValueKind == JsonValueKind.String)
+                                    m.Rol = pRol.GetString() ?? m.Rol;
+                                if (string.IsNullOrWhiteSpace(m.Area) && root.TryGetProperty("Area", out var pArea) && pArea.ValueKind == JsonValueKind.String)
+                                    m.Area = pArea.GetString() ?? m.Area;
+                                if (string.IsNullOrWhiteSpace(m.SesionId) && root.TryGetProperty("SesionId", out var pSes) && pSes.ValueKind == JsonValueKind.String)
+                                    m.SesionId = pSes.GetString() ?? m.SesionId;
+                                if (string.IsNullOrWhiteSpace(m.Equipo) && root.TryGetProperty("Equipo", out var pEq) && pEq.ValueKind == JsonValueKind.String)
+                                    m.Equipo = pEq.GetString() ?? m.Equipo;
+                                if (string.IsNullOrWhiteSpace(m.VersionApp) && root.TryGetProperty("VersionApp", out var pVer) && pVer.ValueKind == JsonValueKind.String)
+                                    m.VersionApp = pVer.GetString() ?? m.VersionApp;
+                            }
+                        }
+                        catch { }
+                        list.Add(m);
+                    }
+
+                    rows = list;
                 }
 
                 if (rows != null)
                 {
+                    // Normalize/fallbacks: ensure UI-visible metadata is populated when possible
                     foreach (var model in rows)
                     {
+                        // If Rol is empty but Area has a sensible value, prefer Area as Rol for display
+                        try
+                        {
+                            if (string.IsNullOrWhiteSpace(model.Rol) && !string.IsNullOrWhiteSpace(model.Area))
+                            {
+                                model.Rol = model.Area;
+                            }
+                        }
+                        catch { }
+
                         ListaAuditoria.Add(model);
                     }
                 }
@@ -201,6 +373,18 @@ namespace ClinicaLongevidadApp.ViewModels
                 // Update computed counters and visible types
                 UpdateStats(ListaAuditoria);
                 OnPropertyChanged(nameof(Registros));
+
+                // Quick diagnostic: surface metadata of the first loaded row so we can confirm mapping
+                try
+                {
+                    if (ListaAuditoria.Count > 0)
+                    {
+                        var f = ListaAuditoria[0];
+                        var msg = $"DBG: first row -> Rol='{f.Rol}' Sesion='{f.SesionId}' Equipo='{f.Equipo}' Ver='{f.VersionApp}'";
+                        ShowSnackbar(msg, 6);
+                    }
+                }
+                catch { }
             }
             catch (Exception ex)
             {
@@ -218,15 +402,78 @@ namespace ClinicaLongevidadApp.ViewModels
                 var detalles = r.Detalles ?? string.Empty;
                 try
                 {
-                    // If detalles is JSON, merge metadata into the object and pretty-print
+                    // If detalles is JSON, prefer showing that JSON but also try to surface metadata
                     if (!string.IsNullOrWhiteSpace(detalles) && detalles.TrimStart().StartsWith("{"))
                     {
                         var node = JsonNode.Parse(detalles) as JsonObject ?? new JsonObject();
-                        if (!string.IsNullOrWhiteSpace(r.Rol) && !node.ContainsKey("Rol")) node["Rol"] = r.Rol;
-                        if (!string.IsNullOrWhiteSpace(r.Area) && !node.ContainsKey("Area")) node["Area"] = r.Area;
-                        if (!string.IsNullOrWhiteSpace(r.SesionId) && !node.ContainsKey("SesionId")) node["SesionId"] = r.SesionId;
-                        if (!string.IsNullOrWhiteSpace(r.Equipo) && !node.ContainsKey("Equipo")) node["Equipo"] = r.Equipo;
-                        if (!string.IsNullOrWhiteSpace(r.VersionApp) && !node.ContainsKey("VersionApp")) node["VersionApp"] = r.VersionApp;
+
+                        // If the Detalles JSON already contains metadata keys, prefer those values when the model lacks them
+                        try
+                        {
+                            if (string.IsNullOrWhiteSpace(r.Rol) && node.TryGetPropertyValue("Rol", out var vRol) && vRol is JsonNode jrRol && jrRol.GetValue<string>() is string sRol)
+                                r.Rol = sRol;
+                        }
+                        catch { }
+                        try
+                        {
+                            if (string.IsNullOrWhiteSpace(r.Area) && node.TryGetPropertyValue("Area", out var vArea) && vArea is JsonNode jrArea && jrArea.GetValue<string>() is string sArea)
+                                r.Area = sArea;
+                        }
+                        catch { }
+                        try
+                        {
+                            if (string.IsNullOrWhiteSpace(r.SesionId) && node.TryGetPropertyValue("SesionId", out var vSes) && vSes is JsonNode jrSes && jrSes.GetValue<string>() is string sSes)
+                                r.SesionId = sSes;
+                        }
+                        catch { }
+                        try
+                        {
+                            if (string.IsNullOrWhiteSpace(r.Equipo) && node.TryGetPropertyValue("Equipo", out var vEq) && vEq is JsonNode jrEq && jrEq.GetValue<string>() is string sEq)
+                                r.Equipo = sEq;
+                        }
+                        catch { }
+                        try
+                        {
+                            if (string.IsNullOrWhiteSpace(r.VersionApp) && node.TryGetPropertyValue("VersionApp", out var vVer) && vVer is JsonNode jrVer && jrVer.GetValue<string>() is string sVer)
+                                r.VersionApp = sVer;
+                        }
+                        catch { }
+
+                        // Ensure printed JSON surfaces non-empty metadata from either the JSON or the model.
+                        void MergeMetadata(string key, string? modelVal)
+                        {
+                            try
+                            {
+                                var has = node.ContainsKey(key);
+                                string? jsonVal = null;
+                                if (has)
+                                {
+                                    var jv = node[key];
+                                    if (jv != null)
+                                    {
+                                        try { jsonVal = jv.GetValue<string>(); } catch { jsonVal = jv.ToString(); }
+                                    }
+                                }
+
+                                if (!string.IsNullOrWhiteSpace(modelVal))
+                                {
+                                    // prefer model value when present
+                                    node[key] = modelVal;
+                                }
+                                else if (!has && !string.IsNullOrWhiteSpace(jsonVal))
+                                {
+                                    node[key] = jsonVal;
+                                }
+                            }
+                            catch { }
+                        }
+
+                        MergeMetadata("Rol", r.Rol);
+                        MergeMetadata("Area", r.Area);
+                        MergeMetadata("SesionId", r.SesionId);
+                        MergeMetadata("Equipo", r.Equipo);
+                        MergeMetadata("VersionApp", r.VersionApp);
+
                         return node.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
                     }
                 }
