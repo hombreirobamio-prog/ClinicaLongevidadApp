@@ -233,6 +233,9 @@ namespace ClinicaLongevidadApp.Services
         {
             try
             {
+                // Respect environment flag to avoid writing sensitive "Detalles" payloads into reports by default.
+                var includeDetailsInReport = string.Equals(Environment.GetEnvironmentVariable("AUDIT_INCLUDE_DETAILS_IN_REPORTS"), "1", StringComparison.OrdinalIgnoreCase);
+
                 var errors = VerifyIntegrity();
                 if (errors == null || errors.Count == 0)
                 {
@@ -267,7 +270,17 @@ namespace ClinicaLongevidadApp.Services
                     {
                         string name = reader.GetName(i);
                         object? val = reader.IsDBNull(i) ? null : reader.GetValue(i);
-                        row[name] = val ?? (object)string.Empty;
+                        // Redact details columns unless explicitly enabled via environment variable
+                        if (!includeDetailsInReport && (string.Equals(name, "Detalles", StringComparison.OrdinalIgnoreCase)
+                            || string.Equals(name, "DetallesPlain", StringComparison.OrdinalIgnoreCase)
+                            || string.Equals(name, "DetallesEnc", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            row[name] = "<REDACTED>";
+                        }
+                        else
+                        {
+                            row[name] = val ?? (object)string.Empty;
+                        }
                     }
                     surrounding.Add(row);
                 }
@@ -308,6 +321,9 @@ namespace ClinicaLongevidadApp.Services
         {
             try
             {
+                // By default do not include raw Detalles payload in quick diagnostics CSV to avoid leaking sensitive data.
+                var includeDetailsInDiagnostics = string.Equals(Environment.GetEnvironmentVariable("AUDIT_INCLUDE_DETAILS_IN_DIAGNOSTICS"), "1", StringComparison.OrdinalIgnoreCase);
+
                 var baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "logs");
                 Directory.CreateDirectory(baseDir);
                 var ts = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -362,10 +378,20 @@ namespace ClinicaLongevidadApp.Services
                     sw.WriteLine("Id;FechaHora;UsuarioAdmin;Accion;Modulo;UsuarioAfectado;Resultado;Detalles;DetallesEnc;PrevHash;Hash;Signature;KeyVersion;KeyVersionEnc;Rol;Area;SesionId;Equipo;VersionApp");
                     while (reader.Read())
                     {
-                        string Get(int i) => reader.IsDBNull(i) ? string.Empty : reader.GetValue(i)?.ToString()?.Replace("\r"," ").Replace("\n"," ");
-                        var parts = new string[] {
-                            Get(0), Get(1), Get(2), Get(3), Get(4), Get(5), Get(6), Get(7), Get(8), Get(9), Get(10), Get(11), Get(12), Get(13), Get(14), Get(15), Get(16), Get(17), Get(18)
-                        };
+                    string Get(int i)
+                    {
+                        if (reader.IsDBNull(i)) return string.Empty;
+                        // redact Detalles/DetallesEnc columns unless explicit opt-in
+                        if (!includeDetailsInDiagnostics && (i == 7 || i == 8))
+                        {
+                            return "<REDACTED>";
+                        }
+                        return reader.GetValue(i)?.ToString()?.Replace("\r", " ").Replace("\n", " ") ?? string.Empty;
+                    }
+
+                    var parts = new string[] {
+                        Get(0), Get(1), Get(2), Get(3), Get(4), Get(5), Get(6), Get(7), Get(8), Get(9), Get(10), Get(11), Get(12), Get(13), Get(14), Get(15), Get(16), Get(17), Get(18)
+                    };
                         sw.WriteLine(string.Join(";", parts));
                     }
                 }
