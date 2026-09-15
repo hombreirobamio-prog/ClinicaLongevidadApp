@@ -168,7 +168,7 @@ namespace ClinicaLongevidadApp.Services
             }
             catch (Exception ex)
             {
-                try { LogService.Error("AuditAdminService", "Failed to requeue dead letter", ex); } catch { }
+                try { AuditLogHelper.Error("AuditAdminService", "Failed to requeue dead letter", ex); } catch { }
             }
             return false;
         }
@@ -187,7 +187,7 @@ namespace ClinicaLongevidadApp.Services
             }
             catch (Exception ex)
             {
-                try { LogService.Error("AuditAdminService", "Failed to delete dead letter", ex); } catch { }
+                try { AuditLogHelper.Error("AuditAdminService", "Failed to delete dead letter", ex); } catch { }
             }
             return false;
         }
