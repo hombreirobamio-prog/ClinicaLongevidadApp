@@ -76,6 +76,19 @@ Estado actual:
 - Migración completada de flujos activos a `RegistrarEvento(...)`.
 - Sin usos restantes de `App.AuditoriaService?.Registrar(...)` en código activo.
 
+### Nota: comportamiento en entornos de pruebas y variables de entorno relevantes
+
+- Durante la ejecución de pruebas unitarias la aplicación omite la creación de los triggers "append-only" (los triggers que impiden `UPDATE`/`DELETE` en la tabla `Auditoria`) para permitir que los tests simulen manipulación y escenarios de integridad. La detección de ejecución bajo test se realiza buscando `DOTNET_ENVIRONMENT=Test` o ensamblados de pruebas comunes (xUnit/NUnit/VSTest). En entornos reales los triggers se crean por defecto para reforzar la inmutabilidad.
+
+- Variables de entorno relevantes para el comportamiento de auditoría (resumido):
+  - `REQUIRE_KEYVAULT=1` — exigir Azure Key Vault al inicializar `AuditoriaService` (fallará rápido si no está disponible).
+  - `AUDIT_ALLOW_PLAINTEXT_DETAILS=1` — permitir almacenar `DetallesPlain` en entornos de `Production` cuando sea necesario para diagnósticos.
+  - `AUDIT_INCLUDE_DETAILS_IN_REPORTS=1` — incluir el campo `Detalles` en los informes completos de integridad (por defecto está redactado).
+  - `AUDIT_INCLUDE_DETAILS_IN_DIAGNOSTICS=1` — incluir `Detalles` en los CSV/diagnósticos rápidos (por defecto está redactado).
+  - `AUDIT_INCLUDE_DETAILS_IN_LOGS=1` — permitir que `AuditLogHelper` escriba detalles completos en logs (por defecto `AuditLogHelper` redacta payloads sensibles).
+
+Estas opciones permiten equilibrar seguridad y diagnósticos: por defecto la aplicación minimiza la exposición de `Detalles` y fuerza inmutabilidad en producción, mientras que en entornos de desarrollo/pruebas se relajan ciertas restricciones para facilitar pruebas y depuración.
+
 ### Generar diagnósticos de integridad (administradores)
 
 Para auditores y administradores la aplicación dispone de un flujo profesional para generar diagnósticos de integridad de la cadena de auditoría. Resumen:
