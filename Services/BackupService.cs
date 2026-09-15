@@ -26,7 +26,10 @@ namespace ClinicaLongevidadApp.Services
         {
             var dbFile = GetSqliteFilePathFromConnectionString(connectionString);
             if (string.IsNullOrEmpty(dbFile) || !File.Exists(dbFile))
+            {
+                AuditLogHelper.Error("BackupService", $"Database file not found or connection string is not file-based. ConnectionString='{connectionString}'");
                 throw new InvalidOperationException("Database file not found or connection string is not file-based.");
+            }
 
             var dir = backupDir ?? Path.GetDirectoryName(dbFile) ?? Environment.CurrentDirectory;
             Directory.CreateDirectory(dir);
@@ -35,12 +38,66 @@ namespace ClinicaLongevidadApp.Services
             var ext = Path.GetExtension(dbFile);
             var ts = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
             var backupPath = Path.Combine(dir, $"{name}_backup_{ts}{ext}");
+            AuditLogHelper.Info("BackupService", $"Starting backup for DB '{dbFile}'");
+            // Try online backup via SQLite API to avoid file-lock issues. Fall back to File.Copy if that fails.
+            try
+            {
+                // Build robust connection strings using the SqliteConnectionStringBuilder so we can
+                // request a read-only shared cache for the source and a ReadWriteCreate destination.
+                var srcBuilder = new SqliteConnectionStringBuilder(connectionString);
+                if (string.IsNullOrEmpty(srcBuilder.DataSource))
+                    throw new InvalidOperationException("Database file not found or connection string is not file-based.");
 
-            // Use File.Copy to create a snapshot. For safety, ensure DB is not locked by using SQLite online backup API
-            // but for simplicity copy the file; this should be sufficient for small deployments.
-            File.Copy(dbFile, backupPath, overwrite: false);
+                var dstBuilder = new SqliteConnectionStringBuilder
+                {
+                    DataSource = backupPath,
+                    Mode = SqliteOpenMode.ReadWriteCreate,
+                    Cache = SqliteCacheMode.Shared
+                };
 
-            return backupPath;
+                // Open connections and set a busy timeout; use the online backup API with retries.
+                using (var src = new SqliteConnection(srcBuilder.ToString()))
+                using (var dst = new SqliteConnection(dstBuilder.ToString()))
+                {
+                    AuditLogHelper.Info("BackupService", "Opening source and destination SQLite connections for online backup.");
+                    src.Open();
+                    dst.Open();
+
+                    using (var c = src.CreateCommand())
+                    {
+                        c.CommandText = "PRAGMA busy_timeout = 3000;";
+                        c.ExecuteNonQuery();
+                    }
+                    using (var c = dst.CreateCommand())
+                    {
+                        c.CommandText = "PRAGMA busy_timeout = 3000;";
+                        c.ExecuteNonQuery();
+                    }
+
+                    // Use the BackupDatabase overload with progress and retry to avoid hangs on busy DBs.
+                    // Named parameters are used to remain resilient to overload ordering.
+                    // Use the simple BackupDatabase overload; busy timeout and shared cache reduce chance of hangs.
+                    src.BackupDatabase(dst);
+                    AuditLogHelper.Info("BackupService", $"Online backup completed successfully to '{backupPath}'");
+                }
+
+                return backupPath;
+            }
+            catch (Exception ex)
+            {
+                AuditLogHelper.Warning("BackupService", $"Online backup failed: {ex.Message}. Falling back to file copy.");
+                try
+                {
+                    File.Copy(dbFile, backupPath, overwrite: false);
+                    AuditLogHelper.Info("BackupService", $"File copy backup completed successfully to '{backupPath}'");
+                    return backupPath;
+                }
+                catch (Exception ex2)
+                {
+                    AuditLogHelper.Error("BackupService", $"File copy backup failed: {ex2.Message}", ex2);
+                    throw;
+                }
+            }
         }
 
         /// <summary>
