@@ -17,12 +17,16 @@ namespace GenerateIntegrityTool
                 var conn = $"Data Source={dbPath}";
                 var svc = new AuditoriaService(conn);
 
+                // First produce quick diagnostics (summary + CSV of problematic rows)
+                var quickDir = svc.GenerateQuickDiagnostics();
+
                 var errors = svc.VerifyIntegrity();
 
                 var report = new
                 {
                     GeneratedAt = DateTime.UtcNow.ToString("o"),
                     Database = dbPath,
+                    QuickDiagnosticsPath = quickDir,
                     ErrorCount = errors?.Count ?? 0,
                     Errors = errors
                 };
@@ -30,6 +34,12 @@ namespace GenerateIntegrityTool
                 var options = new JsonSerializerOptions { WriteIndented = true };
                 File.WriteAllText(reportPath, JsonSerializer.Serialize(report, options));
                 Console.WriteLine($"Integrity report written to {reportPath}");
+                if (errors != null && errors.Count > 0)
+                {
+                    Console.Error.WriteLine($"Integrity check failed: {errors.Count} errors found. See {reportPath}.");
+                    return 3;
+                }
+
                 return 0;
             }
             catch (Exception ex)
