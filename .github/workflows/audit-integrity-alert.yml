@@ -1,0 +1,29 @@
+name: Audit Integrity Failure Alert
+
+on:
+  workflow_run:
+    workflows: ["Audit Integrity CI"]
+    types:
+      - completed
+
+jobs:
+  create-issue-on-failure:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub issue for integrity failure
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const run = context.payload.workflow_run;
+            const title = `Audit integrity failure: run #${run.id} on ${run.head_branch}`;
+            const body = `The Audit Integrity CI workflow (run id ${run.id}) failed on ref ${run.head_branch}.
+
+Check the artifacts and logs: ${run.html_url}\n\nAutomated alert created by workflow.`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body
+            });
