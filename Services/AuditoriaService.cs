@@ -96,6 +96,30 @@ namespace ClinicaLongevidadApp.Services
 
                 // no console diagnostics here
 
+                // Create triggers to enforce append-only behavior: prevent UPDATE and DELETE on Auditoria
+                try
+                {
+                    using var trgUpdate = conn.CreateCommand();
+                    trgUpdate.CommandText = @"CREATE TRIGGER IF NOT EXISTS trg_prevent_auditoria_update
+BEFORE UPDATE ON Auditoria
+BEGIN
+  SELECT RAISE(ABORT, 'UPDATE not allowed on Auditoria table');
+END;";
+                    trgUpdate.ExecuteNonQuery();
+
+                    using var trgDelete = conn.CreateCommand();
+                    trgDelete.CommandText = @"CREATE TRIGGER IF NOT EXISTS trg_prevent_auditoria_delete
+BEFORE DELETE ON Auditoria
+BEGIN
+  SELECT RAISE(ABORT, 'DELETE not allowed on Auditoria table');
+END;";
+                    trgDelete.ExecuteNonQuery();
+                }
+                catch (Exception ex)
+                {
+                    try { LogService.Warning("AuditoriaService", "Could not create append-only triggers: " + ex.Message); } catch { }
+                }
+
                 IntentarAgregarColumna(conn, "Detalles", "TEXT");
                 IntentarAgregarColumna(conn, "DetallesPlain", "TEXT");
                 IntentarAgregarColumna(conn, "DetallesEnc", "TEXT");
@@ -557,7 +581,11 @@ namespace ClinicaLongevidadApp.Services
                 // Legacy 'Detalles' will contain the value used for payload (encrypted blob when encryption enabled).
                 var legacyDetalles = (object?)detallesForPayload ?? DBNull.Value;
                 cmd.Parameters.AddWithValue("@d", legacyDetalles);
-                cmd.Parameters.AddWithValue("@dp", (object?)detallesPlain ?? DBNull.Value);
+                // Persist DetallesPlain only when allowed. Avoid storing plaintext in Production unless explicitly enabled.
+                var envName = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? string.Empty;
+                var isProd = string.Equals(envName, "Production", StringComparison.OrdinalIgnoreCase);
+                var allowPlain = !isProd || string.Equals(Environment.GetEnvironmentVariable("AUDIT_ALLOW_PLAINTEXT_DETAILS"), "1", StringComparison.OrdinalIgnoreCase);
+                cmd.Parameters.AddWithValue("@dp", (object?)(allowPlain ? detallesPlain : null) ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@de", (object?)detallesEnc ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@t", evento.Tipo ?? string.Empty);
                 cmd.Parameters.AddWithValue("@rol", evento.Rol ?? string.Empty);
