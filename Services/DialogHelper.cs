@@ -30,7 +30,7 @@ namespace ClinicaLongevidadApp.Services
         {
             if (RunningUnderTest())
             {
-                try { LogService.Info(title, message); } catch { }
+                try { AuditLogHelper.Info(title, message); } catch { }
                 return;
             }
 

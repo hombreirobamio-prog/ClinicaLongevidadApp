@@ -2,6 +2,7 @@ namespace ClinicaLongevidadApp.Services.KeyRotation
 {
     using System;
     using System.Threading.Tasks;
+    using System.Security.Cryptography;
 
     /// <summary>
     /// Scaffold service for key rotation workflows.
@@ -21,7 +22,6 @@ namespace ClinicaLongevidadApp.Services.KeyRotation
             {
                 return await _kvProvider.GetLatestHmacKeyVersionAsync();
             }
-
             return null;
         }
 
@@ -81,7 +81,7 @@ namespace ClinicaLongevidadApp.Services.KeyRotation
         /// Rotate the encryption key (AES-GCM) to a new key/version.
         /// Implement safe re-encryption/backfill procedures when required.
         /// </summary>
-        public async Task RotateEncryptionKeyAsync(byte[] newEncKey, string newVersion)
+        public async Task<RotationPlan> ApplyRotateEncryptionKeyAsync(byte[] newEncKey, string newVersion)
         {
             var oldVersion = _kvProvider.IsConfigured ? await _kvProvider.GetLatestEncryptionKeyVersionAsync() : null;
             string? createdVersion = null;
@@ -124,6 +124,20 @@ namespace ClinicaLongevidadApp.Services.KeyRotation
             };
 
             return plan;
+        }
+
+        // Test/helper utilities
+        public static byte[] GenerateRandomKey(int size)
+        {
+            if (size <= 0) throw new ArgumentOutOfRangeException(nameof(size));
+            var b = new byte[size];
+            RandomNumberGenerator.Fill(b);
+            return b;
+        }
+
+        public static string GenerateRandomKeyBase64(int size)
+        {
+            return Convert.ToBase64String(GenerateRandomKey(size));
         }
     }
 
