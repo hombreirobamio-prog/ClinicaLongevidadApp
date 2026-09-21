@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Timers;
+using System.Text;
 using Microsoft.Data.Sqlite;
 
 namespace ClinicaLongevidadApp.Services
@@ -13,9 +14,51 @@ namespace ClinicaLongevidadApp.Services
     {
         private Timer? _timer;
         private readonly object _sync = new object();
+        private DateTime? _nextRun;
+        // Event fired when a backup has been created. Parameter: full path to created backup file.
+        public event System.Action<string>? BackupCompleted;
+
+        // Internal debug log file to help trace scheduling during development/tests
+        private void WriteDebugLog(string message)
+        {
+            try
+            {
+                var baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "logs");
+                Directory.CreateDirectory(baseDir);
+                var file = Path.Combine(baseDir, "backup.log");
+                var line = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}\r\n";
+                File.AppendAllText(file, line, Encoding.UTF8);
+            }
+            catch { }
+        }
 
         public BackupService()
         {
+        }
+
+        /// <summary>
+        /// Returns the next scheduled run (local time) if any.
+        /// </summary>
+        public DateTime? NextScheduledRun => _nextRun;
+
+        /// <summary>
+        /// Trigger an immediate backup using the same logic as scheduled jobs. Runs synchronously and returns created path or null on failure.
+        /// </summary>
+        public string? TriggerImmediateBackup(string connectionString, string? backupDir = null)
+        {
+            try
+            {
+                var created = CreateBackup(connectionString, backupDir);
+                try { WriteDebugLog($"TriggerImmediateBackup created: {created}"); } catch { }
+                try { BackupCompleted?.Invoke(created); } catch { }
+                return created;
+            }
+            catch (Exception ex)
+            {
+                try { WriteDebugLog($"TriggerImmediateBackup failed: {ex.Message}\n{ex.StackTrace}"); } catch { }
+                AuditLogHelper.Warning("BackupService", $"TriggerImmediateBackup failed: {ex.Message}");
+                return null;
+            }
         }
 
         /// <summary>
@@ -101,9 +144,9 @@ namespace ClinicaLongevidadApp.Services
         }
 
         /// <summary>
-        /// Schedule a daily backup at the specified local time. Returns true if scheduled.
+/// Schedule a daily backup at the specified local time. Returns the next run DateTime (local) if scheduled, or null on failure.
         /// </summary>
-        public bool ScheduleDailyBackup(TimeSpan localTime, string connectionString, string? backupDir = null)
+ public DateTime? ScheduleDailyBackup(TimeSpan localTime, string connectionString, string? backupDir = null)
         {
             lock (_sync)
             {
@@ -114,11 +157,15 @@ namespace ClinicaLongevidadApp.Services
                 if (next <= now) next = next.AddDays(1);
 
                 var msUntil = (next - now).TotalMilliseconds;
+                AuditLogHelper.Info("BackupService", $"Scheduling backup. Next run at {next:yyyy-MM-dd HH:mm:ss} (in {msUntil} ms). backupDir='{backupDir}'");
+                try { WriteDebugLog($"Scheduling backup. Next run at {next:yyyy-MM-dd HH:mm:ss} (in {msUntil} ms). backupDir='{backupDir}'"); } catch { }
                 _timer = new Timer(msUntil);
                 _timer.AutoReset = false;
                 _timer.Elapsed += (s, e) => OnTimerElapsed(localTime, connectionString, backupDir);
                 _timer.Start();
-                return true;
+                // expose next scheduled run
+                try { _nextRun = next; } catch { }
+                return next;
             }
         }
 
@@ -126,32 +173,51 @@ namespace ClinicaLongevidadApp.Services
         {
             try
             {
-                // perform backup
+                AuditLogHelper.Info("BackupService", $"OnTimerElapsed triggered at {DateTime.Now:yyyy-MM-dd HH:mm:ss}. Performing backup.");
+                try { WriteDebugLog($"OnTimerElapsed triggered at {DateTime.Now:yyyy-MM-dd HH:mm:ss}. Performing backup."); } catch { }
+
+                string? created = null;
                 try
                 {
-                    CreateBackup(connectionString, backupDir);
+                    created = CreateBackup(connectionString, backupDir);
+                    if (!string.IsNullOrWhiteSpace(created))
+                    {
+                        try { WriteDebugLog($"Backup created: {created}"); } catch { }
+                        try { BackupCompleted?.Invoke(created); } catch { }
+                    }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // swallow - caller may log
+                    AuditLogHelper.Warning("BackupService", $"OnTimerElapsed: backup failed: {ex.Message}");
                 }
 
                 // schedule next run in 24 hours
                 lock (_sync)
                 {
-                    _timer?.Dispose();
+                    try { _timer?.Dispose(); } catch { }
                     _timer = new Timer(TimeSpan.FromDays(1).TotalMilliseconds);
                     _timer.AutoReset = true;
                     _timer.Elapsed += (s, e) =>
                     {
-                        try { CreateBackup(connectionString, backupDir); } catch { }
+                        try
+                        {
+                            var created2 = CreateBackup(connectionString, backupDir);
+                            if (!string.IsNullOrWhiteSpace(created2))
+                            {
+                                try { WriteDebugLog($"Recurring backup created: {created2}"); } catch { }
+                                try { BackupCompleted?.Invoke(created2); } catch { }
+                            }
+                        }
+                        catch (Exception ex) { AuditLogHelper.Warning("BackupService", $"Recurring backup failed: {ex.Message}"); }
                     };
                     _timer.Start();
+                    AuditLogHelper.Info("BackupService", "Next recurring backup scheduled in 24 hours.");
+                    try { WriteDebugLog("Next recurring backup scheduled in 24 hours."); } catch { }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Ignore scheduling failures
+                AuditLogHelper.Error("BackupService", $"OnTimerElapsed fatal: {ex.Message}", ex);
             }
         }
 
@@ -167,6 +233,36 @@ namespace ClinicaLongevidadApp.Services
         public void Dispose()
         {
             CancelScheduledBackup();
+        }
+
+        /// <summary>
+        /// Restore the SQLite database from a backup file. The current DB will be preserved by creating a .pre_restore timestamp copy.
+        /// </summary>
+        public void RestoreBackup(string backupFilePath, string connectionString)
+        {
+            if (string.IsNullOrWhiteSpace(backupFilePath)) throw new ArgumentNullException(nameof(backupFilePath));
+            if (!File.Exists(backupFilePath)) throw new FileNotFoundException("Backup file not found.", backupFilePath);
+
+            var dbFile = GetSqliteFilePathFromConnectionString(connectionString);
+            if (string.IsNullOrEmpty(dbFile) || !File.Exists(dbFile))
+            {
+                AuditLogHelper.Error("BackupService", $"Cannot restore: target database file not found. ConnectionString='{connectionString}'");
+                throw new InvalidOperationException("Database file not found or connection string is not file-based.");
+            }
+
+            var dir = Path.GetDirectoryName(dbFile) ?? Environment.CurrentDirectory;
+            var name = Path.GetFileNameWithoutExtension(dbFile);
+            var ext = Path.GetExtension(dbFile);
+            var ts = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+            var preRestore = Path.Combine(dir, $"{name}_pre_restore_{ts}{ext}");
+
+            // Preserve current DB
+            File.Copy(dbFile, preRestore, overwrite: false);
+
+            // Copy backup over current DB (overwrite)
+            File.Copy(backupFilePath, dbFile, overwrite: true);
+
+            AuditLogHelper.Info("BackupService", $"Database restored from '{backupFilePath}'. Previous DB saved as '{preRestore}'");
         }
 
         private static string? GetSqliteFilePathFromConnectionString(string connectionString)

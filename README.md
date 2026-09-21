@@ -398,8 +398,31 @@ Si quieres, creo el PR automáticamente con esta documentación y la rama `featu
 
 ## Cierre de sesión (GitHub)
 
-- Fecha: 2026-09-11
 
+## Resumen adicional: trabajo en rama feat/audit-rewrite (síntesis)
+
+Breve resumen de lo realizado durante la reescritura y pruebas del panel de Auditoría y del servicio de copias:
+
+- Se reimplementó `AuditoriaViewModelV2` con comandos de backup (`BackupNowCommand`, `ScheduleOrCancelCommand`, `RestoreBackupCommand`, `TestScheduleInOneMinuteCommand`) y persistencia de la hora programada.
+- `BackupService` ahora ofrece `ScheduleDailyBackup(TimeSpan, ...)` que devuelve la próxima ejecución (`DateTime?`) y `TriggerImmediateBackup(...)` para disparos manuales.
+- Se añadió un temporizador a nivel de VM (`_uiTimer`) para asegurar que la hora introducida en el textbox dispare la misma acción que "Probar 1 min".
+- Forzado el `DataContext` de la vista `AuditoriaView` a la VM V2 y protegido contra reasignaciones externas (evita que el diseñador/runtime use el VM legacy y produzca bindings rotos).
+- Añadidos logs: `%LocalAppData%\\ClinicaLongevidadApp\\logs\\backup.log` (servicio) y `backup_vm.log` (VM) para diagnosticar programación y ejecuciones.
+
+Qué falta / próximos pasos prioritarios:
+
+1. Validar en el entorno del usuario que al pulsar "Programar" la UI actualiza `Próxima copia:` y que se crea la copia en `%LocalAppData%\\ClinicaLongevidadApp\\backups`.
+2. Si la programación no dispara, pegar los contenidos recientes de `backup_vm.log` y `backup.log` y la salida del depurador para investigar.
+3. Eliminar/ajustar MessageBox en ejecuciones automáticas para que las copias programadas sean silenciosas (usar snackbar + log).
+4. Consolidar y limpiar trazas/hacks de transición (code-behind) antes de merge final.
+
+Comandos y ubicaciones útiles para pruebas:
+
+- Forzar copia inmediata desde VM: `BackupNowCommand` (UI) o método `ForceScheduledNow()`/`TriggerImmediateBackup(...)` en el servicio.
+- Logs: `%LocalAppData%\\ClinicaLongevidadApp\\logs\\backup.log`, `%LocalAppData%\\ClinicaLongevidadApp\\logs\\backup_vm.log`.
+- Copias generadas: `%LocalAppData%\\ClinicaLongevidadApp\\backups`.
+
+Si lo prefieres, preparo mañana un pequeño parche para que las copias programadas no abran MessageBox y para añadir más trazas puntuales si la reproducción falla en tu equipo.
 - Objetivo: dejar un resumen claro de lo realizado en la sesión y las tareas pendientes antes de cerrar la sesión del repositorio.
 
 ### Hecho

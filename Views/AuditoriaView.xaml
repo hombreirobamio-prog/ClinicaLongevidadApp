@@ -1,6 +1,11 @@
 <UserControl x:Class="ClinicaLongevidadApp.Views.AuditoriaView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:ClinicaLongevidadApp.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:AuditoriaViewModelV2, IsDesignTimeCreatable=False}"
              Background="{StaticResource Brush_FondoOscuro}"
              VerticalAlignment="Stretch"
              HorizontalAlignment="Stretch">
@@ -311,10 +316,8 @@
                 </Border>
 
                 <!-- BOTONES -->
-                <StackPanel Grid.Row="3"
-                            Orientation="Horizontal"
-                            HorizontalAlignment="Right"
-                            Margin="0,0,0,12">
+                <StackPanel Grid.Row="3" Margin="0,0,0,12">
+                    <WrapPanel HorizontalAlignment="Center">
 
                     <Button Content="Filtrar"
                             Command="{Binding AplicarFiltrosCommand}"
@@ -399,8 +402,19 @@
                             Margin="5"
                             Visibility="{Binding IsAdmin, Converter={StaticResource BoolToVis}}"/>
 
-                    <!-- Backup controls (admin only) -->
-                    <StackPanel Orientation="Horizontal" Margin="10,0,0,0" Visibility="{Binding IsAdmin, Converter={StaticResource BoolToVis}}">
+                    </WrapPanel>
+
+                    <!-- Backup controls are deliberately on their own line: the audit toolbar
+                         can be wider than the window and previously clipped these commands. -->
+                    <Border Margin="5,8,5,0"
+                            Padding="8"
+                            Background="{StaticResource Brush_FondoPanel}"
+                            BorderBrush="{StaticResource Brush_PrincipalVerde}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Visibility="{Binding IsAdmin, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <WrapPanel HorizontalAlignment="Center">
                         <Button Content="Copia ahora"
                                 Command="{Binding BackupNowCommand}"
                                 Style="{StaticResource EstiloBotonSecundario}"
@@ -411,10 +425,28 @@
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="5">
                             <TextBlock Text="Hora copia:" Foreground="{StaticResource Brush_TextoClaro}" VerticalAlignment="Center" Margin="5,0,5,0"/>
                             <TextBox Width="70" Text="{Binding BackupTimeText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Formato HH:mm" />
-                            <Button Content="Programar" Command="{Binding ScheduleBackupCommand}" Style="{StaticResource EstiloBotonSecundario}" Width="100" Height="30" Margin="8,0,0,0" />
-                            <Button Content="Cancelar" Command="{Binding CancelBackupCommand}" Style="{StaticResource EstiloBotonSecundario}" Width="90" Height="30" Margin="8,0,0,0" />
+                            <Button x:Name="BtnToggleSchedule" Content="{Binding ScheduleButtonText}" Command="{Binding ScheduleOrCancelCommand}" ToolTip="Programar/Cancelar copia diaria (formato HH:mm)" Style="{StaticResource EstiloBotonSecundario}" Width="100" Height="30" Margin="8,0,0,0" Foreground="{StaticResource Brush_TextoClaro}" />
+                            <Button x:Name="BtnRestoreBackup" Content="Restaurar copia" Command="{Binding RestoreBackupCommand}" ToolTip="Restaurar desde una copia existente" Style="{StaticResource EstiloBotonSecundario}" Width="120" Height="30" Margin="8,0,0,0" Foreground="{StaticResource Brush_TextoClaro}" />
                         </StackPanel>
-                    </StackPanel>
+
+                                <Button Content="Probar 1 min"
+                            Command="{Binding TestScheduleInOneMinuteCommand}"
+                            Style="{StaticResource EstiloBotonSecundario}"
+                            Width="130"
+                            Height="36"
+                            Padding="0"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            Margin="5"/>
+                            </WrapPanel>
+                            <TextBlock Text="{Binding BackupScheduleStatus}"
+                                       Foreground="{StaticResource Brush_TextoClaro}"
+                                       TextWrapping="Wrap"
+                                       TextAlignment="Center"
+                                       HorizontalAlignment="Center"
+                                       Margin="5,4,5,0"/>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
 
                 <!-- TABLA Y DETALLE -->

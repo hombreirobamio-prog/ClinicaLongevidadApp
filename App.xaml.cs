@@ -277,6 +277,12 @@ namespace ClinicaLongevidadApp
                     Resultado = true,
                     FechaHora = DateTime.Now,
                     Tipo = "Sesion",
+                    // Provide explicit metadata so DB columns are populated for auditors
+                    Rol = Sesion.RolActual ?? string.Empty,
+                    Area = Sesion.AreaActual ?? string.Empty,
+                    SesionId = Sesion.UsuarioActual ?? Guid.NewGuid().ToString("N"),
+                    Equipo = Environment.MachineName ?? string.Empty,
+                    VersionApp = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty,
                     Detalles = AuditoriaDetallesHelper.CrearJson(
                         ("Usuario", usuarioActual ?? string.Empty),
                         ("Area", Sesion.AreaActual ?? string.Empty))

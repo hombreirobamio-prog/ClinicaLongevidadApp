@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Globalization;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -509,6 +510,44 @@ END;";
                 // Prepare plain/encrypted detalles. Encrypt first (if possible) so payload uses encrypted blob when available.
                 string? detallesEnc = null;
                 string? detallesPlain = evento.Detalles;
+
+                // Compute effective metadata (fill from session/environment when not provided by caller)
+                string effectiveRol = !string.IsNullOrWhiteSpace(evento.Rol) ? evento.Rol : (Services.Sesion.RolActual ?? string.Empty);
+                string effectiveArea = !string.IsNullOrWhiteSpace(evento.Area) ? evento.Area : (Services.Sesion.AreaActual ?? string.Empty);
+                string effectiveSesionId = !string.IsNullOrWhiteSpace(evento.SesionId) ? evento.SesionId : SessionIdActual;
+                string effectiveEquipo = !string.IsNullOrWhiteSpace(evento.Equipo) ? evento.Equipo : Environment.MachineName ?? string.Empty;
+                string effectiveVersion = !string.IsNullOrWhiteSpace(evento.VersionApp) ? evento.VersionApp : (System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty);
+
+                // If the plain detalles is a JSON object, merge missing metadata fields into it so
+                // the payload used for hashing/signing and the stored Detalles include contextual data.
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(detallesPlain) && detallesPlain.TrimStart().StartsWith("{"))
+                    {
+                        try
+                        {
+                            var node = JsonNode.Parse(detallesPlain) as JsonObject ?? new JsonObject();
+                            void TrySet(string key, string val)
+                            {
+                                if (string.IsNullOrWhiteSpace(val)) return;
+                                if (!node.ContainsKey(key) || string.IsNullOrWhiteSpace(node[key]?.ToString())) node[key] = val;
+                            }
+
+                            TrySet("Rol", effectiveRol);
+                            TrySet("Area", effectiveArea);
+                            TrySet("SesionId", effectiveSesionId);
+                            TrySet("Equipo", effectiveEquipo);
+                            TrySet("VersionApp", effectiveVersion);
+
+                            detallesPlain = node.ToJsonString();
+                        }
+                        catch
+                        {
+                            // ignore merge failures and leave detallesPlain as-is
+                        }
+                    }
+                }
+                catch { }
                 string? keyVerEnc = null;
                 var encKey = _keyProvider?.GetEncryptionKey();
                 if (encKey != null && encKey.Length > 0 && !string.IsNullOrEmpty(evento.Detalles))
@@ -626,11 +665,11 @@ END;";
                 cmd.Parameters.AddWithValue("@dp", (object?)(allowPlain ? detallesPlain : null) ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@de", (object?)detallesEnc ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@t", evento.Tipo ?? string.Empty);
-                cmd.Parameters.AddWithValue("@rol", evento.Rol ?? string.Empty);
-                cmd.Parameters.AddWithValue("@area", evento.Area ?? string.Empty);
-                cmd.Parameters.AddWithValue("@ses", evento.SesionId ?? string.Empty);
-                cmd.Parameters.AddWithValue("@eq", evento.Equipo ?? string.Empty);
-                cmd.Parameters.AddWithValue("@ver", evento.VersionApp ?? string.Empty);
+                cmd.Parameters.AddWithValue("@rol", effectiveRol ?? string.Empty);
+                cmd.Parameters.AddWithValue("@area", effectiveArea ?? string.Empty);
+                cmd.Parameters.AddWithValue("@ses", effectiveSesionId ?? string.Empty);
+                cmd.Parameters.AddWithValue("@eq", effectiveEquipo ?? string.Empty);
+                cmd.Parameters.AddWithValue("@ver", effectiveVersion ?? string.Empty);
                 cmd.Parameters.AddWithValue("@eid", evento.EventId ?? Guid.NewGuid().ToString("N"));
                 cmd.Parameters.AddWithValue("@prev", prevHash ?? string.Empty);
                 cmd.Parameters.AddWithValue("@hash", hash ?? string.Empty);
