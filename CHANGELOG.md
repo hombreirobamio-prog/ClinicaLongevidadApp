@@ -1,25 +1,39 @@
-# CHANGELOG
+# Changelog
+
+## [audit-rewrite-8684b20] - Merged
+
+### Added
+- Reescritura de `AuditoriaView` y `AuditoriaViewModelV2` con mejoras de UX y controles de backup (Programar, Cancelar, Copia ahora, Restaurar, Probar 1 min).
+
+### Changed
+- UI: ajustes de layout y estilos para evitar solapamientos y texto recortado en `AuditoriaView`.
+
+### Removed
+- `ViewModels/AuditoriaViewModel.cs` (legacy) reemplazado por `AuditoriaViewModelV2`.
+
+Tag: `audit-rewrite-8684b20`
+
+---
 
 ## Unreleased
 
 ### Added
-- Auditor韆 reforzada: EventId, PrevHash/Hash, Signature (HMAC), cifrado de `Detalles` (AES).
+- Auditor铆a reforzada: EventId, PrevHash/Hash, Signature (HMAC), cifrado de `Detalles` (AES).
 - `IKeyProvider` y `AzureKeyVaultKeyProvider` / `LocalKeyProvider`.
 - Exporter a Blob (`BlobAuditExporter`) y forwarder a webhook (`WebhookForwarder`).
-- `AuditoriaIntegrityWorker` para verificaci髇 peri骴ica de integridad.
+- `AuditoriaIntegrityWorker` para verificaci贸n peri贸dica de integridad.
 - `KeyRotationService` y `IKeyRotationProvider` (LocalKeyRotationProvider scaffold).
-- Integraci髇 en `App.xaml.cs` para inicializaci髇 y worker.
-- Tests unitarios para auditor韆 e integridad.
+- Integraci贸n en `App.xaml.cs` para inicializaci贸n y worker.
+- Tests unitarios para auditor铆a e integridad.
 - `RUNBOOK_AUDITORIA.md` y `AUDIT_SETUP.md` con instrucciones operativas.
 
 ### Changed
-- Refactor `PanelRecepcionViewModel` para inyecci髇 de servicios (IPacienteService, ICitaService, IAuditoriaService).
-- A馻didos m閠odos async y mejoras en manejo de UI/Dispatcher.
+- Refactor `PanelRecepcionViewModel` para inyecci贸n de servicios (IPacienteService, ICitaService, IAuditoriaService).
+- A帽adidos m茅todos async y mejoras en manejo de UI/Dispatcher.
 - Workflow CI actualizado para publicar artefactos de cobertura.
 
 ### Fixed
 - Deterministic audit registration and integrity checks.
-
 
 ---
 
