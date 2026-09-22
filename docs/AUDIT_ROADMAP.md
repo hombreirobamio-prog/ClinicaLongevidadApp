@@ -109,3 +109,25 @@ Objetivo: disponer de un subsistema de auditoría que pueda ser revisado por un 
 
 ---
 Actualizado por: GitHub Copilot en la rama `chore/audit-hardening`.
+
+## Backfill: resumen de la sesión reciente
+
+- Fecha: (última sesión)
+- Estado: herramienta `tools/RotateKeys` reparada y verificaciones realizadas.
+
+Hecho:
+- `tools/RotateKeys/RotateKeys.csproj`: alineado TFM y `Microsoft.Data.Sqlite` con la app.
+- `tools/RotateKeys/Program.cs`: corregida la lógica `preview|apply|backfill` y errores de sintaxis.
+- `Services/KeyRotation/KeyRotationService.cs`: añadido `ApplyRotateEncryptionKeyAsync` y helpers `GenerateRandomKey`/`GenerateRandomKeyBase64`.
+- `ClinicaLongevidadApp.csproj`: eliminadas inclusiones accidentales de `tools\*.cs`.
+
+Resultados de ejecución:
+- `dotnet run --project tools/RotateKeys -- backfill preview --db "C:\\Users\\Francisco\\AppData\\Local\\ClinicaLongevidad.db"` → `Backfill preview: 117 rows would be processed.`
+- `dotnet run --project tools/RotateKeys -- backfill apply --db "C:\\Users\\Francisco\\AppData\\Local\\ClinicaLongevidad.db" --dryrun` → `Backfill processed=100 created=0 skipped=0 (dryRun=True)`
+
+Pendiente inmediato:
+- Decidir si ejecutar `backfill apply` real (hacer backup antes).
+- Investigar discrepancia preview (117) vs dry-run (100).
+- Documentar estrategia final en este roadmap (append-only vs re-encrypt).
+
+Ver `docs/BACKFILL_SESSION_SUMMARY.md` para detalles y comandos reproducibles.

@@ -63,7 +63,7 @@ namespace ClinicaLongevidadApp.Services
             catch (Exception ex)
             {
                 // best-effort enqueue; avoid throwing from audit path
-                try { LogService.Error("AuditForwardQueue", "Failed to enqueue audit forward", ex); } catch { }
+                try { AuditLogHelper.Error("AuditForwardQueue", "Failed to enqueue audit forward", ex); } catch { }
             }
         }
 
@@ -141,11 +141,11 @@ namespace ClinicaLongevidadApp.Services
 
                 tran.Commit();
             }
-            catch (Exception ex)
-            {
-                try { tran.Rollback(); } catch { }
-                try { LogService.Error("AuditForwardQueue", "Failed to move row to dead-letter", ex); } catch { }
-            }
+                catch (Exception ex)
+                {
+                    try { tran.Rollback(); } catch { }
+                    try { AuditLogHelper.Error("AuditForwardQueue", "Failed to move row to dead-letter", ex); } catch { }
+                }
         }
 
         public class QueueRow
@@ -210,11 +210,11 @@ namespace ClinicaLongevidadApp.Services
                             {
                                 // Move to dead-letter for manual inspection/archival
                                 _queue.MoveToDeadLetter(row.Id);
-                                LogService.Error("AuditForwardQueueWorker", $"Row {row.Id} moved to dead-letter after {attempts} attempts: {ex.Message}");
+                                AuditLogHelper.Error("AuditForwardQueueWorker", $"Row {row.Id} moved to dead-letter after {attempts} attempts: {ex.Message}");
                             }
                             catch (Exception e)
                             {
-                                try { LogService.Error("AuditForwardQueueWorker", $"Failed to move row {row.Id} to dead-letter: {e.Message}", e); } catch { }
+                                try { AuditLogHelper.Error("AuditForwardQueueWorker", $"Failed to move row {row.Id} to dead-letter: {e.Message}", e); } catch { }
                             }
                         }
                     }
@@ -222,7 +222,7 @@ namespace ClinicaLongevidadApp.Services
             }
             catch (Exception ex)
             {
-                try { LogService.Error("AuditForwardQueueWorker", "Processing failed", ex); } catch { }
+                try { AuditLogHelper.Error("AuditForwardQueueWorker", "Processing failed", ex); } catch { }
             }
         }
 

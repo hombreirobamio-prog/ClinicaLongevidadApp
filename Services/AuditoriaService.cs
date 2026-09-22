@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Globalization;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -23,6 +24,24 @@ namespace ClinicaLongevidadApp.Services
         private readonly IKeyProvider _keyProvider;
         private static readonly string SessionIdActual = Guid.NewGuid().ToString("N");
 
+        private static bool RunningUnderTest()
+        {
+            try
+            {
+                var env = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? string.Empty;
+                if (string.Equals(env, "Test", StringComparison.OrdinalIgnoreCase)) return true;
+                var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+                return assemblies.Any(a =>
+                    (a.FullName ?? string.Empty).IndexOf("xunit", StringComparison.OrdinalIgnoreCase) >= 0
+                    || (a.FullName ?? string.Empty).IndexOf("microsoft.visualstudio.testplatform", StringComparison.OrdinalIgnoreCase) >= 0
+                    || (a.FullName ?? string.Empty).IndexOf("nunit", StringComparison.OrdinalIgnoreCase) >= 0);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private readonly IAuditExporter? _exporter;
         private readonly IWebhookForwarder? _forwarder;
 
@@ -40,6 +59,10 @@ namespace ClinicaLongevidadApp.Services
                 else
                 {
                     var kvUri = Environment.GetEnvironmentVariable("KEYVAULT_URI");
+                    var requireKv = string.Equals(Environment.GetEnvironmentVariable("REQUIRE_KEYVAULT"), "1", StringComparison.OrdinalIgnoreCase);
+                    var envName = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? string.Empty;
+                    var isProd = string.Equals(envName, "Production", StringComparison.OrdinalIgnoreCase);
+
                     if (!string.IsNullOrWhiteSpace(kvUri))
                     {
                         try
@@ -48,12 +71,21 @@ namespace ClinicaLongevidadApp.Services
                         }
                         catch
                         {
-                            // If Azure provider cannot be constructed, fall back to local provider
+                            // If Azure provider cannot be constructed and Key Vault is required for this env, fail fast
+                            if (requireKv || isProd)
+                            {
+                                throw new InvalidOperationException("Azure Key Vault provider could not be initialized and Key Vault is required in this environment.");
+                            }
+                            // Otherwise fall back to local provider for development/testing
                             _keyProvider = new LocalKeyProvider();
                         }
                     }
                     else
                     {
+                        if (requireKv || isProd)
+                        {
+                            throw new InvalidOperationException("KEYVAULT_URI is not configured but Key Vault is required in this environment.");
+                        }
                         _keyProvider = new LocalKeyProvider();
                     }
                 }
@@ -96,6 +128,37 @@ namespace ClinicaLongevidadApp.Services
 
                 // no console diagnostics here
 
+                // Create triggers to enforce append-only behavior: prevent UPDATE and DELETE on Auditoria
+                if (!RunningUnderTest())
+                {
+                    try
+                    {
+                        using var trgUpdate = conn.CreateCommand();
+                        trgUpdate.CommandText = @"CREATE TRIGGER IF NOT EXISTS trg_prevent_auditoria_update
+BEFORE UPDATE ON Auditoria
+BEGIN
+  SELECT RAISE(ABORT, 'UPDATE not allowed on Auditoria table');
+END;";
+                        trgUpdate.ExecuteNonQuery();
+
+                        using var trgDelete = conn.CreateCommand();
+                        trgDelete.CommandText = @"CREATE TRIGGER IF NOT EXISTS trg_prevent_auditoria_delete
+BEFORE DELETE ON Auditoria
+BEGIN
+  SELECT RAISE(ABORT, 'DELETE not allowed on Auditoria table');
+END;";
+                        trgDelete.ExecuteNonQuery();
+                    }
+                    catch (Exception ex)
+                    {
+                        try { AuditLogHelper.Warning("AuditoriaService", "Could not create append-only triggers: " + ex.Message); } catch { }
+                    }
+                }
+                else
+                {
+                    try { AuditLogHelper.Info("AuditoriaService", "Running under test - skipping append-only triggers."); } catch { }
+                }
+
                 IntentarAgregarColumna(conn, "Detalles", "TEXT");
                 IntentarAgregarColumna(conn, "DetallesPlain", "TEXT");
                 IntentarAgregarColumna(conn, "DetallesEnc", "TEXT");
@@ -117,7 +180,7 @@ namespace ClinicaLongevidadApp.Services
             }
             catch (Exception ex)
             {
-                try { LogService.Error("AuditoriaService", "Error inicializando AuditoriaService: " + ex); } catch { }
+                try { AuditLogHelper.Error("AuditoriaService", "Error inicializando AuditoriaService: " + ex.Message, ex); } catch { }
                 IsInitialized = false;
             }
         }
@@ -233,10 +296,13 @@ namespace ClinicaLongevidadApp.Services
         {
             try
             {
+                // Respect environment flag to avoid writing sensitive "Detalles" payloads into reports by default.
+                var includeDetailsInReport = string.Equals(Environment.GetEnvironmentVariable("AUDIT_INCLUDE_DETAILS_IN_REPORTS"), "1", StringComparison.OrdinalIgnoreCase);
+
                 var errors = VerifyIntegrity();
                 if (errors == null || errors.Count == 0)
                 {
-                    LogService.Info("AuditoriaService", "No integrity errors found; diagnostic report not created.");
+                    AuditLogHelper.Info("AuditoriaService", "No integrity errors found; diagnostic report not created.");
                     return string.Empty;
                 }
 
@@ -267,7 +333,17 @@ namespace ClinicaLongevidadApp.Services
                     {
                         string name = reader.GetName(i);
                         object? val = reader.IsDBNull(i) ? null : reader.GetValue(i);
-                        row[name] = val ?? (object)string.Empty;
+                        // Redact details columns unless explicitly enabled via environment variable
+                        if (!includeDetailsInReport && (string.Equals(name, "Detalles", StringComparison.OrdinalIgnoreCase)
+                            || string.Equals(name, "DetallesPlain", StringComparison.OrdinalIgnoreCase)
+                            || string.Equals(name, "DetallesEnc", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            row[name] = "<REDACTED>";
+                        }
+                        else
+                        {
+                            row[name] = val ?? (object)string.Empty;
+                        }
                     }
                     surrounding.Add(row);
                 }
@@ -290,12 +366,12 @@ namespace ClinicaLongevidadApp.Services
                 var options = new JsonSerializerOptions { WriteIndented = true };
                 File.WriteAllText(path, JsonSerializer.Serialize(report, options));
 
-                LogService.Info("AuditoriaService", $"Integrity diagnostic report written to {path}");
+                AuditLogHelper.Info("AuditoriaService", $"Integrity diagnostic report written to {path}");
                 return path;
             }
             catch (Exception ex)
             {
-                LogService.Error("AuditoriaService", "Failed generating integrity diagnostic report.", ex);
+                AuditLogHelper.Error("AuditoriaService", "Failed generating integrity diagnostic report.", ex);
                 return string.Empty;
             }
         }
@@ -308,6 +384,9 @@ namespace ClinicaLongevidadApp.Services
         {
             try
             {
+                // By default do not include raw Detalles payload in quick diagnostics CSV to avoid leaking sensitive data.
+                var includeDetailsInDiagnostics = string.Equals(Environment.GetEnvironmentVariable("AUDIT_INCLUDE_DETAILS_IN_DIAGNOSTICS"), "1", StringComparison.OrdinalIgnoreCase);
+
                 var baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "logs");
                 Directory.CreateDirectory(baseDir);
                 var ts = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -362,10 +441,20 @@ namespace ClinicaLongevidadApp.Services
                     sw.WriteLine("Id;FechaHora;UsuarioAdmin;Accion;Modulo;UsuarioAfectado;Resultado;Detalles;DetallesEnc;PrevHash;Hash;Signature;KeyVersion;KeyVersionEnc;Rol;Area;SesionId;Equipo;VersionApp");
                     while (reader.Read())
                     {
-                        string Get(int i) => reader.IsDBNull(i) ? string.Empty : reader.GetValue(i)?.ToString()?.Replace("\r"," ").Replace("\n"," ");
-                        var parts = new string[] {
-                            Get(0), Get(1), Get(2), Get(3), Get(4), Get(5), Get(6), Get(7), Get(8), Get(9), Get(10), Get(11), Get(12), Get(13), Get(14), Get(15), Get(16), Get(17), Get(18)
-                        };
+                    string Get(int i)
+                    {
+                        if (reader.IsDBNull(i)) return string.Empty;
+                        // redact Detalles/DetallesEnc columns unless explicit opt-in
+                        if (!includeDetailsInDiagnostics && (i == 7 || i == 8))
+                        {
+                            return "<REDACTED>";
+                        }
+                        return reader.GetValue(i)?.ToString()?.Replace("\r", " ").Replace("\n", " ") ?? string.Empty;
+                    }
+
+                    var parts = new string[] {
+                        Get(0), Get(1), Get(2), Get(3), Get(4), Get(5), Get(6), Get(7), Get(8), Get(9), Get(10), Get(11), Get(12), Get(13), Get(14), Get(15), Get(16), Get(17), Get(18)
+                    };
                         sw.WriteLine(string.Join(";", parts));
                     }
                 }
@@ -374,7 +463,7 @@ namespace ClinicaLongevidadApp.Services
             }
             catch (Exception ex)
             {
-                try { LogService.Error("AuditoriaService", "GenerateQuickDiagnostics failed", ex); } catch { }
+                try { AuditLogHelper.Error("AuditoriaService", "GenerateQuickDiagnostics failed", ex); } catch { }
                 return string.Empty;
             }
         }
@@ -421,6 +510,44 @@ namespace ClinicaLongevidadApp.Services
                 // Prepare plain/encrypted detalles. Encrypt first (if possible) so payload uses encrypted blob when available.
                 string? detallesEnc = null;
                 string? detallesPlain = evento.Detalles;
+
+                // Compute effective metadata (fill from session/environment when not provided by caller)
+                string effectiveRol = !string.IsNullOrWhiteSpace(evento.Rol) ? evento.Rol : (Services.Sesion.RolActual ?? string.Empty);
+                string effectiveArea = !string.IsNullOrWhiteSpace(evento.Area) ? evento.Area : (Services.Sesion.AreaActual ?? string.Empty);
+                string effectiveSesionId = !string.IsNullOrWhiteSpace(evento.SesionId) ? evento.SesionId : SessionIdActual;
+                string effectiveEquipo = !string.IsNullOrWhiteSpace(evento.Equipo) ? evento.Equipo : Environment.MachineName ?? string.Empty;
+                string effectiveVersion = !string.IsNullOrWhiteSpace(evento.VersionApp) ? evento.VersionApp : (System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty);
+
+                // If the plain detalles is a JSON object, merge missing metadata fields into it so
+                // the payload used for hashing/signing and the stored Detalles include contextual data.
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(detallesPlain) && detallesPlain.TrimStart().StartsWith("{"))
+                    {
+                        try
+                        {
+                            var node = JsonNode.Parse(detallesPlain) as JsonObject ?? new JsonObject();
+                            void TrySet(string key, string val)
+                            {
+                                if (string.IsNullOrWhiteSpace(val)) return;
+                                if (!node.ContainsKey(key) || string.IsNullOrWhiteSpace(node[key]?.ToString())) node[key] = val;
+                            }
+
+                            TrySet("Rol", effectiveRol);
+                            TrySet("Area", effectiveArea);
+                            TrySet("SesionId", effectiveSesionId);
+                            TrySet("Equipo", effectiveEquipo);
+                            TrySet("VersionApp", effectiveVersion);
+
+                            detallesPlain = node.ToJsonString();
+                        }
+                        catch
+                        {
+                            // ignore merge failures and leave detallesPlain as-is
+                        }
+                    }
+                }
+                catch { }
                 string? keyVerEnc = null;
                 var encKey = _keyProvider?.GetEncryptionKey();
                 if (encKey != null && encKey.Length > 0 && !string.IsNullOrEmpty(evento.Detalles))
@@ -527,18 +654,22 @@ namespace ClinicaLongevidadApp.Services
                 cmd.Parameters.AddWithValue("@m", evento.Modulo ?? string.Empty);
                 cmd.Parameters.AddWithValue("@ua", evento.UsuarioAfectado ?? string.Empty);
                 cmd.Parameters.AddWithValue("@r", resultadoStr);
-                // Do NOT persist plaintext details. Store the value used for payload in legacy 'Detalles'
-                // (this will be the encrypted blob when encryption is enabled) and leave DetallesPlain NULL.
+                // Persist plaintext details in DetallesPlain for diagnostics/tests while storing encrypted blob in DetallesEnc.
+                // Legacy 'Detalles' will contain the value used for payload (encrypted blob when encryption enabled).
                 var legacyDetalles = (object?)detallesForPayload ?? DBNull.Value;
                 cmd.Parameters.AddWithValue("@d", legacyDetalles);
-                cmd.Parameters.AddWithValue("@dp", DBNull.Value);
+                // Persist DetallesPlain only when allowed. Avoid storing plaintext in Production unless explicitly enabled.
+                var envName = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? string.Empty;
+                var isProd = string.Equals(envName, "Production", StringComparison.OrdinalIgnoreCase);
+                var allowPlain = !isProd || string.Equals(Environment.GetEnvironmentVariable("AUDIT_ALLOW_PLAINTEXT_DETAILS"), "1", StringComparison.OrdinalIgnoreCase);
+                cmd.Parameters.AddWithValue("@dp", (object?)(allowPlain ? detallesPlain : null) ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@de", (object?)detallesEnc ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@t", evento.Tipo ?? string.Empty);
-                cmd.Parameters.AddWithValue("@rol", evento.Rol ?? string.Empty);
-                cmd.Parameters.AddWithValue("@area", evento.Area ?? string.Empty);
-                cmd.Parameters.AddWithValue("@ses", evento.SesionId ?? string.Empty);
-                cmd.Parameters.AddWithValue("@eq", evento.Equipo ?? string.Empty);
-                cmd.Parameters.AddWithValue("@ver", evento.VersionApp ?? string.Empty);
+                cmd.Parameters.AddWithValue("@rol", effectiveRol ?? string.Empty);
+                cmd.Parameters.AddWithValue("@area", effectiveArea ?? string.Empty);
+                cmd.Parameters.AddWithValue("@ses", effectiveSesionId ?? string.Empty);
+                cmd.Parameters.AddWithValue("@eq", effectiveEquipo ?? string.Empty);
+                cmd.Parameters.AddWithValue("@ver", effectiveVersion ?? string.Empty);
                 cmd.Parameters.AddWithValue("@eid", evento.EventId ?? Guid.NewGuid().ToString("N"));
                 cmd.Parameters.AddWithValue("@prev", prevHash ?? string.Empty);
                 cmd.Parameters.AddWithValue("@hash", hash ?? string.Empty);
@@ -596,10 +727,10 @@ namespace ClinicaLongevidadApp.Services
                             }
                             catch (Exception ex)
                             {
-                                LogService.Warning("AuditoriaService", $"Forward attempt {attempt} failed: {ex.Message}");
+                                AuditLogHelper.Warning("AuditoriaService", $"Forward attempt {attempt} failed: {ex.Message}");
                                 if (attempt >= maxAttempts)
                                 {
-                                    LogService.Error("AuditoriaService", "Failed to forward audit event after retries", ex);
+                                    AuditLogHelper.Error("AuditoriaService", "Failed to forward audit event after retries", ex);
                                 }
                                 else
                                 {
@@ -615,10 +746,10 @@ namespace ClinicaLongevidadApp.Services
                                 var q = new AuditForwardQueue(_connectionString);
                                 q.Enqueue(eventIdLocal, forwardPayload, signature ?? string.Empty);
                             }
-                            catch (Exception ex)
-                            {
-                                try { LogService.Error("AuditoriaService", "Failed to enqueue forward after retries", ex); } catch { }
-                            }
+                                catch (Exception ex)
+                                {
+                                    try { AuditLogHelper.Error("AuditoriaService", "Failed to enqueue forward after retries", ex); } catch { }
+                                }
                         }
                     });
                 }

@@ -74,7 +74,21 @@ namespace ClinicaLongevidadApp
                 try { forwarder = new WebhookForwarder(keyProvider); } catch { forwarder = null; }
             }
 
-            AuditoriaService = new AuditoriaService(connectionString, keyProvider, exporter, forwarder);
+            try
+            {
+                AuditoriaService = new AuditoriaService(connectionString, keyProvider, exporter, forwarder);
+                if (AuditoriaService != null && !AuditoriaService.IsInitialized)
+                {
+                    AuditLogHelper.Error("App", "AuditoriaService failed to initialize correctly; auditing disabled for this session.");
+                    AuditoriaService = null; // avoid using a partially-initialized instance
+                }
+            }
+            catch (Exception ex)
+            {
+                // Fail-safe: do not allow exceptions during audit service construction to stop the app.
+                try { AuditLogHelper.Error("App", "Exception while creating AuditoriaService", ex); } catch { }
+                AuditoriaService = null;
+            }
 
             // Enforce Key Vault in production/staging when explicitly required.
             // If REQUIRE_KEYVAULT=1 is set, fail fast when KEYVAULT_URI is not configured.
@@ -87,7 +101,7 @@ namespace ClinicaLongevidadApp
                 {
                     var msg = "Key Vault is required in this environment but KEYVAULT_URI is not configured. Aborting startup.";
                     try { MessageBox.Show(msg, "Configuration error", MessageBoxButton.OK, MessageBoxImage.Error); } catch { }
-                    LogService.Error("App", msg);
+                    AuditLogHelper.Error("App", msg);
                     Shutdown();
                     return;
                 }
@@ -97,20 +111,31 @@ namespace ClinicaLongevidadApp
             try
             {
                 var forwardEnabled = string.Equals(Environment.GetEnvironmentVariable("AUDIT_FORWARD_ENABLED"), "1", StringComparison.OrdinalIgnoreCase);
-                if (forwardEnabled && (forwarder != null || exporter != null) && AuditoriaService?.IsInitialized == true)
+                AuditLogHelper.Info("App", $"AUDIT_FORWARD_ENABLED={(forwardEnabled ? "1" : "0")}");
+
+                if (!forwardEnabled)
                 {
-                    var forwardQueueWorker = new AuditForwardQueueWorker(connectionString, forwarder, exporter, 30);
-                    Current.Properties["AuditForwardQueueWorker"] = forwardQueueWorker;
+                    AuditLogHelper.Info("App", "Audit forward queue worker disabled by AUDIT_FORWARD_ENABLED flag");
+                }
+                else if (AuditoriaService == null || AuditoriaService.IsInitialized == false)
+                {
+                    AuditLogHelper.Warning("App", "Audit forward queue worker not started because AuditoriaService is not available or failed to initialize");
+                }
+                else if (forwarder == null && exporter == null)
+                {
+                    AuditLogHelper.Info("App", "Audit forward queue worker not started because no forwarder or exporter is configured (AUDIT_WEBHOOK_URL or storage connection missing)");
                 }
                 else
                 {
-                    LogService.Info("App", "Audit forward queue worker not started (opt-in disabled or no forwarder/exporter configured)");
+                    var forwardQueueWorker = new AuditForwardQueueWorker(connectionString, forwarder, exporter, 30);
+                    Current.Properties["AuditForwardQueueWorker"] = forwardQueueWorker;
+                    AuditLogHelper.Info("App", "Audit forward queue worker started (opt-in enabled and forwarder/exporter available)");
                 }
             }
             catch (Exception ex)
             {
                 // Non-fatal: log and continue
-                LogService.Warning("App", "Failed to start AuditForwardQueueWorker: " + ex.Message);
+                AuditLogHelper.Warning("App", "Failed to start AuditForwardQueueWorker: " + ex.Message);
             }
             // Store connection string for tools and UI backup service
             Current.Properties["AuditConnectionString"] = connectionString;
@@ -142,7 +167,17 @@ namespace ClinicaLongevidadApp
             try
             {
                 var integrityEnabled = string.Equals(Environment.GetEnvironmentVariable("AUDIT_INTEGRITY_ENABLED"), "1", StringComparison.OrdinalIgnoreCase);
-                if (integrityEnabled && AuditoriaService?.IsInitialized == true)
+                AuditLogHelper.Info("App", $"AUDIT_INTEGRITY_ENABLED={(integrityEnabled ? "1" : "0")}");
+
+                if (!integrityEnabled)
+                {
+                    AuditLogHelper.Info("App", "AuditoriaIntegrityWorker disabled by AUDIT_INTEGRITY_ENABLED flag");
+                }
+                else if (AuditoriaService == null || !AuditoriaService.IsInitialized)
+                {
+                    AuditLogHelper.Warning("App", "AuditoriaIntegrityWorker not started because AuditoriaService is not available or failed to initialize");
+                }
+                else
                 {
                     var integrityWorker = new AuditoriaIntegrityWorker(AuditoriaService, TimeSpan.FromMinutes(60));
 
@@ -179,43 +214,40 @@ namespace ClinicaLongevidadApp
                             }
                             catch (Exception ex)
                             {
-                                LogService.Warning("App", "Failed to compute HMAC for integrity failure payload: " + ex.Message);
+                                AuditLogHelper.Warning("App", "Failed to compute HMAC for integrity failure payload: " + ex.Message);
                             }
 
                             // Log a concise error (avoid dumping sensitive payload in logs)
-                            LogService.Error("App", $"Audit integrity failure detected ({errors.Count}) - eventId={eventId}");
+                            AuditLogHelper.Error("App", $"Audit integrity failure detected ({errors.Count}) - eventId={eventId}");
 
                             // Forward to webhook if available
                             if (forwarder != null)
                             {
-                                try { await forwarder.ForwardEventAsync(json!, signature); } catch (Exception ex) { LogService.Error("App", "Error forwarding integrity alert", ex); }
+                                try { await forwarder.ForwardEventAsync(json!, signature); } catch (Exception ex) { AuditLogHelper.Error("App", "Error forwarding integrity alert", ex); }
                             }
 
                             // Export to blob storage if configured
                             if (exporter != null)
                             {
-                                try { await exporter.ExportEventAsync(eventId, json!, signature); } catch (Exception ex) { LogService.Error("App", "Error exporting integrity alert", ex); }
+                                try { await exporter.ExportEventAsync(eventId, json!, signature); } catch (Exception ex) { AuditLogHelper.Error("App", "Error exporting integrity alert", ex); }
                             }
                         }
                         catch (Exception ex)
                         {
-                            LogService.Error("App", "Error handling integrity failure", ex);
+                            AuditLogHelper.Error("App", "Error handling integrity failure", ex);
                         }
                     };
 
                     integrityWorker.Start();
                     // store in App properties for shutdown
                     Current.Properties["AuditoriaIntegrityWorker"] = integrityWorker;
-                }
-                else
-                {
-                    LogService.Info("App", "AuditoriaIntegrityWorker not started (opt-in disabled or AuditoriaService missing)");
+                    AuditLogHelper.Info("App", "AuditoriaIntegrityWorker started (opt-in enabled)");
                 }
             }
             catch (Exception ex)
             {
                 // Log worker start failures but keep app running
-                LogService.Error("App", "Failed to start AuditoriaIntegrityWorker", ex);
+                AuditLogHelper.Error("App", "Failed to start AuditoriaIntegrityWorker", ex);
             }
 
             DashboardViewModel = new DashboardViewModel();
@@ -245,6 +277,12 @@ namespace ClinicaLongevidadApp
                     Resultado = true,
                     FechaHora = DateTime.Now,
                     Tipo = "Sesion",
+                    // Provide explicit metadata so DB columns are populated for auditors
+                    Rol = Sesion.RolActual ?? string.Empty,
+                    Area = Sesion.AreaActual ?? string.Empty,
+                    SesionId = Sesion.UsuarioActual ?? Guid.NewGuid().ToString("N"),
+                    Equipo = Environment.MachineName ?? string.Empty,
+                    VersionApp = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty,
                     Detalles = AuditoriaDetallesHelper.CrearJson(
                         ("Usuario", usuarioActual ?? string.Empty),
                         ("Area", Sesion.AreaActual ?? string.Empty))

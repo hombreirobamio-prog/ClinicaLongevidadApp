@@ -38,9 +38,9 @@ namespace ClinicaLongevidadApp.Views
         {
             try
             {
-                if (this.DataContext is ViewModels.AuditoriaViewModel vm)
+                if (this.DataContext is ViewModels.AuditoriaViewModelV2 vm2)
                 {
-                    vm.Cleanup();
+                    vm2.Cleanup();
                 }
             }
             catch
@@ -77,12 +77,12 @@ namespace ClinicaLongevidadApp.Views
         {
             try
             {
-                // Prefer showing the last 10 inside the main panel if ViewModel is present
-                if (this.DataContext is ViewModels.AuditoriaViewModel vm)
+                // Prefer showing the last 10 inside the main panel if ViewModelV2 is present
+                if (this.DataContext is ViewModels.AuditoriaViewModelV2 vm2)
                 {
                     try
                     {
-                        await vm.CargarUltimosAsync(10);
+                        await vm2.CargarUltimosAsync(10);
                         return;
                     }
                     catch { /* fall back to opening auxiliary window */ }

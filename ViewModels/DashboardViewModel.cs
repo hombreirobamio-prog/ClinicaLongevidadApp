@@ -77,7 +77,7 @@ namespace ClinicaLongevidadApp.ViewModels
 
                 var vista = new AuditoriaView
                 {
-                    DataContext = new AuditoriaViewModel(
+                    DataContext = new AuditoriaViewModelV2(
                         App.AuditoriaService)
                 };
 
