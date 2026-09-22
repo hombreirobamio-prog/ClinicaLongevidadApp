@@ -1,5 +1,7 @@
 # ClinicaLongevidadApp
 
+> Nota: al reanudar, lea `docs/BACKFILL_SESSION_SUMMARY.md` para el contexto de la última sesión.
+
 <!-- CI and Coverage badges: replace {owner}/{repo} with your repository -->
 ![CI](https://github.com/{owner}/{repo}/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://codecov.io/gh/{owner}/{repo}/branch/main/graph/badge.svg)
@@ -73,6 +75,19 @@ Estado actual:
 - Metadatos automáticos en servicio: `Rol`, `Area`, `SesionId`, `Equipo`, `VersionApp`.
 - Migración completada de flujos activos a `RegistrarEvento(...)`.
 - Sin usos restantes de `App.AuditoriaService?.Registrar(...)` en código activo.
+
+### Nota: comportamiento en entornos de pruebas y variables de entorno relevantes
+
+- Durante la ejecución de pruebas unitarias la aplicación omite la creación de los triggers "append-only" (los triggers que impiden `UPDATE`/`DELETE` en la tabla `Auditoria`) para permitir que los tests simulen manipulación y escenarios de integridad. La detección de ejecución bajo test se realiza buscando `DOTNET_ENVIRONMENT=Test` o ensamblados de pruebas comunes (xUnit/NUnit/VSTest). En entornos reales los triggers se crean por defecto para reforzar la inmutabilidad.
+
+- Variables de entorno relevantes para el comportamiento de auditoría (resumido):
+  - `REQUIRE_KEYVAULT=1` — exigir Azure Key Vault al inicializar `AuditoriaService` (fallará rápido si no está disponible).
+  - `AUDIT_ALLOW_PLAINTEXT_DETAILS=1` — permitir almacenar `DetallesPlain` en entornos de `Production` cuando sea necesario para diagnósticos.
+  - `AUDIT_INCLUDE_DETAILS_IN_REPORTS=1` — incluir el campo `Detalles` en los informes completos de integridad (por defecto está redactado).
+  - `AUDIT_INCLUDE_DETAILS_IN_DIAGNOSTICS=1` — incluir `Detalles` en los CSV/diagnósticos rápidos (por defecto está redactado).
+  - `AUDIT_INCLUDE_DETAILS_IN_LOGS=1` — permitir que `AuditLogHelper` escriba detalles completos en logs (por defecto `AuditLogHelper` redacta payloads sensibles).
+
+Estas opciones permiten equilibrar seguridad y diagnósticos: por defecto la aplicación minimiza la exposición de `Detalles` y fuerza inmutabilidad en producción, mientras que en entornos de desarrollo/pruebas se relajan ciertas restricciones para facilitar pruebas y depuración.
 
 ### Generar diagnósticos de integridad (administradores)
 
@@ -380,4 +395,100 @@ Advertencias de seguridad:
 - Revisar y aprobar mediante PR antes de considerar mantener la opción en el repositorio principal.
 
 Si quieres, creo el PR automáticamente con esta documentación y la rama `feature/force-admin` listos para revisión.
+
+## Cierre de sesión (GitHub)
+
+### Resumen de la sesión (cierre)
+- Fecha: 2026-09-07 (cierre)
+- Rama activa: `feat/audit-rewrite`
+
+Hecho en esta sesión:
+- Consolidada `AuditoriaViewModelV2` como VM única para el panel Auditoría.
+- Eliminado VM legacy y actualizado `Views/AuditoriaView.xaml(.cs)` y `MainWindow.xaml.cs` para usar V2.
+- Implementada copia inmediata (`Copia ahora`), restauración y programación diaria.
+- Añadidos logs de diagnóstico: `%LocalAppData%\\ClinicaLongevidadApp\\logs\\backup_vm.log` y `backup.log`.
+- Añadida guardia para evitar programaciones duplicadas (evita múltiples timers al pulsar repetidamente `Programar`).
+
+Pendientes inmediatos:
+- Validar en ejecución que el botón `Programar/Cancelar` muestra estado inequívoco tras los cambios.
+- Revisar y endurecer `Cleanup()` para asegurar que `DispatcherTimer` y eventos quedan desuscritos correctamente.
+- Añadir pruebas automatizadas básicas para: scheduling, cancelar scheduling y restore.
+- Limpiar trazas de debug una vez validado el comportamiento en entorno local.
+
+Siguiente paso recomendado:
+1. Ejecutar la app localmente y reproducir estos escenarios: programar misma hora varias veces; cambiar hora y reprogramar; cancelar programación.
+2. Revisar `backup_vm.log` para confirmar que no hay múltiples registros "ScheduleBackup: registering..." para la misma hora.
+3. Si OK, commitear y push: `git add . && git commit -m "fix(audit): prevent duplicate scheduling, consolidate AuditoriaViewModelV2" && git push`.
+
+## Resumen adicional: trabajo en rama feat/audit-rewrite (síntesis)
+
+Breve resumen de lo realizado durante la reescritura y pruebas del panel de Auditoría y del servicio de copias:
+
+- Se reimplementó `AuditoriaViewModelV2` con comandos de backup (`BackupNowCommand`, `ScheduleOrCancelCommand`, `RestoreBackupCommand`, `TestScheduleInOneMinuteCommand`) y persistencia de la hora programada.
+- `BackupService` ahora ofrece `ScheduleDailyBackup(TimeSpan, ...)` que devuelve la próxima ejecución (`DateTime?`) y `TriggerImmediateBackup(...)` para disparos manuales.
+- Se añadió un temporizador a nivel de VM (`_uiTimer`) para asegurar que la hora introducida en el textbox dispare la misma acción que "Probar 1 min".
+- Forzado el `DataContext` de la vista `AuditoriaView` a la VM V2 y protegido contra reasignaciones externas (evita que el diseñador/runtime use el VM legacy y produzca bindings rotos).
+- Añadidos logs: `%LocalAppData%\\ClinicaLongevidadApp\\logs\\backup.log` (servicio) y `backup_vm.log` (VM) para diagnosticar programación y ejecuciones.
+
+Qué falta / próximos pasos prioritarios:
+
+1. Validar en el entorno del usuario que al pulsar "Programar" la UI actualiza `Próxima copia:` y que se crea la copia en `%LocalAppData%\\ClinicaLongevidadApp\\backups`.
+2. Si la programación no dispara, pegar los contenidos recientes de `backup_vm.log` y `backup.log` y la salida del depurador para investigar.
+3. Eliminar/ajustar MessageBox en ejecuciones automáticas para que las copias programadas sean silenciosas (usar snackbar + log).
+4. Consolidar y limpiar trazas/hacks de transición (code-behind) antes de merge final.
+
+Comandos y ubicaciones útiles para pruebas:
+
+- Forzar copia inmediata desde VM: `BackupNowCommand` (UI) o método `ForceScheduledNow()`/`TriggerImmediateBackup(...)` en el servicio.
+- Logs: `%LocalAppData%\\ClinicaLongevidadApp\\logs\\backup.log`, `%LocalAppData%\\ClinicaLongevidadApp\\logs\\backup_vm.log`.
+- Copias generadas: `%LocalAppData%\\ClinicaLongevidadApp\\backups`.
+
+Si lo prefieres, preparo mañana un pequeño parche para que las copias programadas no abran MessageBox y para añadir más trazas puntuales si la reproducción falla en tu equipo.
+- Objetivo: dejar un resumen claro de lo realizado en la sesión y las tareas pendientes antes de cerrar la sesión del repositorio.
+
+### Hecho
+- Restaurado el botón/admin de diagnóstico en la vista de Auditoría y añadidos los comandos de backup en `AuditoriaViewModel`.
+- Mejorada la lógica de `Services/BackupService.cs`: uso de backup online de SQLite (`BackupDatabase`), configuración de `PRAGMA busy_timeout`, y fallback a copia de fichero.
+- Añadido logging en `BackupService` (usa `Services/LogService`) para registrar inicio, éxito y fallos de los backups.
+- Ajustes en `tools/GenerateIntegrity` (TFM y paquetes) y ejecución de diagnóstico de integridad (genera `IntegrityReport_local.json`).
+- Proyecto compila correctamente después de los cambios.
+
+### Pendiente (inmediato)
+- Probar el backup en runtime: ejecutar la acción "Copia ahora" desde la UI de Auditoría o invocar `BackupService.CreateBackup(...)` con la connection string usada en `Application.Current.Properties["AuditConnectionString"]` y confirmar que se crea el `.db` de backup.
+- Si el backup falla: inspeccionar procesos que bloqueen la DB y revisar la cadena de conexión usada por la UI.
+- Ejecutar la suite de tests local (`dotnet test`) y revisar logs generados en `%LocalAppData%\ClinicaLongevidadApp\Logs`.
+
+### Falta (trabajo a medio plazo)
+- Decidir y documentar la política de persistencia/rotación de claves HMAC/ENC (Local vs Key Vault) y aplicar en `KeyRotation` providers.
+- Plan de backfill/append-only para corregir filas históricas sin `Hash`/`Signature` — preparar script sobre copia de la BD y pruebas en entorno no productivo.
+- Mejorar feedback UI (toasts/snackbars) y añadir logging más detallado/rotación de logs.
+
+### Nota final
+Antes de cualquier intervención en la tabla `Auditoria` en producción, realizar copia de seguridad válida y comprobada y documentar el proceso. Para la próxima sesión: primero validar backups y logs, luego proceder con el plan de remediación de integridad si procede.
+
+## Audit hardening — environment variables & runtime notes
+
+Breve referencia para desarrolladores/operadores. Leer antes de modificar auditoría o activar workers en entornos compartidos.
+
+- `KEYVAULT_URI`: prefer Azure Key Vault for HMAC/encryption keys when set.
+- `REQUIRE_KEYVAULT=1`: fail startup if `KEYVAULT_URI` is not set (use to enforce Key Vault in production/staging).
+- `AUDIT_FORWARD_ENABLED=1`: enable forward queue worker (opt-in).
+- `AUDIT_INTEGRITY_ENABLED=1`: enable integrity worker (opt-in).
+- `AUDIT_INCLUDE_DETAILS_IN_REPORTS=1`: include `Detalles` in integrity reports (disabled by default).
+- `AUDIT_INCLUDE_DETAILS_IN_DIAGNOSTICS=1`: include `Detalles` in quick diagnostics CSV (disabled by default).
+- `AUDIT_INCLUDE_DETAILS_IN_LOGS=1`: allow writing `Detalles` into application logs (disabled by default).
+- `AUDIT_ALLOW_PLAINTEXT_DETAILS=1`: permit persisting `DetallesPlain` in Production (disabled by default; avoid in prod).
+- `AUDIT_HMAC_KEY`, `AUDIT_ENC_KEY`: local-only keys for `LocalKeyProvider` (development/testing only).
+- `FORCE_ADMIN=1`: development helper to force admin session for local testing (do not use in shared environments).
+
+Quick run (development):
+
+- Force admin and run:
+  - PowerShell: `$env:FORCE_ADMIN='1'; dotnet run --project ClinicaLongevidadApp.csproj --configuration Debug`
+- Enable workers locally:
+  - PowerShell: `$env:AUDIT_FORWARD_ENABLED='1'; $env:AUDIT_INTEGRITY_ENABLED='1'; dotnet run --project ClinicaLongevidadApp.csproj --configuration Debug`
+
+Notes:
+- Reports and diagnostics redact `Detalles` by default to avoid leaking sensitive payloads; enable inclusion only in trusted environments.
+- The audit table is protected by SQLite triggers to enforce append-only behavior (UPDATE/DELETE are aborted).
 

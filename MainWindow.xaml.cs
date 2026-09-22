@@ -94,11 +94,11 @@ namespace ClinicaLongevidadApp
             {
                 // Try to find the AuditoriaView in the visual tree and ask its ViewModel to load last 10 into the panel
                 var auditoriaView = FindVisualChild<Views.AuditoriaView>(this);
-                if (auditoriaView is not null && auditoriaView.DataContext is ViewModels.AuditoriaViewModel vm)
+                if (auditoriaView is not null && auditoriaView.DataContext is ViewModels.AuditoriaViewModelV2 vm2)
                 {
                     try
                     {
-                        await vm.CargarUltimosAsync(10);
+                        await vm2.CargarUltimosAsync(10);
                         return;
                     }
                     catch { /* fall through to opening auxiliary window */ }

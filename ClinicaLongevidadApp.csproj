@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -27,6 +27,12 @@
     <None Remove="tools\**\*" />
     <Page Remove="tools\**\*" />
   </ItemGroup>
+
+  <!-- Tool entry points should not be compiled into the main application. Tools are separate projects
+       and are built independently. The explicit Compile include for tool Program.cs files caused
+       duplicate entry-point errors; they are intentionally omitted here. -->
+
+  <!-- Tools are built as separate projects and must not be compiled into the main WPF app. -->
   <!-- Tools source files must not be compiled into the main WPF application. The individual tool projects
        are built separately (see tools/*/*.csproj). Any accidental Compile Include for tool sources
        will cause duplicate entry-point errors when building the app or solution. -->
@@ -38,13 +44,22 @@
   <!-- Test assembly initializer should not be compiled into the main application. -->
 
   <ItemGroup>
+    <None Include=".github\workflows\audit-integrity-alert.yml" />
+    <None Include=".github\workflows\audit-integrity.yml" />
     <None Include=".github\workflows\ci.yml" />
     <None Include=".github\workflows\dotnet-build-test.yml" />
     <None Include="ClinicaLongevidadApp.Tests\ClinicaLongevidadApp.Tests.csproj" />
     <None Include="ClinicaLongevidadApp.Tests\README.md" />
     <None Include="tools\AuditDecrypt\AuditDecrypt.csproj" />
     <None Include="tools\AuditDecrypt\README.md" />
+    <None Include="tools\DbAuditInspect\DbAuditInspect.csproj" />
+    <None Include="tools\GenerateIntegrity\GenerateIntegrity.csproj" />
+    <None Include="tools\RotateKeys\RotateKeys.csproj" />
     <!-- tools project is excluded from main build to avoid multiple entry points -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="tools\NewFolder\" />
   </ItemGroup>
 
 </Project>

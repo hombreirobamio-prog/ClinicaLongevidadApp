@@ -32,7 +32,7 @@ jobs:
 
       - name: Generate integrity report
         run: |
-          dotnet run --project tools/GenerateIntegrity -- ./audit_ci.db IntegrityReport_CI.json || exit 0
+          dotnet run --project tools/GenerateIntegrity -- ./audit_ci.db IntegrityReport_CI.json
 
       - name: Upload integrity report
         uses: actions/upload-artifact@v4

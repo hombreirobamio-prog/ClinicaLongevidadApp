@@ -1,4 +1,4 @@
-﻿using ClinicaLongevidadApp.Models;
+using ClinicaLongevidadApp.Models;
 using System;
 namespace ClinicaLongevidadApp.Services
 {
@@ -20,7 +20,13 @@ namespace ClinicaLongevidadApp.Services
                     UsuarioAdmin = usuario ?? Environment.UserName ?? string.Empty,
                     Resultado = resultado,
                     Detalles = System.Text.Json.JsonSerializer.Serialize(detalles ?? new { }),
-                    Tipo = "Operación"
+                    Tipo = "Operación",
+                    // Provide explicit metadata: prefer current session values when available
+                    Rol = Services.Sesion.RolActual ?? string.Empty,
+                    Area = Services.Sesion.AreaActual ?? string.Empty,
+                    SesionId = Services.Sesion.UsuarioActual ?? Guid.NewGuid().ToString("N"),
+                    Equipo = Environment.MachineName ?? string.Empty,
+                    VersionApp = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty
                 };
                 svc.RegistrarEvento(evento);
             }
