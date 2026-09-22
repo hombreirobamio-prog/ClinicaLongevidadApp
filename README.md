@@ -398,6 +398,27 @@ Si quieres, creo el PR automáticamente con esta documentación y la rama `featu
 
 ## Cierre de sesión (GitHub)
 
+### Resumen de la sesión (cierre)
+- Fecha: 2026-09-07 (cierre)
+- Rama activa: `feat/audit-rewrite`
+
+Hecho en esta sesión:
+- Consolidada `AuditoriaViewModelV2` como VM única para el panel Auditoría.
+- Eliminado VM legacy y actualizado `Views/AuditoriaView.xaml(.cs)` y `MainWindow.xaml.cs` para usar V2.
+- Implementada copia inmediata (`Copia ahora`), restauración y programación diaria.
+- Añadidos logs de diagnóstico: `%LocalAppData%\\ClinicaLongevidadApp\\logs\\backup_vm.log` y `backup.log`.
+- Añadida guardia para evitar programaciones duplicadas (evita múltiples timers al pulsar repetidamente `Programar`).
+
+Pendientes inmediatos:
+- Validar en ejecución que el botón `Programar/Cancelar` muestra estado inequívoco tras los cambios.
+- Revisar y endurecer `Cleanup()` para asegurar que `DispatcherTimer` y eventos quedan desuscritos correctamente.
+- Añadir pruebas automatizadas básicas para: scheduling, cancelar scheduling y restore.
+- Limpiar trazas de debug una vez validado el comportamiento en entorno local.
+
+Siguiente paso recomendado:
+1. Ejecutar la app localmente y reproducir estos escenarios: programar misma hora varias veces; cambiar hora y reprogramar; cancelar programación.
+2. Revisar `backup_vm.log` para confirmar que no hay múltiples registros "ScheduleBackup: registering..." para la misma hora.
+3. Si OK, commitear y push: `git add . && git commit -m "fix(audit): prevent duplicate scheduling, consolidate AuditoriaViewModelV2" && git push`.
 
 ## Resumen adicional: trabajo en rama feat/audit-rewrite (síntesis)
 

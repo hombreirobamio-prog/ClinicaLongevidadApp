@@ -218,7 +218,32 @@ namespace ClinicaLongevidadApp.ViewModels
                 try { System.IO.Directory.CreateDirectory(backupDir); } catch { }
 
                 // persist schedule and register with service
-                BackupTimeText = ts.ToString(@"hh\:mm");
+                var tsString = ts.ToString(@"hh\:mm");
+
+                // if already scheduled to the same time, ignore duplicate requests
+                try
+                {
+                    if (IsBackupScheduled && !string.IsNullOrWhiteSpace(_savedBackupTime) && string.Equals(_savedBackupTime, tsString, StringComparison.Ordinal))
+                    {
+                        ShowSnackbar($"Ya existe una copia programada a las {tsString}", 4);
+                        try { WriteVmDebugLog($"ScheduleBackup: ignored duplicate schedule request for {tsString}"); } catch { }
+                        return;
+                    }
+                }
+                catch { }
+
+                // if there is an existing different schedule, cancel it first to avoid multiple timers
+                try
+                {
+                    if (IsBackupScheduled && (!string.IsNullOrWhiteSpace(_savedBackupTime) && !string.Equals(_savedBackupTime, tsString, StringComparison.Ordinal)))
+                    {
+                        try { WriteVmDebugLog($"ScheduleBackup: cancelling previous schedule {_savedBackupTime} before applying new {tsString}"); } catch { }
+                        try { _backupService?.CancelScheduledBackup(); } catch { }
+                    }
+                }
+                catch { }
+
+                BackupTimeText = tsString;
                 SaveScheduledTime(BackupTimeText);
                 try { WriteVmDebugLog($"ScheduleBackup: registering schedule at {BackupTimeText}"); } catch { }
                 var svcNext = _backupService?.ScheduleDailyBackup(ts, conn, backupDir);
@@ -239,6 +264,8 @@ namespace ClinicaLongevidadApp.ViewModels
                     }
 
                     IsBackupScheduled = true;
+                    // remember the scheduled value so UI edits can detect changes
+                    try { _savedBackupTime = BackupTimeText; } catch { }
                 }
                 catch { NextScheduledRun = null; IsBackupScheduled = true; }
 
@@ -260,6 +287,7 @@ namespace ClinicaLongevidadApp.ViewModels
                 IsBackupScheduled = false;
                 NextScheduledRun = null;
                 SaveScheduledTime(string.Empty);
+                _savedBackupTime = null;
                 BackupScheduleStatus = "No hay copia programada.";
                 ShowSnackbar("Copia programada cancelada", 4);
             }
@@ -281,22 +309,24 @@ namespace ClinicaLongevidadApp.ViewModels
         {
             try
             {
-                var conn = Application.Current.Properties["AuditConnectionString"] as string;
-                if (string.IsNullOrWhiteSpace(conn))
-                {
-                    var dbPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidad.db");
-                    conn = $"Data Source={dbPath}";
-                }
-
-                var backupDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "backups");
-                try { System.IO.Directory.CreateDirectory(backupDir); } catch { }
-
+                // Schedule a one-off test backup in one minute without registering a recurring schedule
                 var when = DateTime.Now.AddMinutes(1);
-                var ts = when.TimeOfDay;
-                _backupService?.ScheduleDailyBackup(ts, conn, backupDir);
-                IsBackupScheduled = true;
                 NextScheduledRun = new DateTime(when.Year, when.Month, when.Day, when.Hour, when.Minute, 0);
-                ShowSnackbar($"Copia de prueba programada a las {NextScheduledRun:dd/MM/yyyy HH:mm}", 5);
+                ShowSnackbar($"Copia de prueba (única) en {NextScheduledRun:dd/MM/yyyy HH:mm}", 5);
+
+                // Fire-and-forget background task to wait one minute then perform backup
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromMinutes(1));
+                        await PerformBackupAsync(showDialog: true);
+
+                        // clear NextScheduledRun after execution
+                        Application.Current?.Dispatcher?.Invoke(() => NextScheduledRun = null);
+                    }
+                    catch { }
+                });
             }
             catch (Exception ex)
             {
@@ -529,7 +559,29 @@ namespace ClinicaLongevidadApp.ViewModels
         public ICommand? CancelBackupCommand { get; private set; }
         public ICommand? ScheduleOrCancelCommand { get; private set; }
         public ICommand? RestoreBackupCommand { get; private set; }
-        public string BackupTimeText { get; set; } = string.Empty; // e.g. "23:30"
+        private string? _backupTimeText = string.Empty;
+        private string? _savedBackupTime = null;
+        public string BackupTimeText
+        {
+            get => _backupTimeText ?? string.Empty;
+            set
+            {
+                var newVal = value ?? string.Empty;
+                if (string.Equals(_backupTimeText, newVal, StringComparison.Ordinal)) return;
+                _backupTimeText = newVal;
+                // If user changes the time away from the saved scheduled time, mark as not scheduled
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(_savedBackupTime) && !string.Equals(_savedBackupTime, _backupTimeText, StringComparison.Ordinal))
+                    {
+                        IsBackupScheduled = false;
+                    }
+                }
+                catch { }
+                OnPropertyChanged(nameof(BackupTimeText));
+                OnPropertyChanged(nameof(ScheduleButtonText));
+            }
+        } // e.g. "23:30"
 
         public ICommand? TestScheduleInOneMinuteCommand { get; private set; }
         public ICommand? ForceScheduledNowCommand { get; private set; }

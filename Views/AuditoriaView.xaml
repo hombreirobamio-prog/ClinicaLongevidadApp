@@ -101,9 +101,13 @@
                             <ColumnDefinition Width="1.2*"/>
                             <ColumnDefinition Width="1.2*"/>
                         </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
 
                         <!-- BÚSQUEDA GENERAL -->
-                        <StackPanel Grid.Column="0"
+                        <StackPanel Grid.Column="0" Grid.Row="0"
                                     Margin="0,0,10,0">
 
                             <TextBlock Text="Buscar"
@@ -115,15 +119,14 @@
                                                     Mode=TwoWay,
                                                     UpdateSourceTrigger=PropertyChanged}"
                                      ToolTip="Usuario, acción, módulo o resultado"/>
-                            <CheckBox Content="Mostrar sólo operaciones de herramientas (export/restore/replay)"
-                                      IsChecked="{Binding MostrarSoloOperacionesHerramientas, Mode=TwoWay}"
-                                      Foreground="{StaticResource Brush_TextoClaro}"
-                                      Margin="0,8,0,0"
-                                      ToolTip="Filtra registros generados por herramientas operativas (RotateKeys)." />
                         </StackPanel>
 
+                        <!-- NOTE: checkbox moved below filter controls to avoid overlapping comboboxes -->
+
+
+
                         <!-- USUARIO -->
-                        <StackPanel Grid.Column="1"
+                        <StackPanel Grid.Column="1" Grid.Row="0"
                                     Margin="0,0,10,0">
 
                             <TextBlock Text="Usuario"
@@ -131,13 +134,13 @@
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,5"/>
 
-                            <ComboBox ItemsSource="{Binding Usuarios}"
+                            <ComboBox MinHeight="40" MinWidth="140" ItemsSource="{Binding Usuarios}"
                                       SelectedItem="{Binding UsuarioSeleccionado,
                                                               Mode=TwoWay}"/>
                         </StackPanel>
 
                         <!-- MÓDULO -->
-                        <StackPanel Grid.Column="2"
+                        <StackPanel Grid.Column="2" Grid.Row="0"
                                     Margin="0,0,10,0">
 
                             <TextBlock Text="Módulo"
@@ -145,13 +148,13 @@
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,5"/>
 
-                            <ComboBox ItemsSource="{Binding Modulos}"
+                            <ComboBox MinHeight="40" MinWidth="140" ItemsSource="{Binding Modulos}"
                                       SelectedItem="{Binding ModuloSeleccionado,
                                                               Mode=TwoWay}"/>
                         </StackPanel>
 
                         <!-- ACCIÓN -->
-                        <StackPanel Grid.Column="3"
+                        <StackPanel Grid.Column="3" Grid.Row="0"
                                     Margin="0,0,10,0">
 
                             <TextBlock Text="Acción"
@@ -159,26 +162,26 @@
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,5"/>
 
-                            <ComboBox ItemsSource="{Binding Acciones}"
+                            <ComboBox MinHeight="40" MinWidth="140" ItemsSource="{Binding Acciones}"
                                       SelectedItem="{Binding AccionSeleccionada,
                                                               Mode=TwoWay}"/>
                         </StackPanel>
 
                         <!-- RESULTADO -->
-                        <StackPanel Grid.Column="4"
+                        <StackPanel Grid.Column="4" Grid.Row="0"
                                     Margin="0,0,10,0">
 
                             <TextBlock Text="Resultado"
                                        Foreground="{StaticResource Brush_TextoClaro}"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,5"/>
-                            <ComboBox ItemsSource="{Binding Resultados}"
+                            <ComboBox MinHeight="40" MinWidth="140" ItemsSource="{Binding Resultados}"
                                       SelectedItem="{Binding ResultadoSeleccionado,
                                                               Mode=TwoWay}"/>
                         </StackPanel>
 
                         <!-- TIPO -->
-                        <StackPanel Grid.Column="5"
+                        <StackPanel Grid.Column="5" Grid.Row="0"
                                     Margin="0,0,10,0">
 
                             <TextBlock Text="Tipo"
@@ -186,13 +189,13 @@
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,5"/>
 
-                            <ComboBox ItemsSource="{Binding Tipos}"
+                            <ComboBox MinHeight="40" MinWidth="140" ItemsSource="{Binding Tipos}"
                                       SelectedItem="{Binding TipoSeleccionado,
                                                               Mode=TwoWay}"/>
                         </StackPanel>
 
                         <!-- ROL -->
-                        <StackPanel Grid.Column="6"
+                        <StackPanel Grid.Column="6" Grid.Row="0"
                                     Margin="0,0,10,0">
 
                             <TextBlock Text="Rol"
@@ -200,23 +203,33 @@
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,5"/>
 
-                            <ComboBox ItemsSource="{Binding Roles}"
+                            <ComboBox MinHeight="40" MinWidth="140" ItemsSource="{Binding Roles}"
                                       SelectedItem="{Binding RolSeleccionado,
                                                               Mode=TwoWay}"/>
                         </StackPanel>
 
                         <!-- ÁREA -->
-                        <StackPanel Grid.Column="7">
+                        <StackPanel Grid.Column="7" Grid.Row="0">
 
                             <TextBlock Text="Área"
                                        Foreground="{StaticResource Brush_TextoClaro}"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,5"/>
 
-                            <ComboBox ItemsSource="{Binding Areas}"
+                            <ComboBox MinHeight="40" MinWidth="140" ItemsSource="{Binding Areas}"
                                       SelectedItem="{Binding AreaSeleccionada,
                                                               Mode=TwoWay}"/>
                         </StackPanel>
+
+                        <!-- Mostrar sólo operaciones (se sitúa debajo de los filtros) -->
+                        <CheckBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="8" IsChecked="{Binding MostrarSoloOperacionesHerramientas, Mode=TwoWay}"
+                                  Foreground="{StaticResource Brush_TextoClaro}"
+                                  Margin="8,6,0,0"
+                                  HorizontalAlignment="Left"
+                                  ToolTip="Filtra registros generados por herramientas operativas (RotateKeys).">
+                            <TextBlock Text="Mostrar sólo operaciones de herramientas (export/restore/replay)" />
+                        </CheckBox>
+
                     </Grid>
 
                 </Border>
@@ -323,8 +336,9 @@
                             Command="{Binding AplicarFiltrosCommand}"
                             Style="{StaticResource EstiloBotonPrincipal}"
                             Width="110"
-                            Height="50"
-                            Padding="0"
+                            Height="40"
+                            FontSize="14"
+                            Padding="0,10,0,0"
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"
                             Margin="5"/>
@@ -332,8 +346,8 @@
                     <Button Content="Limpiar"
                             Command="{Binding LimpiarFiltrosCommand}"
                             Style="{StaticResource EstiloBotonSecundario}"
-                            Width="110"
-                            Height="50"
+                            MinWidth="140"
+                            Height="40"
                             Padding="0"
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"
@@ -342,8 +356,8 @@
                     <Button Content="Actualizar"
                             Command="{Binding ActualizarCommand}"
                             Style="{StaticResource EstiloBotonSecundario}"
-                            Width="120"
-                            Height="50"
+                            MinWidth="140"
+                            Height="40"
                             Padding="0"
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"
@@ -352,8 +366,8 @@
                     <Button Content="Últimos movimientos"
                             Click="BtnRecentAudit_Click"
                             Style="{StaticResource EstiloBotonSecundario}"
-                            Width="160"
-                            Height="50"
+                            MinWidth="200"
+                            Height="45"
                             Padding="0"
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"
@@ -362,8 +376,8 @@
                     <Button Content="Exportar CSV"
                             Command="{Binding ExportarCsvCommand}"
                             Style="{StaticResource EstiloBotonSecundario}"
-                            Width="135"
-                            Height="50"
+                            MinWidth="150"
+                            Height="40"
                             Padding="0"
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"
@@ -372,8 +386,8 @@
                     <Button Content="Generar diagnóstico"
                             Click="BtnGenerarDiagnostico_Click"
                             Style="{StaticResource EstiloBotonSecundario}"
-                            Width="160"
-                            Height="50"
+                            MinWidth="200"
+                            Height="40"
                             Padding="0"
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"
@@ -383,8 +397,8 @@
                     <Button Content="Rotar HMAC"
                             Command="{Binding RotateHmacCommand}"
                             Style="{StaticResource EstiloBotonSecundario}"
-                            Width="140"
-                            Height="50"
+                            MinWidth="150"
+                            Height="40"
                             Padding="0"
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"
@@ -394,8 +408,8 @@
                     <Button Content="Rotar ENC"
                             Command="{Binding RotateEncCommand}"
                             Style="{StaticResource EstiloBotonSecundario}"
-                            Width="140"
-                            Height="50"
+                            MinWidth="150"
+                            Height="40"
                             Padding="0"
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"
@@ -418,26 +432,49 @@
                         <Button Content="Copia ahora"
                                 Command="{Binding BackupNowCommand}"
                                 Style="{StaticResource EstiloBotonSecundario}"
-                                Width="130"
-                                Height="50"
+                                Width="120"
+                                Height="44"
+                                FontSize="14"
                                 Margin="5"/>
 
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="5">
-                            <TextBlock Text="Hora copia:" Foreground="{StaticResource Brush_TextoClaro}" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                            <TextBox Width="70" Text="{Binding BackupTimeText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Formato HH:mm" />
-                            <Button x:Name="BtnToggleSchedule" Content="{Binding ScheduleButtonText}" Command="{Binding ScheduleOrCancelCommand}" ToolTip="Programar/Cancelar copia diaria (formato HH:mm)" Style="{StaticResource EstiloBotonSecundario}" Width="100" Height="30" Margin="8,0,0,0" Foreground="{StaticResource Brush_TextoClaro}" />
-                            <Button x:Name="BtnRestoreBackup" Content="Restaurar copia" Command="{Binding RestoreBackupCommand}" ToolTip="Restaurar desde una copia existente" Style="{StaticResource EstiloBotonSecundario}" Width="120" Height="30" Margin="8,0,0,0" Foreground="{StaticResource Brush_TextoClaro}" />
-                        </StackPanel>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="5">
+                                <TextBlock Text="Hora copia:" Foreground="{StaticResource Brush_TextoClaro}" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                <TextBox Width="70" Text="{Binding BackupTimeText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Formato HH:mm" />
 
-                                <Button Content="Probar 1 min"
-                            Command="{Binding TestScheduleInOneMinuteCommand}"
-                            Style="{StaticResource EstiloBotonSecundario}"
-                            Width="130"
-                            Height="36"
-                            Padding="0"
-                            HorizontalContentAlignment="Center"
-                            VerticalContentAlignment="Center"
-                            Margin="5"/>
+                                <!-- Programar: forzar texto con TextBlock para evitar templates que sustituyan el contenido -->
+                                <Button Command="{Binding ScheduleBackupCommand}"
+                                        ToolTip="Programar copia diaria (formato HH:mm)"
+                                        Style="{StaticResource EstiloBotonSecundario}"
+                                        Width="120" Height="36" Margin="8,0,0,0" Foreground="{StaticResource Brush_TextoClaro}">
+                                    <TextBlock Text="Programar" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Button>
+
+                                <!-- Cancelar: mostrar/ocultar según exista programación -->
+                                <Button Command="{Binding CancelBackupCommand}"
+                                        ToolTip="Cancelar copia programada"
+                                        Style="{StaticResource EstiloBotonSecundario}"
+                                        Width="120" Height="36" Margin="8,0,0,0" Foreground="{StaticResource Brush_TextoClaro}"
+                                        Visibility="{Binding IsBackupScheduled, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="Cancelar" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Button>
+
+                                <!-- Restaurar: mostrar texto claro para evitar confusión -->
+                                <Button x:Name="BtnRestoreBackup" Command="{Binding RestoreBackupCommand}" ToolTip="Restaurar desde una copia existente" Style="{StaticResource EstiloBotonSecundario}" Width="120" Height="36" Margin="8,0,0,0" Foreground="{StaticResource Brush_TextoClaro}">
+                                    <TextBlock Text="Restaurar" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Button>
+                            </StackPanel>
+
+                                <Button Command="{Binding TestScheduleInOneMinuteCommand}"
+                                        Style="{StaticResource EstiloBotonSecundario}"
+                                        Width="120"
+                                        Height="36"
+                                        Padding="0"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
+                                        Margin="5"
+                                        ToolTip="Ejecuta una copia de prueba única en 1 minuto">
+                                    <TextBlock Text="Probar 1 min" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Button>
                             </WrapPanel>
                             <TextBlock Text="{Binding BackupScheduleStatus}"
                                        Foreground="{StaticResource Brush_TextoClaro}"
