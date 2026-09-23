@@ -1,10 +1,23 @@
 # ClinicaLongevidadApp
 
 > Nota: al reanudar, lea `docs/BACKFILL_SESSION_SUMMARY.md` para el contexto de la última sesión.
+## Resumen de la última sesión (acciones realizadas)
 
+- UI: `AuditoriaView` — movido el `CheckBox` largo para que quede debajo de los filtros y evitar solapamientos; ajustes de tamaños, `MinWidth` y padding en controles y botones.  
+- ViewModel: consolidada la lógica en `ViewModels/AuditoriaViewModelV2` y eliminado el `AuditoriaViewModel` legacy (PR #14).  
+- Tests/build: ejecutados localmente — `dotnet build` OK y `dotnet test` pasó (49/49).  
+- Git/GH: PR #14 mergeada (squash), tag `audit-rewrite-8684b20` creado y release marcado como pre-release.  
+- Artefacto: publicado localmente `audit-rewrite-8684b20.zip` (creado en el workspace); subida automática al release pendiente (intentos con `gh release upload` fallaron — se recomienda adjuntar manualmente si es necesario).
 <!-- CI and Coverage badges: replace {owner}/{repo} with your repository -->
+Pendiente / siguientes pasos prioritarios:
 ![CI](https://github.com/{owner}/{repo}/actions/workflows/ci.yml/badge.svg)
+- Verificación manual UI en entorno local: abrir la app, ir a `Auditoría` y validar checklist (`.github/AUDIT_PR_CHECKLIST.md`).  
+- Probar flujos de backup (Copia ahora, Programar/Cancelar, Probar 1 min, Restaurar) y revisar logs en `%LocalAppData%`.  
+- Revisar advertencias detectadas en compilación (nullability warnings en `AuditoriaViewModelV2` y `AuditoriaService`) y corregir donde sea necesario.  
+- Adjuntar el artefacto ZIP al release (manual o con token) si se requiere distribuible para auditoría.  
+- Documentar política de persistencia de claves y decidir provider (Key Vault en producción).
 ![Coverage](https://codecov.io/gh/{owner}/{repo}/branch/main/graph/badge.svg)
+Las tareas anteriores están registradas también en la PR y en `CHANGELOG.md`.
 
 ## Changelog
 
