@@ -1,0 +1,79 @@
+Guía rápida para auditoría — ClinicaLongevidadApp
+
+Propósito
+-------
+Documento operativo para que el auditor ejecute comprobaciones básicas del subsistema de auditoría, genere artefactos y valide el comportamiento de backups/restore e integridad.
+
+Cómo ejecutar (entorno local)
+----------------------------
+1. Abrir PowerShell en el workspace del proyecto.
+2. Forzar sesión de administrador y suprimir diálogos (modo auditor):
+   - `$env:FORCE_ADMIN='1'; $env:SILENT_MODE='1'; dotnet run --project ClinicaLongevidadApp.csproj --configuration Debug --no-launch-profile`
+   - `FORCE_ADMIN=1` fija `Sesion.RolActual` a `Administración` para mostrar menús y comandos administrativos.
+   - `SILENT_MODE=1` suprime MessageBox y auto-confirma yes/no para flujos automatizados.
+
+Generar artefactos de diagnóstico
+---------------------------------
+- Desde la UI (Administración → Auditoría) use el botón `Generar diagnóstico`.
+  - Esto ejecuta `GenerateQuickDiagnostics()` y `GenerateIntegrityDiagnosticReport()` en background.
+  - Al terminar mostrará la ubicación de los artefactos y opcionalmente abrirá la carpeta en el Explorador.
+- Alternativa CLI: si la app está corriendo con `App.AuditoriaService` disponible, ejecutar desde código o herramienta auxiliar `tools/GenerateIntegrity` (si existe en el repo).
+
+Rutas de artefactos
+-------------------
+- Quick diagnostics (resumen + CSV):
+  - `%LocalAppData%\ClinicaLongevidadApp\logs` (p. ej. `IntegrityQuickSummary_<ts>.txt`, `IntegrityProblemRows_<ts>.csv`)
+- Informe de integridad completo (JSON):
+  - `%ProgramData%\ClinicaLongevidadApp\AuditIntegrityReports` (p. ej. `IntegrityReport_<ts>_id<N>.json`)
+- Backups generados por la UI:
+  - `%LocalAppData%\ClinicaLongevidadApp\backups` (ficheros `.db`)
+- Logs de backup/VM:
+  - `%LocalAppData%\ClinicaLongevidadApp\logs\backup.log`
+  - `%LocalAppData%\ClinicaLongevidadApp\logs\backup_vm.log`
+
+Checklist mínimo para el auditor
+-------------------------------
+1. Menú y permisos
+   - Iniciar app con `FORCE_ADMIN=1` y verificar que las opciones administrativas aparecen (`Generar diagnóstico`, `Rotar HMAC`, backups).
+2. Generar diagnóstico
+   - Pulsar `Generar diagnóstico` y comprobar que se generan los ficheros en las rutas indicadas.
+   - Ver contenido del `IntegrityQuickSummary_*.txt` y del CSV `IntegrityProblemRows_*.csv` si existen.
+   - Si hay errores de integridad, revisar el JSON en `AuditIntegrityReports`.
+3. Probar backup ahora
+   - En la vista Auditoría (admin) pulsar `Copia ahora`.
+   - Verificar que aparece fichero en `backups` y que `backup.log`/`backup_vm.log` tienen entrada.
+   - Restaurar: usar `Restaurar` con uno de los backups y confirmar que la operación finaliza sin error.
+4. Prueba de programación
+   - Programar una copia con hora próxima o usar `Probar 1 min` y verificar ejecución automática.
+   - Confirmar que no se crean múltiples schedulers (buscar duplicados en `backup_vm.log`).
+5. Verificación de integridad
+   - Ejecutar `GenerateQuickDiagnostics()` y `GenerateIntegrityDiagnosticReport()` (UI o herramientas) y revisar `IntegrityReport_*.json` si existe.
+   - Comprobar campos `PrevHash`, `Hash`, `Signature` y `KeyVersion`/`KeyVersionEnc` en las filas problemáticas.
+6. Rotación de claves (solo si procede)
+   - Ejecutar `Rotar HMAC` / `Rotar ENC` y verificar que se registra evento en Auditoría y que `KeyVersion` en nuevas filas corresponde al nuevo valor.
+7. Exportar y revisar CSV
+   - Exportar CSV desde UI y comprobar que contiene las columnas esperadas (Fechahora, UsuarioAdmin, Accion, Modulo, Detalles, PrevHash, Hash, Signature, KeyVersion...)
+
+Evidencia y artefactos a recopilar
+---------------------------------
+- Quick summary TXT y CSV generados.
+- Integrity report JSON si se produjo.
+- Ejemplo de backup `.db` y logs relevantes (`backup.log`, `backup_vm.log`, `AuditDebug.txt` si existe).
+- Capturas de pantalla de la UI con las acciones (opcional).
+
+Automatización recomendada
+--------------------------
+Hay un script opcional que puede añadirse para generar artefactos y empaquetarlos; puedo crear `scripts/generate_audit_artifacts.ps1` si lo preferís.
+
+Notas de seguridad y privacidad
+------------------------------
+- Por defecto los diagnósticos redactan `Detalles` para evitar exponer datos sensibles. Para incluir `Detalles` en informes se usan variables de entorno:
+  - `AUDIT_INCLUDE_DETAILS_IN_REPORTS=1`
+  - `AUDIT_INCLUDE_DETAILS_IN_DIAGNOSTICS=1`
+  - Úsalas sólo en entornos seguros de pruebas.
+- Rotar claves es una operación sensible: documentad y aprobad con procedimientos operativos antes de ejecutar en entornos compartidos.
+
+Contacto y siguientes pasos
+--------------------------
+- Si queréis, añado el script `scripts/generate_audit_artifacts.ps1` y automatizo el empaquetado + subida al release.
+- También puedo añadir esta guía al `README.md` o mantenerla en `docs/AUDIT_GUIDE.md` (ya creada).
