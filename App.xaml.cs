@@ -276,6 +276,49 @@ namespace ClinicaLongevidadApp
             MainWindow = mainWindow;
 
             mainWindow.Show();
+
+            // If FORCE_ADMIN helper is enabled, run an automated self-check of the audit subsystem
+            // so the auditor can immediately obtain quick diagnostics and an integrity report.
+            try
+            {
+                if (string.Equals(Environment.GetEnvironmentVariable("FORCE_ADMIN"), "1", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Run diagnostics in background to avoid blocking UI startup
+                    System.Threading.Tasks.Task.Run(() =>
+                    {
+                        try
+                        {
+                            string? quickPath = null;
+                            string? reportPath = null;
+                            try { quickPath = AuditoriaService?.GenerateQuickDiagnostics(); } catch { }
+                            try { reportPath = AuditoriaService?.GenerateIntegrityDiagnosticReport(); } catch { }
+
+                            try { AuditLogHelper.Info("App", "FORCE_ADMIN self-check completed. quick=" + (quickPath ?? "") + " report=" + (reportPath ?? "")); } catch { }
+
+                            // Notify the UI with locations (marshal to UI thread)
+                            try
+                            {
+                                Application.Current?.Dispatcher?.Invoke(() =>
+                                {
+                                    try
+                                    {
+                                        var sb = new System.Text.StringBuilder();
+                                        sb.AppendLine("Audit self-check completed.");
+                                        if (!string.IsNullOrWhiteSpace(quickPath)) sb.AppendLine("Quick diagnostics dir: " + quickPath);
+                                        if (!string.IsNullOrWhiteSpace(reportPath)) sb.AppendLine("Integrity report: " + reportPath);
+                                        if (string.IsNullOrWhiteSpace(quickPath) && string.IsNullOrWhiteSpace(reportPath)) sb.AppendLine("No diagnostics were generated (no integrity errors or service unavailable).");
+                                        try { MessageBox.Show(sb.ToString(), "Audit self-check", MessageBoxButton.OK, MessageBoxImage.Information); } catch { }
+                                    }
+                                    catch { }
+                                });
+                            }
+                            catch { }
+                        }
+                        catch { }
+                    });
+                }
+            }
+            catch { }
         }
 
         public static void CerrarSesion()
