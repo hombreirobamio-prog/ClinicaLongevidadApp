@@ -61,7 +61,7 @@ namespace ClinicaLongevidadApp
                 conn ??= Environment.GetEnvironmentVariable("AUDIT_DB") ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(conn))
                 {
-                    MessageBox.Show("Audit connection string not available.", "Audit Diagnostics", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Services.DialogHelper.ShowWarning("Audit Diagnostics", "Audit connection string not available.");
                     return;
                 }
 
@@ -75,11 +75,11 @@ namespace ClinicaLongevidadApp
                 msg.AppendLine("Diagnóstico completado.");
                 if (!string.IsNullOrWhiteSpace(quick)) msg.AppendLine("Ficheros rápidos escritos en: " + quick);
                 if (!string.IsNullOrWhiteSpace(report)) msg.AppendLine("Informe de integridad escrito en: " + report);
-                MessageBox.Show(msg.ToString(), "Audit Diagnostics", MessageBoxButton.OK, MessageBoxImage.Information);
+                Services.DialogHelper.ShowInfo("Audit Diagnostics", msg.ToString());
             }
             catch (Exception ex)
             {
-                try { MessageBox.Show("Error generando diagnósticos: " + ex.Message, "Audit Diagnostics", MessageBoxButton.OK, MessageBoxImage.Error); } catch { }
+                try { Services.DialogHelper.ShowError("Audit Diagnostics", "Error generando diagnósticos: " + ex.Message); } catch { }
             }
         }
 
@@ -111,7 +111,7 @@ namespace ClinicaLongevidadApp
             try { conn = App.Current.Properties["AuditConnectionString"] as string; } catch { }
             if (string.IsNullOrWhiteSpace(conn))
             {
-                MessageBox.Show("Audit connection string not available.", "Audit Recent", MessageBoxButton.OK, MessageBoxImage.Warning);
+                Services.DialogHelper.ShowWarning("Audit Recent", "Audit connection string not available.");
                 return;
             }
 

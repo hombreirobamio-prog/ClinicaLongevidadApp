@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using ClinicaLongevidadApp.ViewModels;
 
@@ -20,12 +20,7 @@ namespace ClinicaLongevidadApp.Views
 
                 if (string.IsNullOrWhiteSpace(areaSeleccionada))
                 {
-                    MessageBox.Show(
-                        "Debe seleccionar un área antes de continuar.",
-                        "Aviso",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning
-                    );
+                    Services.DialogHelper.ShowWarning("Aviso", "Debe seleccionar un área antes de continuar.");
                     return;
                 }
 
