@@ -48,7 +48,7 @@ WHERE (DetallesPlain IS NOT NULL AND TRIM(DetallesPlain) <> '')
         /// Apply backfill by creating audit events for rows with plaintext details.
         /// This method is safe in that it does not modify existing rows; it appends new events.
         /// </summary>
-        public async Task<BackfillResult> ApplyBackfillAsync(int batchSize = 100, bool dryRun = true)
+        public Task<BackfillResult> ApplyBackfillAsync(int batchSize = 100, bool dryRun = true)
         {
             var processed = 0;
             var created = 0;
@@ -110,7 +110,7 @@ ORDER BY Id LIMIT @limit";
                 }
             }
 
-            return new BackfillResult { Processed = processed, Created = created, Skipped = skipped };
+            return Task.FromResult(new BackfillResult { Processed = processed, Created = created, Skipped = skipped });
         }
     }
 

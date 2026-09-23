@@ -1,7 +1,6 @@
 using System.Windows;
 
 using System;
-using System.Windows;
 using ClinicaLongevidadApp.Services;
 
 namespace ClinicaLongevidadApp

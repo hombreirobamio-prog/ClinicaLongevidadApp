@@ -11,7 +11,7 @@ namespace ClinicaLongevidadApp.Tests
     {
         private readonly string _dbPath;
         private readonly string _connectionString;
-        private readonly AuditoriaService _auditoriaServiceBackup;
+        private readonly AuditoriaService? _auditoriaServiceBackup;
 
         public ServiceAuditoriaIntegrationTests()
         {

@@ -15,6 +15,7 @@ namespace ClinicaLongevidadApp.Services
         private Timer? _timer;
         private readonly object _sync = new object();
         private DateTime? _nextRun;
+        private readonly IKeyProvider? _keyProvider;
         // Event fired when a backup has been created. Parameter: full path to created backup file.
         public event System.Action<string>? BackupCompleted;
 
@@ -29,11 +30,22 @@ namespace ClinicaLongevidadApp.Services
                 var line = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}\r\n";
                 File.AppendAllText(file, line, Encoding.UTF8);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // Avoid recursive logging on failure to write the debug log.
+                // Swallow the error silently to avoid throwing from diagnostic logging.
+                _ = ex;
+            }
         }
 
         public BackupService()
+            : this(null)
         {
+        }
+
+        public BackupService(IKeyProvider? keyProvider)
+        {
+            _keyProvider = keyProvider ?? new LocalKeyProvider();
         }
 
         /// <summary>
@@ -124,6 +136,18 @@ namespace ClinicaLongevidadApp.Services
                     AuditLogHelper.Info("BackupService", $"Online backup completed successfully to '{backupPath}'");
                 }
 
+                // After creating backup, compute checksum and optional HMAC signature for integrity
+                try
+                {
+                    ComputeAndWriteChecksums(backupPath);
+                }
+                catch (Exception ex)
+                {
+                    try { WriteDebugLog($"ComputeAndWriteChecksums failed: {ex.Message}\n{ex.StackTrace}"); } catch { }
+                    AuditLogHelper.Warning("BackupService", $"ComputeAndWriteChecksums failed: {ex.Message}");
+                    throw;
+                }
+
                 return backupPath;
             }
             catch (Exception ex)
@@ -133,6 +157,17 @@ namespace ClinicaLongevidadApp.Services
                 {
                     File.Copy(dbFile, backupPath, overwrite: false);
                     AuditLogHelper.Info("BackupService", $"File copy backup completed successfully to '{backupPath}'");
+                    // Ensure integrity artifacts are written even when falling back to file copy.
+                    try
+                    {
+                        ComputeAndWriteChecksums(backupPath);
+                    }
+                    catch (Exception ex3)
+                    {
+                        try { WriteDebugLog($"ComputeAndWriteChecksums (fallback) failed: {ex3.Message}"); } catch { }
+                        AuditLogHelper.Warning("BackupService", $"ComputeAndWriteChecksums (fallback) failed: {ex3.Message}");
+                    }
+
                     return backupPath;
                 }
                 catch (Exception ex2)
@@ -256,6 +291,17 @@ namespace ClinicaLongevidadApp.Services
             var ts = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
             var preRestore = Path.Combine(dir, $"{name}_pre_restore_{ts}{ext}");
 
+            // Verify checksum/HMAC before restore if present
+            try
+            {
+                VerifyBackupIntegrity(backupFilePath);
+            }
+            catch (Exception ex)
+            {
+                AuditLogHelper.Warning("BackupService", $"Backup integrity verification failed: {ex.Message}");
+                throw;
+            }
+
             // Preserve current DB
             File.Copy(dbFile, preRestore, overwrite: false);
 
@@ -263,6 +309,91 @@ namespace ClinicaLongevidadApp.Services
             File.Copy(backupFilePath, dbFile, overwrite: true);
 
             AuditLogHelper.Info("BackupService", $"Database restored from '{backupFilePath}'. Previous DB saved as '{preRestore}'");
+        }
+
+        private void ComputeAndWriteChecksums(string backupPath)
+        {
+            // Compute SHA256. Open with ReadWrite share to allow reading the file while another handle
+            // (e.g., SQLite/native) still has it open for a short time.
+            using var fs = File.Open(backupPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var sha = System.Security.Cryptography.SHA256.Create();
+            var hash = sha.ComputeHash(fs);
+            var hex = Convert.ToHexString(hash).ToLowerInvariant();
+            File.WriteAllText(backupPath + ".sha256", hex, Encoding.UTF8);
+
+            // Compute HMAC if key available
+            try
+            {
+                var hmacKey = _keyProvider?.GetHmacKey();
+                if (hmacKey != null && hmacKey.Length > 0)
+                {
+                    fs.Seek(0, SeekOrigin.Begin);
+                    using var h = new System.Security.Cryptography.HMACSHA256(hmacKey);
+                    var mac = h.ComputeHash(fs);
+                    var macHex = Convert.ToHexString(mac).ToLowerInvariant();
+                    File.WriteAllText(backupPath + ".hmac", macHex, Encoding.UTF8);
+                    var ver = _keyProvider?.GetHmacKeyVersion() ?? string.Empty;
+                    File.WriteAllText(backupPath + ".hmac.ver", ver, Encoding.UTF8);
+                }
+            }
+            catch (Exception ex)
+            {
+                try { WriteDebugLog($"ComputeAndWriteChecksums HMAC failed: {ex.Message}"); } catch { }
+                AuditLogHelper.Warning("BackupService", $"ComputeAndWriteChecksums HMAC failed: {ex.Message}");
+            }
+        }
+
+        private void VerifyBackupIntegrity(string backupPath)
+        {
+            // Verify SHA256 if present
+            var shaPath = backupPath + ".sha256";
+            if (File.Exists(shaPath))
+            {
+                var expected = File.ReadAllText(shaPath).Trim();
+                using var fs = OpenFileWithRetry(backupPath);
+                using var sha = System.Security.Cryptography.SHA256.Create();
+                var actual = Convert.ToHexString(sha.ComputeHash(fs)).ToLowerInvariant();
+                if (!string.Equals(expected, actual, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("SHA256 checksum mismatch for backup file.");
+                }
+            }
+
+            // Verify HMAC if present
+            var hmacPath = backupPath + ".hmac";
+            var hmacVerPath = backupPath + ".hmac.ver";
+            if (File.Exists(hmacPath))
+            {
+                var expectedMac = File.ReadAllText(hmacPath).Trim();
+                var ver = File.Exists(hmacVerPath) ? File.ReadAllText(hmacVerPath).Trim() : null;
+                var key = _keyProvider?.GetHmacKeyByVersion(ver);
+                if (key == null || key.Length == 0) throw new InvalidOperationException("HMAC key for backup verification not available.");
+                using var fs = OpenFileWithRetry(backupPath);
+                using var h = new System.Security.Cryptography.HMACSHA256(key);
+                var actual = Convert.ToHexString(h.ComputeHash(fs)).ToLowerInvariant();
+                if (!string.Equals(expectedMac, actual, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("HMAC verification failed for backup file.");
+                }
+            }
+        }
+
+        private FileStream OpenFileWithRetry(string path, int attempts = 3, int delayMs = 200)
+        {
+            for (int i = 0; ; i++)
+            {
+                try
+                {
+                    // Open for read and allow other processes to read/write briefly while still creating the stream.
+                    return File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                }
+                catch (IOException) when (i < attempts - 1)
+                {
+                    // transient lock; wait a bit and retry
+                    try { System.Threading.Thread.Sleep(delayMs); } catch { }
+                    continue;
+                }
+            }
         }
 
         private static string? GetSqliteFilePathFromConnectionString(string connectionString)

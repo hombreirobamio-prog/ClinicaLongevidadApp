@@ -16,7 +16,6 @@ namespace ClinicaLongevidadApp.Tests
             {
                 // Only set defaults if not already provided by CI or environment
                 const string hmacEnv = "AUDIT_HMAC_KEY";
-                const string encEnv = "AUDIT_ENC_KEY";
 
                 if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(hmacEnv)))
                 {

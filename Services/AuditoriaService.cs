@@ -21,7 +21,7 @@ namespace ClinicaLongevidadApp.Services
         public bool IsInitialized { get; private set; } = false;
 
         private readonly string _connectionString;
-        private readonly IKeyProvider _keyProvider;
+        private readonly IKeyProvider _keyProvider = null!;
         private static readonly string SessionIdActual = Guid.NewGuid().ToString("N");
 
         private static bool RunningUnderTest()

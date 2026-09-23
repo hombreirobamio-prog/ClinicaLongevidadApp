@@ -2,7 +2,11 @@
 
 -> Nota: al reanudar, lea `docs/BACKFILL_SESSION_SUMMARY.md` para el contexto de la última sesión.
 
-> Nota para el auditor: para ejecutar la comprobación de auditoría sin tocar código, doble clic en `scripts\\run_audit_for_auditor.bat` o siga `docs/AUDIT_GUIDE.md`. Si desea que los artefactos se suban automáticamente al release, asegúrese de tener `gh` autenticado con permisos `repo`.
+-> Nota para el auditor: para ejecutar la comprobación de auditoría sin tocar código, doble clic en `scripts\\run_audit_for_auditor.bat` o siga `docs/AUDIT_GUIDE.md`. Si desea que los artefactos se suban automáticamente al release, asegúrese de tener `gh` autenticado con permisos `repo`.
+
+One-click audit (recommended)
+- `scripts\\run_audit_for_auditor.bat` — doble clic para ejecutar el runner: arranca la app en modo auditor, espera la generación de diagnósticos, empaqueta `logs`/`backups`/`AuditIntegrityReports` en un ZIP y (opcional) sube el ZIP al release `audit-rewrite-8684b20` si `gh` está disponible.
+- `scripts\\generate_audit_artifacts.ps1` — script PowerShell invocado por el runner; puede ejecutarse directamente para ajustar timeout o desactivar la subida automática.
 ## Resumen de la última sesión (acciones realizadas)
 
 - UI: `AuditoriaView` — movido el `CheckBox` largo para que quede debajo de los filtros y evitar solapamientos; ajustes de tamaños, `MinWidth` y padding en controles y botones.  
@@ -10,6 +14,28 @@
 - Tests/build: ejecutados localmente — `dotnet build` OK y `dotnet test` pasó (49/49).  
 - Git/GH: PR #14 mergeada (squash), tag `audit-rewrite-8684b20` creado y release marcado como pre-release.  
 - Artefacto: publicado localmente `audit-rewrite-8684b20.zip` (creado en el workspace); subida automática al release pendiente (intentos con `gh release upload` fallaron — se recomienda adjuntar manualmente si es necesario).
+
+### Cambios aplicados en esta sesión (resumen corto)
+
+- `Services/BackupService.cs`: mitigación de bloqueo al verificar backups:
+  - Reemplazado acceso directo con `File.OpenRead` por `OpenFileWithRetry` que abre el archivo con `FileShare.ReadWrite` y realiza reintentos breves en caso de `IOException` por locks transitorios.
+  - `ComputeAndWriteChecksums` ya abre el fichero en modo compatible con lecturas concurrentes.
+  - Se eliminó el `using System.Threading;` ambiguo y se usó `System.Threading.Thread.Sleep` fully-qualified para evitar conflictos con `System.Timers.Timer`.
+
+Estos cambios permiten que las pruebas de backup/restore sean más robustas frente a locks temporales del sistema.
+
+### Pendiente tras los cambios aplicados
+
+- Ejecutar la suite de tests completa (`dotnet test`) para verificar que la corrección evita la excepción `IOException` observada en `BackupServiceTests.TriggerImmediateBackup_CreatesFiles_And_RestoreSucceeds`.
+- Revisar logs generados en `%LocalAppData%\\ClinicaLongevidadApp\\logs\\backup.log` y `backup_vm.log` tras ejecutar la prueba de backup.
+- Considerar añadir tests adicionales que simulen locks concurrentes para evitar regresiones.
+
+### Siguientes pasos recomendados
+
+- Ejecutar localmente: `dotnet test --no-build --filter "FullyQualifiedName~BackupServiceTests.TriggerImmediateBackup_CreatesFiles_And_RestoreSucceeds"` y revisar que pasa sin errores.
+- Si el problema persiste, instrumentar temporalmente `BackupService` para dump de handles/processos que bloquean el fichero o aumentar el tiempo/máximo de reintentos en `OpenFileWithRetry`.
+- Commitear y push de cambios: `git add Services/BackupService.cs README.md && git commit -m "fix(backup): retry on locked backup file and use shared read" && git push`.
+
 <!-- CI and Coverage badges: replace {owner}/{repo} with your repository -->
 Pendiente / siguientes pasos prioritarios:
 ![CI](https://github.com/{owner}/{repo}/actions/workflows/ci.yml/badge.svg)
