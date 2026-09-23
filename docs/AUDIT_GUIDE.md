@@ -77,3 +77,14 @@ Contacto y siguientes pasos
 --------------------------
 - Si queréis, añado el script `scripts/generate_audit_artifacts.ps1` y automatizo el empaquetado + subida al release.
 - También puedo añadir esta guía al `README.md` o mantenerla en `docs/AUDIT_GUIDE.md` (ya creada).
+
+One-click para el auditor
+-------------------------
+Para facilitar la tarea al auditor se ha añadido un runner sencillo: `scripts/run_audit_for_auditor.bat`.
+
+- Qué hace: inicia la aplicación en modo auditor (FORCE_ADMIN + SILENT_MODE), espera la generación de diagnósticos, empaqueta los artefactos en un ZIP y, si está configurado `gh` autenticado, intenta subirlo al release `audit-rewrite-8684b20`.
+- Uso: desde el equipo donde está el repositorio, el auditor sólo tiene que hacer doble clic en `scripts\run_audit_for_auditor.bat`.
+- Requisitos para subida automática: `gh` instalado y autenticado con token que tenga permisos `repo`. Si no está, el ZIP se crea localmente en el workspace y no se sube.
+- Tiempo de espera: el runner usa un timeout (por defecto 300s) para esperar a los artefactos; si la generación tarda más, se puede ejecutar manualmente el PowerShell `scripts\generate_audit_artifacts.ps1` con un timeout mayor.
+
+Recomendación: entrega al auditor una copia del repo con la carpeta `scripts` y las instrucciones de esta guía; así no necesita tocar nada del código ni del entorno.
