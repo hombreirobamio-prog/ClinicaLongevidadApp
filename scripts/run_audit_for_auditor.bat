@@ -9,7 +9,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0generate_audit_a
 if %ERRORLEVEL% equ 0 (
     echo Audit session finished.
 ) else (
-    echo Audit session completed with errors (exit code %ERRORLEVEL%). Check logs and the script output.
+    echo Audit session completed with errors - exit code %ERRORLEVEL%. Check logs and the script output.
 )
 pause
 ENDLOCAL
