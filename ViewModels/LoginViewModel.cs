@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Windows;
 using ClinicaLongevidadApp.Commands;
@@ -300,11 +300,26 @@ namespace ClinicaLongevidadApp.ViewModels
             string titulo,
             MessageBoxImage icono)
         {
-            MessageBox.Show(
-                mensaje,
-                titulo,
-                MessageBoxButton.OK,
-                icono);
+            try
+            {
+                if (icono == MessageBoxImage.Error)
+                {
+                    Services.DialogHelper.ShowError(titulo, mensaje);
+                }
+                else if (icono == MessageBoxImage.Warning)
+                {
+                    Services.DialogHelper.ShowWarning(titulo, mensaje);
+                }
+                else
+                {
+                    Services.DialogHelper.ShowInfo(titulo, mensaje);
+                }
+            }
+            catch
+            {
+                // fallback
+                try { System.Windows.MessageBox.Show(mensaje, titulo, System.Windows.MessageBoxButton.OK, icono); } catch { }
+            }
         }
     }
 }

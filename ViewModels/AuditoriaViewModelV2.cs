@@ -121,7 +121,7 @@ namespace ClinicaLongevidadApp.ViewModels
                             ShowSnackbar($"Copia creada: {System.IO.Path.GetFileName(created)}", 6);
                             if (showDialog)
                             {
-                                try { MessageBox.Show($"Copia creada:\n{created}", "Backup", MessageBoxButton.OK, MessageBoxImage.Information); } catch { }
+                                try { Services.DialogHelper.ShowInfo("Backup", $"Copia creada:\n{created}"); } catch { }
                             }
                         }
                         else
@@ -272,10 +272,10 @@ namespace ClinicaLongevidadApp.ViewModels
                 ShowSnackbar($@"Copia programada a las {ts:hh\:mm}", 5);
                 BackupScheduleStatus = $"Programada para {NextScheduledRun:dd/MM/yyyy HH:mm}.";
             }
-            catch (Exception ex)
+                catch (Exception ex)
             {
                 BackupScheduleStatus = "No se pudo programar la copia: " + ex.Message;
-                try { MessageBox.Show("Error al programar copia: " + ex.Message, "Backup", MessageBoxButton.OK, MessageBoxImage.Error); } catch { }
+                try { Services.DialogHelper.ShowError("Backup", "Error al programar copia: " + ex.Message); } catch { }
             }
         }
 
@@ -330,7 +330,7 @@ namespace ClinicaLongevidadApp.ViewModels
             }
             catch (Exception ex)
             {
-                try { MessageBox.Show("Error al programar copia de prueba: " + ex.Message, "Backup", MessageBoxButton.OK, MessageBoxImage.Error); } catch { }
+                try { Services.DialogHelper.ShowError("Backup", "Error al programar copia de prueba: " + ex.Message); } catch { }
             }
         }
 
@@ -357,8 +357,8 @@ namespace ClinicaLongevidadApp.ViewModels
                 if (res != true) return;
                 var path = dlg.FileName;
 
-                var confirm = MessageBox.Show($"Restaurar desde {path}?\nSe creará una copia previa del estado actual de la base de datos.", "Restaurar copia", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                if (confirm != MessageBoxResult.Yes) return;
+                var confirm = Services.DialogHelper.ConfirmYesNo("Restaurar copia", $"Restaurar desde {path}?\nSe creará una copia previa del estado actual de la base de datos.");
+                if (!confirm) return;
 
                 var conn = Application.Current.Properties["AuditConnectionString"] as string;
                 if (string.IsNullOrWhiteSpace(conn))
@@ -375,11 +375,11 @@ namespace ClinicaLongevidadApp.ViewModels
 
                 _backupService.RestoreBackup(path, conn);
                 ShowSnackbar("Restauración completada", 6);
-                MessageBox.Show("Restauración completada. Reinicia la aplicación si es necesario.", "Restauración", MessageBoxButton.OK, MessageBoxImage.Information);
+                Services.DialogHelper.ShowInfo("Restauración", "Restauración completada. Reinicia la aplicación si es necesario.");
             }
             catch (Exception ex)
             {
-                try { MessageBox.Show("Error restaurando copia: " + ex.Message, "Restauración", MessageBoxButton.OK, MessageBoxImage.Error); } catch { }
+                try { Services.DialogHelper.ShowError("Restauración", "Error restaurando copia: " + ex.Message); } catch { }
             }
         }
 
@@ -902,7 +902,7 @@ namespace ClinicaLongevidadApp.ViewModels
             }
             catch (Exception ex)
             {
-                try { MessageBox.Show(ex.Message, "Auditoría - Error", MessageBoxButton.OK, MessageBoxImage.Error); } catch { }
+                try { Services.DialogHelper.ShowError("Auditoría - Error", ex.Message); } catch { }
             }
         }
 
@@ -954,7 +954,7 @@ namespace ClinicaLongevidadApp.ViewModels
             }
             catch (Exception ex)
             {
-                try { MessageBox.Show(ex.Message, "Aplicar filtros", MessageBoxButton.OK, MessageBoxImage.Error); } catch { }
+                try { Services.DialogHelper.ShowError("Aplicar filtros", ex.Message); } catch { }
             }
         }
 
