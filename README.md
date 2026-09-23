@@ -1,6 +1,8 @@
 # ClinicaLongevidadApp
 
-> Nota: al reanudar, lea `docs/BACKFILL_SESSION_SUMMARY.md` para el contexto de la última sesión.
+-> Nota: al reanudar, lea `docs/BACKFILL_SESSION_SUMMARY.md` para el contexto de la última sesión.
+
+> Nota para el auditor: para ejecutar la comprobación de auditoría sin tocar código, doble clic en `scripts\\run_audit_for_auditor.bat` o siga `docs/AUDIT_GUIDE.md`. Si desea que los artefactos se suban automáticamente al release, asegúrese de tener `gh` autenticado con permisos `repo`.
 ## Resumen de la última sesión (acciones realizadas)
 
 - UI: `AuditoriaView` — movido el `CheckBox` largo para que quede debajo de los filtros y evitar solapamientos; ajustes de tamaños, `MinWidth` y padding en controles y botones.  
