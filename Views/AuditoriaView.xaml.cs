@@ -21,6 +21,28 @@ namespace ClinicaLongevidadApp.Views
                 true);
         }
 
+        private void BtnOpenDiagnostics_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var localLogs = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "logs");
+                var commonReports = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "ClinicaLongevidadApp", "AuditIntegrityReports");
+
+                string? toOpen = null;
+                if (System.IO.Directory.Exists(commonReports)) toOpen = commonReports;
+                else if (System.IO.Directory.Exists(localLogs)) toOpen = localLogs;
+
+                if (string.IsNullOrWhiteSpace(toOpen))
+                {
+                    Services.DialogHelper.ShowWarning("Abrir diagnósticos", "No hay carpetas de diagnósticos disponibles en este equipo.");
+                    return;
+                }
+
+                try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer", "\"" + toOpen + "\"") { UseShellExecute = true }); } catch (Exception ex) { Services.DialogHelper.ShowError("Abrir diagnósticos", "No se pudo abrir la carpeta: " + ex.Message); }
+            }
+            catch { }
+        }
+
         private void BtnGenerarDiagnostico_Click(object sender, RoutedEventArgs e)
         {
             try

@@ -394,6 +394,17 @@
                             Margin="5"
                             Visibility="{Binding IsAdmin, Converter={StaticResource BoolToVis}}"/>
 
+                    <Button Content="Abrir diagnósticos"
+                            Click="BtnOpenDiagnostics_Click"
+                            Style="{StaticResource EstiloBotonSecundario}"
+                            MinWidth="180"
+                            Height="40"
+                            Padding="0"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            Margin="5"
+                            Visibility="{Binding IsAdmin, Converter={StaticResource BoolToVis}}"/>
+
                     <Button Content="Rotar HMAC"
                             Command="{Binding RotateHmacCommand}"
                             Style="{StaticResource EstiloBotonSecundario}"
