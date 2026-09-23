@@ -255,6 +255,22 @@ namespace ClinicaLongevidadApp
             InputManager.Current.PreProcessInput += OnPreProcessInput;
             StartInactivityMonitoring();
 
+            // Developer helper: allow forcing an admin session for local testing/auditor review.
+            // Set environment variable FORCE_ADMIN=1 to enable. This is opt-in and only intended
+            // for development/testing scenarios.
+            try
+            {
+                if (string.Equals(Environment.GetEnvironmentVariable("FORCE_ADMIN"), "1", StringComparison.OrdinalIgnoreCase))
+                {
+                    Services.Sesion.RolActual = "Administración";
+                    Services.Sesion.AreaActual = "Administración";
+                    Services.Sesion.UsuarioActual = "admin.local";
+                    try { AuditLogHelper.Info("App", "FORCE_ADMIN enabled: session forced to Administración for testing."); } catch { }
+                    try { Services.Sesion.NotifyChanged(); } catch { }
+                }
+            }
+            catch { }
+
             var mainWindow = new MainWindow();
 
             MainWindow = mainWindow;
