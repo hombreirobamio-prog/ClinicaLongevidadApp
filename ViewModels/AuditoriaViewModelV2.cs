@@ -351,6 +351,7 @@ namespace ClinicaLongevidadApp.ViewModels
         {
             try
             {
+                await Task.CompletedTask;
                 var backupDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "backups");
                 var dlg = new Microsoft.Win32.OpenFileDialog() { Filter = "SQLite backups (*.db;*.sqlite;*.sqlite3;*.bak)|*.db;*.sqlite;*.sqlite3;*.bak|All files|*.*", Title = "Seleccionar copia de seguridad para restaurar", InitialDirectory = backupDir };
                 var res = dlg.ShowDialog();
@@ -625,7 +626,7 @@ namespace ClinicaLongevidadApp.ViewModels
         {
             try
             {
-                try { _backupService.BackupCompleted -= OnBackupCompleted; } catch { }
+                try { if (_backupService != null) _backupService.BackupCompleted -= OnBackupCompleted; } catch { }
                 try { _backupService?.CancelScheduledBackup(); } catch { }
             }
             catch { }
@@ -849,7 +850,7 @@ namespace ClinicaLongevidadApp.ViewModels
             {
                 ListaAuditoria.Clear();
 
-                List<AuditoriaModel> rows = null;
+                List<AuditoriaModel>? rows = null;
                 if (_auditoriaService is not null)
                 {
                     rows = await Task.Run(() => _auditoriaService.GetRecentAudits(limit));
@@ -956,6 +957,7 @@ namespace ClinicaLongevidadApp.ViewModels
             {
                 try { Services.DialogHelper.ShowError("Aplicar filtros", ex.Message); } catch { }
             }
+            await Task.CompletedTask;
         }
 
         public Task LimpiarFiltrosAsync()
@@ -1007,9 +1009,9 @@ namespace ClinicaLongevidadApp.ViewModels
         {
             var list = rows?.ToList() ?? new List<AuditoriaModel>();
 
-            void Update(ObservableCollection<string> target, IEnumerable<string?> values)
+                void Update(ObservableCollection<string> target, IEnumerable<string?> values)
             {
-                var vals = values.Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s.Trim())
+                var vals = values.Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => (s ?? string.Empty).Trim())
                                  .Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(s => s).ToList();
                 var desired = new List<string>(1 + vals.Count) { "-- Todos --" };
                 desired.AddRange(vals);
@@ -1022,7 +1024,8 @@ namespace ClinicaLongevidadApp.ViewModels
                 for (int i = 0; i < desired.Count; i++)
                 {
                     var d = desired[i];
-                    var idx = target.IndexOf(target.FirstOrDefault(x => string.Equals(x?.Trim(), d, StringComparison.OrdinalIgnoreCase)));
+                    var existing = target.FirstOrDefault(x => string.Equals(x?.Trim(), d, StringComparison.OrdinalIgnoreCase));
+                    var idx = existing == null ? -1 : target.IndexOf(existing);
                     if (idx == -1) target.Insert(i, d);
                     else if (idx != i) try { target.Move(idx, i); } catch { }
                 }
@@ -1164,6 +1167,7 @@ namespace ClinicaLongevidadApp.ViewModels
                 MessageBox.Show($"Exportación CSV completada:\n{path}", "Exportar CSV", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch { }
+            await Task.CompletedTask;
         }
     }
 }

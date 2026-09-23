@@ -77,10 +77,14 @@ namespace ClinicaLongevidadApp.Tests
                         Buffer.BlockCopy(combined, nonce.Length, tag, 0, tag.Length);
                         Buffer.BlockCopy(combined, nonce.Length + tag.Length, cipher, 0, cipher.Length);
                         var plain = new byte[cipher.Length];
-                        using (var aesg = new System.Security.Cryptography.AesGcm(encKey))
+                        // AesGcm(byte[]) is obsolete in .NET 8; explicitly allow the legacy constructor
+#pragma warning disable SYSLIB0053
+                        var keyForAes = encKey ?? Array.Empty<byte>();
+                        using (var aesg = new System.Security.Cryptography.AesGcm(keyForAes))
                         {
                             aesg.Decrypt(nonce, cipher, tag, plain);
                         }
+#pragma warning restore SYSLIB0053
                         payload = System.Text.Encoding.UTF8.GetString(plain);
                     }
                     catch { payload = detallesEnc; }

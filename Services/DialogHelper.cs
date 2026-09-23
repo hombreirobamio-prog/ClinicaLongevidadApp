@@ -20,6 +20,11 @@ namespace ClinicaLongevidadApp.Services
                     || (a.FullName ?? string.Empty).IndexOf("microsoft.visualstudio.testplatform", StringComparison.OrdinalIgnoreCase) >= 0
                     || (a.FullName ?? string.Empty).IndexOf("nunit", StringComparison.OrdinalIgnoreCase) >= 0);
             }
+            catch
+            {
+                return false;
+            }
+        }
 
         private static bool ShouldSuppressDialogs()
         {
@@ -31,11 +36,6 @@ namespace ClinicaLongevidadApp.Services
             }
             catch { }
             return false;
-        }
-            catch
-            {
-                return false;
-            }
         }
 
         public static void ShowInfo(string title, string message)
