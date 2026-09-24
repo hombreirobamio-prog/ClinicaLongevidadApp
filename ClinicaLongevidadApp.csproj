@@ -28,6 +28,10 @@
     <Page Remove="tools\**\*" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="tools\RunIntegrityReport\Program.cs" />
+  </ItemGroup>
+
   <!-- Tool entry points should not be compiled into the main application. Tools are separate projects
        and are built independently. The explicit Compile include for tool Program.cs files caused
        duplicate entry-point errors; they are intentionally omitted here. -->
@@ -55,6 +59,8 @@
     <None Include="tools\DbAuditInspect\DbAuditInspect.csproj" />
     <None Include="tools\GenerateIntegrity\GenerateIntegrity.csproj" />
     <None Include="tools\RotateKeys\RotateKeys.csproj" />
+    <None Include="tools\RunIntegrityReport\RunIntegrityReport.csproj" />
+    <None Include="tools\summarize_integrity_report.ps1" />
     <!-- tools project is excluded from main build to avoid multiple entry points -->
   </ItemGroup>
 

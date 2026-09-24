@@ -84,7 +84,8 @@ namespace ClinicaLongevidadApp.Tests
             _originalCopyPath = _dbPath + ".orig";
             File.Copy(_dbPath, _originalCopyPath, overwrite: true);
 
-            svc.RestoreBackup(backupPath, _conn);
+            // backupPath is ensured to exist above; use null-forgiving to satisfy static analysis
+            svc.RestoreBackup(backupPath!, _conn);
 
             // After restore, DB file exists and has content
             using var conn = new SqliteConnection(_conn);
@@ -98,7 +99,9 @@ namespace ClinicaLongevidadApp.Tests
         public void Dispose()
         {
             try { if (File.Exists(_dbPath)) File.Delete(_dbPath); } catch { }
+            try { if (!string.IsNullOrWhiteSpace(_originalCopyPath) && File.Exists(_originalCopyPath)) File.Delete(_originalCopyPath); } catch { }
             try { if (Directory.Exists(_backupDir)) Directory.Delete(_backupDir, true); } catch { }
+            try { Environment.SetEnvironmentVariable("AUDIT_HMAC_KEY", _previousHmacEnv); } catch { }
         }
     }
 }
