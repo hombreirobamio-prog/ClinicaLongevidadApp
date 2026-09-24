@@ -42,7 +42,7 @@ namespace ClinicaLongevidadApp.Tests
                 var logFile = Path.Combine(logDir, "backup.log");
                 string logContents = "";
                 try { if (File.Exists(logFile)) logContents = File.ReadAllText(logFile); } catch { }
-                Assert.True(false, $"Backup not created. backupPath='{backupPath}'. backup log:\n{logContents}");
+                throw new Xunit.Sdk.XunitException($"Backup not created. backupPath='{backupPath}'. backup log:\n{logContents}");
             }
 
             var sha = backupPath + ".sha256";
@@ -50,7 +50,7 @@ namespace ClinicaLongevidadApp.Tests
             {
                 string files = "";
                 try { files = string.Join("\n", Directory.GetFiles(_backupDir)); } catch { }
-                Assert.True(false, $"SHA256 file missing for backup. backupDir files:\n{files}");
+                throw new Xunit.Sdk.XunitException($"SHA256 file missing for backup. backupDir files:\n{files}");
             }
             var shaText = File.ReadAllText(sha).Trim();
             Assert.False(string.IsNullOrWhiteSpace(shaText));
