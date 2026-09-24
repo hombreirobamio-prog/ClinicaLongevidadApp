@@ -27,7 +27,8 @@ namespace ClinicaLongevidadApp.Tests
             using var conn = new SqliteConnection(_connectionString);
             conn.Open();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT Accion, Resultado, UsuarioAdmin, Detalles FROM Auditoria ORDER BY Id DESC LIMIT 1";
+            // Prefer the explicit DetallesPlain column when available (tests should not fail if Detalles is stored encrypted).
+            cmd.CommandText = "SELECT Accion, Resultado, UsuarioAdmin, COALESCE(DetallesPlain, Detalles) AS DetallesCombined FROM Auditoria ORDER BY Id DESC LIMIT 1";
             using var reader = cmd.ExecuteReader();
             Assert.True(reader.Read());
 
