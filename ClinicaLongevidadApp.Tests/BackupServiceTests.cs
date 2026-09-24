@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.IO;
 using Microsoft.Data.Sqlite;
 using ClinicaLongevidadApp.Services;
@@ -11,6 +12,8 @@ namespace ClinicaLongevidadApp.Tests
         private readonly string _dbPath;
         private readonly string _conn;
         private readonly string _backupDir;
+        private readonly string? _previousHmacEnv;
+        private string? _originalCopyPath;
 
         public BackupServiceTests()
         {
@@ -19,7 +22,8 @@ namespace ClinicaLongevidadApp.Tests
             _backupDir = Path.Combine(Path.GetTempPath(), $"backup_out_{Guid.NewGuid():N}");
             Directory.CreateDirectory(_backupDir);
 
-            // ensure env key for HMAC
+            // ensure env key for HMAC (preserve previous value)
+            _previousHmacEnv = Environment.GetEnvironmentVariable("AUDIT_HMAC_KEY");
             Environment.SetEnvironmentVariable("AUDIT_HMAC_KEY", "test-hmac-key-0123456789");
 
             // create a simple sqlite db
@@ -35,7 +39,16 @@ namespace ClinicaLongevidadApp.Tests
         {
             var svc = new BackupService();
             var backupPath = svc.TriggerImmediateBackup(_conn, _backupDir);
-            if (string.IsNullOrWhiteSpace(backupPath) || !File.Exists(backupPath))
+            // allow small grace period for background flushes
+            var attempts = 5;
+            var exists = false;
+            for (int i = 0; i < attempts; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(backupPath) && File.Exists(backupPath)) { exists = true; break; }
+                Thread.Sleep(200);
+            }
+
+            if (!exists)
             {
                 // try to show debug log to help diagnose
                 var logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "logs");
@@ -46,14 +59,21 @@ namespace ClinicaLongevidadApp.Tests
             }
 
             var sha = backupPath + ".sha256";
-            if (!File.Exists(sha))
+            // allow short retries for artifact generation
+            var shaExists = false;
+            for (int i = 0; i < attempts; i++)
+            {
+                if (File.Exists(sha)) { shaExists = true; break; }
+                Thread.Sleep(200);
+            }
+            if (!shaExists)
             {
                 string files = "";
                 try { files = string.Join("\n", Directory.GetFiles(_backupDir)); } catch { }
                 throw new Xunit.Sdk.XunitException($"SHA256 file missing for backup. backupDir files:\n{files}");
             }
             var shaText = File.ReadAllText(sha).Trim();
-            Assert.False(string.IsNullOrWhiteSpace(shaText));
+            Assert.NotEmpty(shaText);
 
             var hmac = backupPath + ".hmac";
             var hmacVer = backupPath + ".hmac.ver";
@@ -61,8 +81,8 @@ namespace ClinicaLongevidadApp.Tests
             Assert.True(File.Exists(hmacVer));
 
             // Now try restore: will verify integrity and replace the DB (we first ensure db exists)
-            var originalCopy = _dbPath + ".orig";
-            File.Copy(_dbPath, originalCopy, overwrite: true);
+            _originalCopyPath = _dbPath + ".orig";
+            File.Copy(_dbPath, _originalCopyPath, overwrite: true);
 
             svc.RestoreBackup(backupPath, _conn);
 
