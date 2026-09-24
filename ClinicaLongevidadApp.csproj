@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -29,7 +29,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="tools\RunIntegrityReport\Program.cs" />
+    <!-- Tool Program.cs files were explicitly included here previously which caused duplicate
+         entry point (CS0017) errors when building the WPF application. Tool projects are
+         built separately and their sources must not be compiled into the main application.
+         The explicit Compile includes were removed so tools remain separate projects. -->
   </ItemGroup>
 
   <!-- Tool entry points should not be compiled into the main application. Tools are separate projects
@@ -56,11 +59,12 @@
     <None Include="ClinicaLongevidadApp.Tests\README.md" />
     <None Include="tools\AuditDecrypt\AuditDecrypt.csproj" />
     <None Include="tools\AuditDecrypt\README.md" />
+    <None Include="tools\BACKFILL_PLAN.md" />
     <None Include="tools\DbAuditInspect\DbAuditInspect.csproj" />
     <None Include="tools\GenerateIntegrity\GenerateIntegrity.csproj" />
     <None Include="tools\RotateKeys\RotateKeys.csproj" />
-    <None Include="tools\RunIntegrityReport\RunIntegrityReport.csproj" />
     <None Include="tools\summarize_integrity_report.ps1" />
+    <None Include="tools\VerifyIntegrity\VerifyIntegrity.csproj" />
     <!-- tools project is excluded from main build to avoid multiple entry points -->
   </ItemGroup>
 
