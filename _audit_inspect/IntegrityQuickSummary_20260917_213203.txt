@@ -1,8 +1,0 @@
-﻿Integrity quick diagnostics generated at 2026-09-17T21:32:03.8099287+02:00
-ConnectionString=Data Source=C:\Users\Francisco\AppData\Local\ClinicaLongevidad.db
-Total rows=1067
-Rows with empty Hash=470
-Rows with empty Signature=551
-
-First problematic rows exported to CSV (if any):
-C:\Users\Francisco\AppData\Local\ClinicaLongevidadApp\logs\IntegrityProblemRows_20260917_213203.csv
