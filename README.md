@@ -533,3 +533,27 @@ Notes:
 - Reports and diagnostics redact `Detalles` by default to avoid leaking sensitive payloads; enable inclusion only in trusted environments.
 - The audit table is protected by SQLite triggers to enforce append-only behavior (UPDATE/DELETE are aborted).
 
+## Cierre de sesión: 24/09/2026
+
+- Fecha: 24/09/2026
+- Estado: sesión de auditoría y limpieza de código realizada.
+
+Hecho (resumen corto):
+- Limpiadas `using` duplicadas y eliminado warning de inicialización en `AuditoriaService` (`_keyProvider = null!`).
+- Corregidos avisos `async` sin `await` en `AuditoriaViewModelV2`/`BackfillService` para evitar advertencias de compilación.
+- Ejecutada la suite de tests local (`dotnet test`) — 50/50 passed.
+- Ejecutado el runner de auditoría; creado `audit-artifacts_20260924_003022.zip` y subido al release `audit-rewrite-8684b20` en `hombreirobamio-prog/ClinicaLongevidadApp`.
+
+Qué se está haciendo ahora:
+- Inspección y extracción de los artefactos de auditoría para revisión manual.
+- Revisión de logs en `%LocalAppData%\\ClinicaLongevidadApp\\logs` y generación de informe de integridad si procede.
+
+Pendiente / siguiente pasos:
+- Revisar `backup.log` y `backup_vm.log` tras ejecuciones programadas y tests de backup.
+- Añadir tests que simulen locks concurrentes sobre ficheros de backup para evitar regresiones.
+- Decidir política de persistencia/rotación de claves HMAC/ENC (Local vs Key Vault) y aplicar cambios en `KeyRotation` si procede.
+- Corregir advertencias en tests (`xUnit2020` recomendaciones) reemplazando `Assert.True(false, ...)` por `Assert.Fail(...)` o equivalente.
+
+Acción recomendada antes de cerrar sesión:
+- Confirmar que los logs y el informe de integridad no contienen problemas críticos. Si todo OK, commitear y push final.
+
