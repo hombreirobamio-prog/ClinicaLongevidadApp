@@ -22,6 +22,27 @@ if (-not (Test-Path $ManifestPath)) {
 
 Write-Host "Verifying manifest: $ManifestPath"
 
+function Compute-SHA256($path) {
+    try {
+        return (Get-FileHash -Path $path -Algorithm SHA256 -ErrorAction Stop).Hash.ToLower()
+    }
+    catch {
+        # Fallback to .NET implementation if Get-FileHash is not available
+        try {
+            $sha = [System.Security.Cryptography.SHA256]::Create()
+            $fs = [System.IO.File]::Open($path, 'Open', 'Read', 'Read')
+            try {
+                $raw = $sha.ComputeHash($fs)
+                return ([System.BitConverter]::ToString($raw) -replace '-','').ToLower()
+            }
+            finally { $fs.Close() }
+        }
+        catch {
+            throw $_
+        }
+    }
+}
+
 $lines = Get-Content -Path $ManifestPath -ErrorAction Stop
 
 $entries = @()
@@ -65,7 +86,7 @@ foreach ($e in $entries) {
         continue
     }
     try {
-        $hash = (Get-FileHash -Path $filePath -Algorithm SHA256 -ErrorAction Stop).Hash.ToLower()
+        $hash = Compute-SHA256 $filePath
     } catch {
         $errors += "HASH-ERROR: $filePath -> $_"
         Write-Host "  -> Error computing hash: $_" -ForegroundColor Red
