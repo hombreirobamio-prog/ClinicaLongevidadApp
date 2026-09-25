@@ -88,3 +88,32 @@ Para facilitar la tarea al auditor se ha añadido un runner sencillo: `scripts/r
 - Tiempo de espera: el runner usa un timeout (por defecto 300s) para esperar a los artefactos; si la generación tarda más, se puede ejecutar manualmente el PowerShell `scripts\generate_audit_artifacts.ps1` con un timeout mayor.
 
 Recomendación: entrega al auditor una copia del repo con la carpeta `scripts` y las instrucciones de esta guía; así no necesita tocar nada del código ni del entorno.
+
+Verificación del manifiesto y backups
+-----------------------------------
+Cuando se genera el ZIP de auditoría, el runner añade un fichero `audit_manifest_YYYYMMDD_HHMMSS.txt` que contiene los valores SHA256 y, si existen, los HMAC y su versión para cada backup `.db` incluido.
+
+Pasos básicos para verificar localmente:
+
+- Comprobar el hash SHA256 de un backup:
+  - PowerShell: `Get-FileHash -Algorithm SHA256 "path\to\ClinicaLongevidadApp_backup_*.db"`
+  - Comparar el valor con la entrada `SHA256:` en el `audit_manifest_*.txt` o con el contenido del fichero `.sha256` junto al backup.
+
+- Comprobar HMAC (nota: requiere la clave HMAC):
+  - Si dispones de la clave HMAC, puedes calcular el HMAC-SHA256 en PowerShell con .NET:
+    ```powershell
+    $key = "<clave-en-texto-plano>"
+    $hmac = New-Object System.Security.Cryptography.HMACSHA256([System.Text.Encoding]::UTF8.GetBytes($key))
+    $hash = $hmac.ComputeHash([System.IO.File]::ReadAllBytes("path\to\ClinicaLongevidadApp_backup_*.db"))
+    ([BitConverter]::ToString($hash) -replace '-','').ToLower()
+    ```
+  - Comparar el resultado con `HMAC:` en el manifiesto o con el fichero `.hmac` si existe.
+
+- Verificar versión de HMAC: el fichero `.hmac.ver` contiene la `KeyVersion` usada; confirmar que coincide con la gestión de claves registrada.
+
+Uso del runner con requisitos estrictos
+-------------------------------------
+- Para exigir que se genere al menos un backup permanente y fallar si no hay ninguno (útil en CI):
+  - `.\	ools\generate_audit_artifacts.ps1 -RequireBackup`
+- Si prefieres omitir la generación del backup permanente (por ejemplo en entornos de desarrollo), usa `-SkipPermanentBackup`.
+
