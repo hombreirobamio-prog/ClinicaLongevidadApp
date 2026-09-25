@@ -328,23 +328,35 @@ namespace ClinicaLongevidadApp.Services
 
                 void doCompute()
                 {
-                    using var fs = OpenFileWithRetry(backupPath);
-                    using var sha = System.Security.Cryptography.SHA256.Create();
-                    fs.Seek(0, SeekOrigin.Begin);
-                    var hash = sha.ComputeHash(fs);
-                    var hex = Convert.ToHexString(hash).ToLowerInvariant();
-                    File.WriteAllText(backupPath + ".sha256", hex, Encoding.UTF8);
-
-                    var hmacKey = _keyProvider?.GetHmacKey();
-                    if (hmacKey != null && hmacKey.Length > 0)
+                    // To avoid transient locks on the newly created backup file we copy it
+                    // to a temporary file and compute hashes over the copy. This is robust
+                    // against readers/writers that keep short-lived handles on the original.
+                    var tempPath = backupPath + ".tmp";
+                    try
                     {
-                        fs.Seek(0, SeekOrigin.Begin);
-                        using var h = new System.Security.Cryptography.HMACSHA256(hmacKey);
-                        var mac = h.ComputeHash(fs);
-                        var macHex = Convert.ToHexString(mac).ToLowerInvariant();
-                        File.WriteAllText(backupPath + ".hmac", macHex, Encoding.UTF8);
-                        var ver = _keyProvider?.GetHmacKeyVersion() ?? string.Empty;
-                        File.WriteAllText(backupPath + ".hmac.ver", ver, Encoding.UTF8);
+                        File.Copy(backupPath, tempPath, overwrite: true);
+                        using var fs2 = File.Open(tempPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                        using var sha = System.Security.Cryptography.SHA256.Create();
+                        fs2.Seek(0, SeekOrigin.Begin);
+                        var hash = sha.ComputeHash(fs2);
+                        var hex = Convert.ToHexString(hash).ToLowerInvariant();
+                        File.WriteAllText(backupPath + ".sha256", hex, Encoding.UTF8);
+
+                        var hmacKey = _keyProvider?.GetHmacKey();
+                        if (hmacKey != null && hmacKey.Length > 0)
+                        {
+                            fs2.Seek(0, SeekOrigin.Begin);
+                            using var h = new System.Security.Cryptography.HMACSHA256(hmacKey);
+                            var mac = h.ComputeHash(fs2);
+                            var macHex = Convert.ToHexString(mac).ToLowerInvariant();
+                            File.WriteAllText(backupPath + ".hmac", macHex, Encoding.UTF8);
+                            var ver = _keyProvider?.GetHmacKeyVersion() ?? string.Empty;
+                            File.WriteAllText(backupPath + ".hmac.ver", ver, Encoding.UTF8);
+                        }
+                    }
+                    finally
+                    {
+                        try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { }
                     }
                 }
 
