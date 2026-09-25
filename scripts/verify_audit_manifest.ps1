@@ -82,7 +82,7 @@ foreach ($e in $entries) {
         Write-Host "  No SHA value present in manifest for this file. Computed: $hash" -ForegroundColor Yellow
     }
 
-    # check companion .sha256 file
+    # check companion .sha256 file (required)
     $shaFile = "$filePath.sha256"
     if (Test-Path $shaFile) {
         try { $shaContent = (Get-Content $shaFile -ErrorAction Stop) -join ""; $shaContent = $shaContent.Trim() } catch { $shaContent = $null }
@@ -93,31 +93,44 @@ foreach ($e in $entries) {
             } else {
                 Write-Host "  Companion .sha256 matches." -ForegroundColor Green
             }
-        }
-    }
-
-    # check presence of hmac and hmac.ver
-    $hmacFile = "$filePath.hmac"
-    $hmacVerFile = "$filePath.hmac.ver"
-    if ($e.HMAC) {
-        if (Test-Path $hmacFile) {
-            $hmacContent = (Get-Content $hmacFile -ErrorAction SilentlyContinue) -join ""; $hmacContent = $hmacContent.Trim()
-            if ($hmacContent.ToLower() -ne $e.HMAC) {
-                $warnings += "HMAC-MISMATCH: $hmacFile (manifest: $($e.HMAC), file: $hmacContent)"
-                Write-Host "  HMAC in manifest differs from companion .hmac" -ForegroundColor Yellow
-            } else { Write-Host "  HMAC present and matches manifest." -ForegroundColor Green }
         } else {
-            $warnings += "HMAC-MISSING-FILE: $hmacFile"
-            Write-Host "  HMAC expected in manifest but companion .hmac file not found." -ForegroundColor Yellow
+            $errors += "SHAFILE-READERROR: $shaFile"
+            Write-Host "  Could not read companion .sha256 file." -ForegroundColor Red
         }
     } else {
-        if (Test-Path $hmacFile) { Write-Host "  Companion .hmac exists but manifest has no HMAC entry." -ForegroundColor Yellow }
+        $errors += "SHAFILE-MISSING: $shaFile"
+        Write-Host "  Companion .sha256 file not found (required)." -ForegroundColor Red
+    }
+
+    # check presence of hmac and hmac.ver (require .hmac companion)
+    $hmacFile = "$filePath.hmac"
+    $hmacVerFile = "$filePath.hmac.ver"
+    if (Test-Path $hmacFile) {
+        $hmacContent = (Get-Content $hmacFile -ErrorAction SilentlyContinue) -join ""; $hmacContent = $hmacContent.Trim()
+        if ($hmacContent) {
+            if ($e.HMAC) {
+                if ($hmacContent.ToLower() -ne $e.HMAC) {
+                    $errors += "HMAC-MISMATCH: $hmacFile (manifest: $($e.HMAC), file: $hmacContent)"
+                    Write-Host "  HMAC in manifest differs from companion .hmac" -ForegroundColor Red
+                } else {
+                    Write-Host "  HMAC present and matches manifest." -ForegroundColor Green
+                }
+            } else {
+                Write-Host "  Companion .hmac present (manifest has no HMAC entry)." -ForegroundColor Yellow
+            }
+        } else {
+            $errors += "HMAC-READERROR: $hmacFile"
+            Write-Host "  Could not read companion .hmac file." -ForegroundColor Red
+        }
+    } else {
+        $errors += "HMAC-MISSING: $hmacFile"
+        Write-Host "  Companion .hmac file not found (required)." -ForegroundColor Red
     }
     if ($e.HMACVersion) {
         if (Test-Path $hmacVerFile) {
             $ver = (Get-Content $hmacVerFile -ErrorAction SilentlyContinue) -join ""; $ver = $ver.Trim()
-            if ($ver -ne $e.HMACVersion) { $warnings += "HMACVER-MISMATCH: $hmacVerFile (manifest: $($e.HMACVersion), file: $ver)"; Write-Host "  HMAC.version mismatch" -ForegroundColor Yellow } else { Write-Host "  HMAC.version present and matches." -ForegroundColor Green }
-        } else { $warnings += "HMACVER-MISSING-FILE: $hmacVerFile"; Write-Host "  HMAC.version expected but file not found." -ForegroundColor Yellow }
+            if ($ver -ne $e.HMACVersion) { $errors += "HMACVER-MISMATCH: $hmacVerFile (manifest: $($e.HMACVersion), file: $ver)"; Write-Host "  HMAC.version mismatch" -ForegroundColor Red } else { Write-Host "  HMAC.version present and matches." -ForegroundColor Green }
+        } else { $errors += "HMACVER-MISSING-FILE: $hmacVerFile"; Write-Host "  HMAC.version expected but file not found." -ForegroundColor Red }
     }
 }
 
