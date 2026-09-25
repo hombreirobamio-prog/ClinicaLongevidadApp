@@ -89,6 +89,37 @@ Para facilitar la tarea al auditor se ha añadido un runner sencillo: `scripts/r
 
 Recomendación: entrega al auditor una copia del repo con la carpeta `scripts` y las instrucciones de esta guía; así no necesita tocar nada del código ni del entorno.
 
+Estado actual (resumen para el auditor)
+-------------------------------------
+Breve resumen de lo que ya está implementado y cómo verificarlo rápidamente:
+
+- Generación de artefactos automatizada: `scripts/generate_audit_artifacts.ps1` crea un ZIP con
+  logs, informes de integridad y backups permanentes. El script puede ejecutar `tools/InvokeBackup`
+  para generar una copia permanente en `artifacts/backups` antes de empaquetar.
+- Manifiesto de verificación: el empaquetador añade `audit_manifest_YYYYMMDD_HHMMSS.txt` con `SHA256` y,
+  cuando procede, `HMAC` y `HMAC.Version` para cada backup incluido.
+- Verificador automático: `scripts/verify_audit_manifest.ps1` valida que los SHA calculados de los
+  `.db` coinciden con los valores del manifiesto y comprueba la presencia/consistencia de `.sha256` / `.hmac` / `.hmac.ver`.
+- Runner "one-click": `scripts/run_audit_for_auditor.bat` ejecuta el flujo completo:
+  1) genera artefactos (requiere al menos un backup permanente por defecto),
+  2) ejecuta el verificador del manifiesto y aborta si hay errores,
+  3) sube el ZIP al release `audit-rewrite-8684b20` si la verificación es correcta.
+- Estado operativo: el flujo ha sido probado localmente — ZIPs como `audit-artifacts_20260925_150728.zip` se crearon y se subieron correctamente.
+- Código y PR: los cambios (scripts y documentos) fueron agrupados en la rama `audit/artifacts-improvements` y se creó la PR
+  correspondiente: https://github.com/hombreirobamio-prog/ClinicaLongevidadApp/pull/15
+
+Qué puede hacer el auditor ahora (pasos rápidos)
+----------------------------------------------
+- Ejecutar el runner (one-click): doble clic en `scripts\run_audit_for_auditor.bat` o desde PowerShell:
+  `.\scripts\run_audit_for_auditor.bat` — el proceso fallará si no se genera al menos un backup permanente o si la verificación detecta discrepancias.
+- Inspeccionar artefactos sin ejecutar el runner: ejecutar `scripts/generate_audit_artifacts.ps1 -SkipPermanentBackup -ListFiles` para empaquetar lo disponible sin crear backup nuevo.
+- Verificar manualmente el manifiesto: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify_audit_manifest.ps1` (usa el manifiesto más reciente si no se pasa ruta).
+
+Recomendación final
+-------------------
+Conservar `-RequireBackup` activo en ejecuciones de auditoría y en CI para asegurar evidencia reproducible. Si preferís ejecuciones locales menos estrictas, usar `-SkipPermanentBackup`.
+
+
 Verificación del manifiesto y backups
 -----------------------------------
 Cuando se genera el ZIP de auditoría, el runner añade un fichero `audit_manifest_YYYYMMDD_HHMMSS.txt` que contiene los valores SHA256 y, si existen, los HMAC y su versión para cada backup `.db` incluido.
