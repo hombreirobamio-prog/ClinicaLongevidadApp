@@ -319,18 +319,20 @@ namespace ClinicaLongevidadApp.Services
 
         private void ComputeAndWriteChecksums(string backupPath)
         {
-            // Compute SHA256. Open with retry and ReadWrite share to allow reading the file
-            // while another handle (e.g., SQLite/native) still has it open briefly.
-            using var fs = OpenFileWithRetry(backupPath);
-            using var sha = System.Security.Cryptography.SHA256.Create();
-            fs.Seek(0, SeekOrigin.Begin);
-            var hash = sha.ComputeHash(fs);
-            var hex = Convert.ToHexString(hash).ToLowerInvariant();
-            File.WriteAllText(backupPath + ".sha256", hex, Encoding.UTF8);
-
-            // Compute HMAC if key available
             try
             {
+                try { WriteDebugLog($"ComputeAndWriteChecksums start: {backupPath}"); } catch { }
+                // Compute SHA256. Open with retry and ReadWrite share to allow reading the file
+                // while another handle (e.g., SQLite/native) still has it open briefly.
+                using var fs = OpenFileWithRetry(backupPath);
+                using var sha = System.Security.Cryptography.SHA256.Create();
+                fs.Seek(0, SeekOrigin.Begin);
+                var hash = sha.ComputeHash(fs);
+                var hex = Convert.ToHexString(hash).ToLowerInvariant();
+                File.WriteAllText(backupPath + ".sha256", hex, Encoding.UTF8);
+                try { WriteDebugLog($"ComputeAndWriteChecksums wrote sha: {backupPath}.sha256"); } catch { }
+
+                // Compute HMAC if key available
                 var hmacKey = _keyProvider?.GetHmacKey();
                 if (hmacKey != null && hmacKey.Length > 0)
                 {
@@ -341,12 +343,18 @@ namespace ClinicaLongevidadApp.Services
                     File.WriteAllText(backupPath + ".hmac", macHex, Encoding.UTF8);
                     var ver = _keyProvider?.GetHmacKeyVersion() ?? string.Empty;
                     File.WriteAllText(backupPath + ".hmac.ver", ver, Encoding.UTF8);
+                    try { WriteDebugLog($"ComputeAndWriteChecksums wrote hmac+ver: {backupPath}.hmac, {backupPath}.hmac.ver"); } catch { }
+                }
+                else
+                {
+                    try { WriteDebugLog($"ComputeAndWriteChecksums: no HMAC key available"); } catch { }
                 }
             }
             catch (Exception ex)
             {
-                try { WriteDebugLog($"ComputeAndWriteChecksums HMAC failed: {ex.Message}"); } catch { }
-                AuditLogHelper.Warning("BackupService", $"ComputeAndWriteChecksums HMAC failed: {ex.Message}");
+                try { WriteDebugLog($"ComputeAndWriteChecksums failed: {ex.Message}\n{ex.StackTrace}"); } catch { }
+                AuditLogHelper.Warning("BackupService", $"ComputeAndWriteChecksums failed: {ex.Message}");
+                throw;
             }
         }
 
