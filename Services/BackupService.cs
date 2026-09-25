@@ -393,7 +393,7 @@ namespace ClinicaLongevidadApp.Services
             }
         }
 
-        private FileStream OpenFileWithRetry(string path, int attempts = 5, int delayMs = 200)
+        private FileStream OpenFileWithRetry(string path, int attempts = 10, int delayMs = 300)
         {
             for (int i = 0; ; i++)
             {
