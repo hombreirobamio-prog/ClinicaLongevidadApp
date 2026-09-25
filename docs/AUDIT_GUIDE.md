@@ -65,6 +65,28 @@ Automatización recomendada
 --------------------------
 Hay un script opcional que puede añadirse para generar artefactos y empaquetarlos; puedo crear `scripts/generate_audit_artifacts.ps1` si lo preferís.
 
+CI / Integración continua (comportamiento actual)
+-----------------------------------------------
+Se ha añadido un workflow de GitHub Actions (`.github/workflows/audit-pipeline.yml`) que automatiza build, tests y la generación/verificación de artefactos de auditoría.
+
+- Qué hace el workflow:
+  1. Compila el proyecto y ejecuta tests.
+  2. Ejecuta `scripts/generate_audit_artifacts.ps1 -RequireBackup` para generar los artefactos de auditoría (incluye backup permanente cuando procede).
+  3. Ejecuta `scripts/verify_audit_manifest.ps1 -RequireHmac` (verificación estricta en CI).
+  4. Sube los artefactos del job como `audit-artifacts` (artifact del workflow) siempre.
+  5. Intenta subir el ZIP al Release solamente si existe el Release para el tag configurado. La creación automática de la Release se permite únicamente en ejecuciones manuales (`workflow_dispatch`).
+
+- Política por seguridad (recomendada y aplicada):
+  - Evitamos crear Releases automáticamente desde pushes para prevenir publicaciones accidentales desde PRs o builds automatizados.
+  - En `push` a `master` el workflow exige que la Release ya exista; si no existe el job falla para forzar creación manual de la Release.
+  - En ejecuciones manuales (`workflow_dispatch`) el workflow puede crear la Release y subir el ZIP (útil para handoffs de auditoría controlados).
+
+- Cómo ejecutar desde GitHub:
+  - Manual: en la pestaña Actions seleccionar `Audit pipeline` y pulsar `Run workflow`. Opcionalmente proporcionar `release_tag` para indicar el tag de Release (por defecto `audit-rewrite-8684b20`).
+  - Push: crear previamente la Release en GitHub con el tag deseado, luego push a `master` disparará el pipeline y el ZIP se subirá al Release existente.
+
+Recomendación: para auditorías formales usar la ejecución manual y confirmar el `release_tag` o crear la Release antes del push para que CI pueda adjuntar los artefactos.
+
 Notas de seguridad y privacidad
 ------------------------------
 - Por defecto los diagnósticos redactan `Detalles` para evitar exponer datos sensibles. Para incluir `Detalles` en informes se usan variables de entorno:

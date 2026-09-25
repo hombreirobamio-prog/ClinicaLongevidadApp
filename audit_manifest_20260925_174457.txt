@@ -1,0 +1,43 @@
+﻿File: C:\Proyectos\ClinicaLongevidadApp\artifacts\backups\ClinicaLongevidadApp_backup_20260925_124018251.db
+  SHA256: 84a5668aef9f40fd9f8e4c72f86b8115ede9d32ab5b579fdc98890682f2864b2
+  HMAC: 6c7ea16d4df844920d1ea4dddb887f716bc128ab3c04666f753bd2398fb0e125
+  HMAC.Version: 20260921225942_698eee55
+
+File: C:\Proyectos\ClinicaLongevidadApp\artifacts\backups\ClinicaLongevidadApp_backup_20260925_130728069.db
+  SHA256: 84a5668aef9f40fd9f8e4c72f86b8115ede9d32ab5b579fdc98890682f2864b2
+  HMAC: 6c7ea16d4df844920d1ea4dddb887f716bc128ab3c04666f753bd2398fb0e125
+  HMAC.Version: 20260921225942_698eee55
+
+File: C:\Users\Francisco\AppData\Local\ClinicaLongevidadApp\backups\ClinicaLongevidad_backup_20260921_213547.db
+  SHA256: d3a5c57f17410f37fe1b90c0eb48e85110be5592a66d1ec5764a4793a2500ed9
+
+File: C:\Users\Francisco\AppData\Local\ClinicaLongevidadApp\backups\ClinicaLongevidad_backup_20260921_213559.db
+  SHA256: d3a5c57f17410f37fe1b90c0eb48e85110be5592a66d1ec5764a4793a2500ed9
+
+File: C:\Users\Francisco\AppData\Local\ClinicaLongevidadApp\backups\ClinicaLongevidad_backup_20260921_213618.db
+  SHA256: d3a5c57f17410f37fe1b90c0eb48e85110be5592a66d1ec5764a4793a2500ed9
+
+File: C:\Users\Francisco\AppData\Local\ClinicaLongevidadApp\backups\ClinicaLongevidad_backup_20260921_213623.db
+  SHA256: d3a5c57f17410f37fe1b90c0eb48e85110be5592a66d1ec5764a4793a2500ed9
+
+File: C:\Users\Francisco\AppData\Local\ClinicaLongevidadApp\backups\ClinicaLongevidad_backup_20260921_213700.db
+  SHA256: d3a5c57f17410f37fe1b90c0eb48e85110be5592a66d1ec5764a4793a2500ed9
+
+File: C:\Users\Francisco\AppData\Local\ClinicaLongevidadApp\backups\ClinicaLongevidad_backup_20260921_213701.db
+  SHA256: d3a5c57f17410f37fe1b90c0eb48e85110be5592a66d1ec5764a4793a2500ed9
+
+File: C:\Users\Francisco\AppData\Local\ClinicaLongevidadApp\backups\ClinicaLongevidad_backup_20260921_213800.db
+  SHA256: d3a5c57f17410f37fe1b90c0eb48e85110be5592a66d1ec5764a4793a2500ed9
+
+File: C:\Users\Francisco\AppData\Local\ClinicaLongevidadApp\backups\ClinicaLongevidad_backup_20260921_214109.db
+  SHA256: d3a5c57f17410f37fe1b90c0eb48e85110be5592a66d1ec5764a4793a2500ed9
+
+File: C:\Users\Francisco\AppData\Local\ClinicaLongevidadApp\backups\ClinicaLongevidad_backup_20260921_220100.db
+  SHA256: 7027f109a5165f05d84147ff1c3730daa6920af64c30815774ce4e510b7a7684
+
+File: C:\Users\Francisco\AppData\Local\ClinicaLongevidadApp\backups\ClinicaLongevidad_backup_20260921_221300.db
+  SHA256: 0f49a7a9685834b721d054e3b00a5639589f2a772c076964106624a0351464e5
+
+File: C:\Users\Francisco\AppData\Local\ClinicaLongevidadApp\backups\ClinicaLongevidad_backup_20260921_233600.db
+  SHA256: 40d42ebd071c5188b0c809420f113a821392613965ad3582baa4eb8ef018de78
+

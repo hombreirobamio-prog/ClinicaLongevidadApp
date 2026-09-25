@@ -28,6 +28,11 @@
     <Page Remove="tools\**\*" />
   </ItemGroup>
 
+  <!-- Explicit Compile include for tools\InvokeBackup\Program.cs removed.
+       Tools live in their own projects under tools/* and are built separately.
+       Including tool entry points in the main WPF project caused a build error
+       when the tool source was not present. -->
+
   <!-- Tool programs should not be compiled into the main application. Individual tools live
        in the `tools/*` folder and are built as separate projects. The explicit Compile
        include of a tool's Program.cs caused duplicate entry-point errors and was removed. -->
@@ -50,6 +55,7 @@
   <ItemGroup>
     <None Include=".github\workflows\audit-integrity-alert.yml" />
     <None Include=".github\workflows\audit-integrity.yml" />
+    <None Include=".github\workflows\audit-pipeline.yml" />
     <None Include=".github\workflows\ci.yml" />
     <None Include=".github\workflows\dotnet-build-test.yml" />
     <None Include="ClinicaLongevidadApp.Tests\ClinicaLongevidadApp.Tests.csproj" />
@@ -59,6 +65,7 @@
     <None Include="tools\BACKFILL_PLAN.md" />
     <None Include="tools\DbAuditInspect\DbAuditInspect.csproj" />
     <None Include="tools\GenerateIntegrity\GenerateIntegrity.csproj" />
+    <None Include="tools\InvokeBackup\InvokeBackup.csproj" />
     <None Include="tools\remove_untracked.py" />
     <None Include="tools\RotateKeys\RotateKeys.csproj" />
     <None Include="tools\RunAuditDiagnostics\RunAuditDiagnostics.csproj" />

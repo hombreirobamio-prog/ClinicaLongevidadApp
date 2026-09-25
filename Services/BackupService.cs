@@ -320,8 +320,9 @@ namespace ClinicaLongevidadApp.Services
         private void ComputeAndWriteChecksums(string backupPath)
         {
             // Synchronous, best-effort checksum/HMAC generation with retries.
-            // Tests and consumers expect checksum files to be available shortly after backup;
-            // therefore we retry for a short period instead of deferring to background.
+            // Compute over a uniquely-named temp copy created in the system temp folder using a
+            // streamed copy. This avoids using a temp file next to the DB (which could collide)
+            // and reduces transient sharing violations observed in some environments.
             try
             {
                 try { WriteDebugLog($"ComputeAndWriteChecksums start: {backupPath}"); } catch { }
@@ -330,14 +331,22 @@ namespace ClinicaLongevidadApp.Services
                 const int delayMs = 300;
                 for (int attempt = 1; attempt <= maxAttempts; attempt++)
                 {
+                    string tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".bak");
                     try
                     {
-                        // Copy to temp and compute over the copy to avoid interfering with any handles
-                        var tempPath = backupPath + ".tmp";
-                        try
+                        // Stream-copy the file while allowing the source to be read/written by others.
+                        // Use OpenFileWithRetry to tolerate transient locks on the source.
+                        using (var src = OpenFileWithRetry(backupPath))
+                        using (var dst = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
                         {
-                            File.Copy(backupPath, tempPath, overwrite: true);
-                            using var fs2 = File.Open(tempPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                            src.Seek(0, SeekOrigin.Begin);
+                            src.CopyTo(dst);
+                            dst.Flush(true);
+                        }
+
+                        // Compute hashes over the temp copy.
+                        using (var fs2 = File.Open(tempPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                        {
                             using var sha = System.Security.Cryptography.SHA256.Create();
                             fs2.Seek(0, SeekOrigin.Begin);
                             var hash = sha.ComputeHash(fs2);
@@ -356,10 +365,6 @@ namespace ClinicaLongevidadApp.Services
                                 File.WriteAllText(backupPath + ".hmac.ver", ver, Encoding.UTF8);
                             }
                         }
-                        finally
-                        {
-                            try { var t = backupPath + ".tmp"; if (File.Exists(t)) File.Delete(t); } catch { }
-                        }
 
                         try { WriteDebugLog($"ComputeAndWriteChecksums succeeded: {backupPath} (attempt {attempt})"); } catch { }
                         return;
@@ -374,6 +379,10 @@ namespace ClinicaLongevidadApp.Services
                         }
                         try { System.Threading.Thread.Sleep(delayMs); } catch { }
                         continue;
+                    }
+                    finally
+                    {
+                        try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { }
                     }
                 }
             }
@@ -436,6 +445,12 @@ namespace ClinicaLongevidadApp.Services
                         System.Threading.Thread.Sleep(delayMs);
                     }
                     catch { }
+                    continue;
+                }
+                catch (UnauthorizedAccessException) when (i < attempts - 1)
+                {
+                    // Sometimes antivirus or other tools produce transient access denied errors; retry.
+                    try { System.Threading.Thread.Sleep(delayMs); } catch { }
                     continue;
                 }
             }

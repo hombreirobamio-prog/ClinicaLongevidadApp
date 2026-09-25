@@ -1,0 +1,139 @@
+name: Audit pipeline
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag to upload audit artifacts to'
+        required: false
+        default: 'audit-rewrite-8684b20'
+
+jobs:
+  build-and-audit:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: audit-rewrite-8684b20
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore and build
+      run: |
+        dotnet restore
+        dotnet build --no-restore --configuration Release
+
+    - name: Run tests
+      run: dotnet test --no-build --configuration Release --logger "trx"
+
+    - name: Generate audit artifacts (PowerShell)
+      shell: pwsh
+      run: |
+        Write-Host "Generating audit artifacts..."
+        pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/generate_audit_artifacts.ps1 -RequireBackup
+
+    - name: Verify audit manifest (strict)
+      shell: pwsh
+      run: |
+        Write-Host "Verifying audit manifest (RequireHmac)..."
+        pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/verify_audit_manifest.ps1 -RequireHmac
+
+    - name: Find generated audit ZIP
+      shell: pwsh
+      run: |
+        $zip = Get-ChildItem -Path $PWD -Filter 'audit-artifacts_*.zip' -File | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if (-not $zip) { Write-Error 'No artifact ZIP found'; exit 1 }
+        Write-Host "Found zip: $($zip.FullName)"
+        "ZIP_PATH=$($zip.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        "ZIP_NAME=$($zip.Name)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+    - name: Check if Release exists
+      id: check_release
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const tag = (github.event.inputs && github.event.inputs.release_tag) ? github.event.inputs.release_tag : process.env.RELEASE_TAG;
+          try {
+            const res = await github.rest.repos.getReleaseByTag({ owner: github.context.repo.owner, repo: github.context.repo.repo, tag });
+            core.setOutput('exists','true');
+            core.setOutput('upload_url', res.data.upload_url);
+          } catch (e) {
+            if (e.status === 404) {
+              core.setOutput('exists','false');
+            } else {
+              throw e;
+            }
+          }
+
+    - name: Enforce release presence for push runs (strict verification)
+      if: github.event_name == 'push' && steps.check_release.outputs.exists == 'false'
+      run: |
+        echo "Strict audit verification is enabled but the release '${{ github.event.inputs.release_tag || env.RELEASE_TAG }}' does not exist."
+        echo "Failing the job to require manual release creation."
+        exit 1
+      shell: bash
+
+    - name: Create Release (manual only)
+      if: steps.check_release.outputs.exists == 'false' && github.event_name == 'workflow_dispatch'
+      id: create_release
+      uses: actions/create-release@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag_name: ${{ github.event.inputs.release_tag || env.RELEASE_TAG }}
+        release_name: ${{ github.event.inputs.release_tag || env.RELEASE_TAG }}
+        body: 'Automated audit artifacts from CI'
+        draft: false
+        prerelease: false
+
+    - name: Set upload URL env
+      run: |
+        if [ "${{ steps.check_release.outputs.exists }}" == 'true' ]; then
+          echo "UPLOAD_URL=${{ steps.check_release.outputs.upload_url }}" >> $GITHUB_ENV
+        elif [ "${{ steps.create_release.outputs.upload_url }}" != '' ]; then
+          echo "UPLOAD_URL=${{ steps.create_release.outputs.upload_url }}" >> $GITHUB_ENV
+        else
+          echo "UPLOAD_URL=" >> $GITHUB_ENV
+        fi
+      shell: bash
+
+    - name: Upload audit ZIP to Release (if available)
+      if: env.UPLOAD_URL != ''
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ env.UPLOAD_URL }}
+        asset_path: ${{ env.ZIP_PATH }}
+        asset_name: ${{ env.ZIP_NAME }}
+        asset_content_type: application/zip
+
+    - name: Log release skip
+      if: env.UPLOAD_URL == ''
+      run: |
+        echo "No release upload performed: release does not exist and automatic creation is disabled for this event." 
+      shell: bash
+
+    - name: Upload created audit ZIP artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: audit-artifacts
+        path: |
+          ./audit-artifacts_*.zip
+          ./artifacts/**/*
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: '**/*.trx'
