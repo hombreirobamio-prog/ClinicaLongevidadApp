@@ -319,84 +319,66 @@ namespace ClinicaLongevidadApp.Services
 
         private void ComputeAndWriteChecksums(string backupPath)
         {
-            // Best-effort checksum/HMAC generation. If immediate generation fails due to
-            // transient locks we schedule background retries and do not throw to avoid
-            // failing the backup operation itself.
+            // Synchronous, best-effort checksum/HMAC generation with retries.
+            // Tests and consumers expect checksum files to be available shortly after backup;
+            // therefore we retry for a short period instead of deferring to background.
             try
             {
                 try { WriteDebugLog($"ComputeAndWriteChecksums start: {backupPath}"); } catch { }
 
-                void doCompute()
+                const int maxAttempts = 20; // ~20 * 300ms = 6s total
+                const int delayMs = 300;
+                for (int attempt = 1; attempt <= maxAttempts; attempt++)
                 {
-                    // To avoid transient locks on the newly created backup file we copy it
-                    // to a temporary file and compute hashes over the copy. This is robust
-                    // against readers/writers that keep short-lived handles on the original.
-                    var tempPath = backupPath + ".tmp";
                     try
                     {
-                        File.Copy(backupPath, tempPath, overwrite: true);
-                        using var fs2 = File.Open(tempPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                        using var sha = System.Security.Cryptography.SHA256.Create();
-                        fs2.Seek(0, SeekOrigin.Begin);
-                        var hash = sha.ComputeHash(fs2);
-                        var hex = Convert.ToHexString(hash).ToLowerInvariant();
-                        File.WriteAllText(backupPath + ".sha256", hex, Encoding.UTF8);
-
-                        var hmacKey = _keyProvider?.GetHmacKey();
-                        if (hmacKey != null && hmacKey.Length > 0)
+                        // Copy to temp and compute over the copy to avoid interfering with any handles
+                        var tempPath = backupPath + ".tmp";
+                        try
                         {
+                            File.Copy(backupPath, tempPath, overwrite: true);
+                            using var fs2 = File.Open(tempPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                            using var sha = System.Security.Cryptography.SHA256.Create();
                             fs2.Seek(0, SeekOrigin.Begin);
-                            using var h = new System.Security.Cryptography.HMACSHA256(hmacKey);
-                            var mac = h.ComputeHash(fs2);
-                            var macHex = Convert.ToHexString(mac).ToLowerInvariant();
-                            File.WriteAllText(backupPath + ".hmac", macHex, Encoding.UTF8);
-                            var ver = _keyProvider?.GetHmacKeyVersion() ?? string.Empty;
-                            File.WriteAllText(backupPath + ".hmac.ver", ver, Encoding.UTF8);
-                        }
-                    }
-                    finally
-                    {
-                        try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { }
-                    }
-                }
+                            var hash = sha.ComputeHash(fs2);
+                            var hex = Convert.ToHexString(hash).ToLowerInvariant();
+                            File.WriteAllText(backupPath + ".sha256", hex, Encoding.UTF8);
 
-                try
-                {
-                    // Try immediate compute (may throw if file locked beyond retries in OpenFileWithRetry)
-                    doCompute();
-                    try { WriteDebugLog($"ComputeAndWriteChecksums succeeded immediately: {backupPath}"); } catch { }
-                    return;
-                }
-                catch (Exception exImmediate)
-                {
-                    try { WriteDebugLog($"ComputeAndWriteChecksums immediate attempt failed: {exImmediate.Message}"); } catch { }
-                    // Schedule background retries so we eventually produce artifacts without failing backup.
-                    System.Threading.ThreadPool.QueueUserWorkItem(_ =>
-                    {
-                        const int maxAttempts = 60; // retry for up to ~30s (60 * 500ms)
-                        const int delayMs = 500;
-                        for (int i = 0; i < maxAttempts; i++)
-                        {
-                            try
+                            var hmacKey = _keyProvider?.GetHmacKey();
+                            if (hmacKey != null && hmacKey.Length > 0)
                             {
-                                doCompute();
-                                try { WriteDebugLog($"ComputeAndWriteChecksums background succeeded on attempt {i + 1}: {backupPath}"); } catch { }
-                                return;
-                            }
-                            catch
-                            {
-                                try { System.Threading.Thread.Sleep(delayMs); } catch { }
-                                continue;
+                                fs2.Seek(0, SeekOrigin.Begin);
+                                using var h = new System.Security.Cryptography.HMACSHA256(hmacKey);
+                                var mac = h.ComputeHash(fs2);
+                                var macHex = Convert.ToHexString(mac).ToLowerInvariant();
+                                File.WriteAllText(backupPath + ".hmac", macHex, Encoding.UTF8);
+                                var ver = _keyProvider?.GetHmacKeyVersion() ?? string.Empty;
+                                File.WriteAllText(backupPath + ".hmac.ver", ver, Encoding.UTF8);
                             }
                         }
-                        try { WriteDebugLog($"ComputeAndWriteChecksums background retries exhausted: {backupPath}"); } catch { }
-                        AuditLogHelper.Warning("BackupService", $"ComputeAndWriteChecksums background retries exhausted for {backupPath}");
-                    });
+                        finally
+                        {
+                            try { var t = backupPath + ".tmp"; if (File.Exists(t)) File.Delete(t); } catch { }
+                        }
+
+                        try { WriteDebugLog($"ComputeAndWriteChecksums succeeded: {backupPath} (attempt {attempt})"); } catch { }
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        try { WriteDebugLog($"ComputeAndWriteChecksums attempt {attempt} failed: {ex.Message}"); } catch { }
+                        if (attempt == maxAttempts)
+                        {
+                            AuditLogHelper.Warning("BackupService", $"ComputeAndWriteChecksums failed after {maxAttempts} attempts: {ex.Message}");
+                            return; // give up but do not throw to avoid breaking backup
+                        }
+                        try { System.Threading.Thread.Sleep(delayMs); } catch { }
+                        continue;
+                    }
                 }
             }
             catch (Exception ex)
             {
-                // If something unexpected happens, log and continue; do not throw to avoid failing backup.
                 try { WriteDebugLog($"ComputeAndWriteChecksums fatal error: {ex.Message}\n{ex.StackTrace}"); } catch { }
                 AuditLogHelper.Warning("BackupService", $"ComputeAndWriteChecksums fatal error: {ex.Message}");
             }
