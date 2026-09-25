@@ -25,6 +25,17 @@ Comprobaciones recomendadas (rápidas)
    - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify_audit_manifest.ps1`
    - Salida esperada: `Errors: 0`.
 
+Opciones de verificación
+-----------------------
+- Verificación permisiva (por defecto):
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify_audit_manifest.ps1`
+  - Comprueba SHA y companion `.sha256` obligatorios; HMAC se trata como recomendado (warnings si falta).
+- Verificación estricta (recomendada en auditoría/CI si se dispone de la clave HMAC):
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify_audit_manifest.ps1 -RequireHmac`
+  - Esta opción exige la presencia y coincidencia de los ficheros `.hmac` y `.hmac.ver` además de `.sha256`.
+
+Recomendación: usar `-RequireHmac` en auditorías formales o pipelines donde la clave HMAC esté disponible para comprobación completa.
+
 3) Comprobación manual de hash:
    - `Get-FileHash -Algorithm SHA256 "artifacts\backups\<backup>.db"` y comparar con `audit_manifest_*.txt` o el archivo `.sha256` correspondiente.
 

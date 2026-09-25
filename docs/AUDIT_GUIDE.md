@@ -119,6 +119,19 @@ Recomendación final
 -------------------
 Conservar `-RequireBackup` activo en ejecuciones de auditoría y en CI para asegurar evidencia reproducible. Si preferís ejecuciones locales menos estrictas, usar `-SkipPermanentBackup`.
 
+Nota sobre verificación estricta de HMAC
+--------------------------------------
+El verificador `scripts/verify_audit_manifest.ps1` soporta el flag `-RequireHmac`.
+- Uso por defecto: HMAC es opcional (el verificador devuelve warnings si faltan). Esto permite compatibilidad con backups históricos.
+- Uso estricto: pasar `-RequireHmac` para exigir la presencia y coincidencia de los ficheros `.hmac` y `.hmac.ver` además de `.sha256`.
+
+Ejemplo (estricto):
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify_audit_manifest.ps1 -RequireHmac
+```
+
+Recomendación: en auditorías formales o en CI usar `-RequireHmac` si la clave HMAC está disponible para comprobar firmas completas.
+
 
 Verificación del manifiesto y backups
 -----------------------------------
