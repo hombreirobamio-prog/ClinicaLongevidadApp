@@ -91,7 +91,9 @@ namespace ClinicaLongevidadApp.Services
 
             var name = Path.GetFileNameWithoutExtension(dbFile);
             var ext = Path.GetExtension(dbFile);
-            var ts = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+            // Include milliseconds to reduce chance of filename collisions when multiple
+            // backups are created within the same second.
+            var ts = DateTime.UtcNow.ToString("yyyyMMdd_HHmmssfff");
             var backupPath = Path.Combine(dir, $"{name}_backup_{ts}{ext}");
             AuditLogHelper.Info("BackupService", $"Starting backup for DB '{dbFile}'");
             // Try online backup via SQLite API to avoid file-lock issues. Fall back to File.Copy if that fails.
@@ -155,7 +157,11 @@ namespace ClinicaLongevidadApp.Services
                 AuditLogHelper.Warning("BackupService", $"Online backup failed: {ex.Message}. Falling back to file copy.");
                 try
                 {
-                    File.Copy(dbFile, backupPath, overwrite: false);
+                    // Use overwrite:true to avoid failing when a transient collision occurs
+                    // (existing backups with same name). We already include milliseconds
+                    // in the filename which makes collisions unlikely, but being tolerant
+                    // here avoids hard failures observed in some environments.
+                    File.Copy(dbFile, backupPath, overwrite: true);
                     AuditLogHelper.Info("BackupService", $"File copy backup completed successfully to '{backupPath}'");
                     // Ensure integrity artifacts are written even when falling back to file copy.
                     try
@@ -313,10 +319,11 @@ namespace ClinicaLongevidadApp.Services
 
         private void ComputeAndWriteChecksums(string backupPath)
         {
-            // Compute SHA256. Open with ReadWrite share to allow reading the file while another handle
-            // (e.g., SQLite/native) still has it open for a short time.
-            using var fs = File.Open(backupPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            // Compute SHA256. Open with retry and ReadWrite share to allow reading the file
+            // while another handle (e.g., SQLite/native) still has it open briefly.
+            using var fs = OpenFileWithRetry(backupPath);
             using var sha = System.Security.Cryptography.SHA256.Create();
+            fs.Seek(0, SeekOrigin.Begin);
             var hash = sha.ComputeHash(fs);
             var hex = Convert.ToHexString(hash).ToLowerInvariant();
             File.WriteAllText(backupPath + ".sha256", hex, Encoding.UTF8);
@@ -378,7 +385,7 @@ namespace ClinicaLongevidadApp.Services
             }
         }
 
-        private FileStream OpenFileWithRetry(string path, int attempts = 3, int delayMs = 200)
+        private FileStream OpenFileWithRetry(string path, int attempts = 5, int delayMs = 200)
         {
             for (int i = 0; ; i++)
             {
@@ -390,7 +397,11 @@ namespace ClinicaLongevidadApp.Services
                 catch (IOException) when (i < attempts - 1)
                 {
                     // transient lock; wait a bit and retry
-                    try { System.Threading.Thread.Sleep(delayMs); } catch { }
+                    try
+                    {
+                        System.Threading.Thread.Sleep(delayMs);
+                    }
+                    catch { }
                     continue;
                 }
             }
