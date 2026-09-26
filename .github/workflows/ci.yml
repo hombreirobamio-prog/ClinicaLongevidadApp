@@ -9,6 +9,9 @@ on:
 
 jobs:
   build-and-test:
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: windows-latest
 
     steps:
