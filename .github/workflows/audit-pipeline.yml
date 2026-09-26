@@ -1,4 +1,5 @@
 name: Audit pipeline
+name: Audit pipeline
 
 on:
   push:
