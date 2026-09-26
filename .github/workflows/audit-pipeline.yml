@@ -62,8 +62,16 @@ jobs:
         Write-Host "Checking for available backup files before strict verification..."
         $local = Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadApp\backups'
         $artifact = Join-Path $PWD 'artifacts\backups'
-        $hasLocal = Test-Path $local -PathType Container -ErrorAction SilentlyContinue -and (Get-ChildItem -Path $local -Filter '*.db' -File -ErrorAction SilentlyContinue | Measure-Object).Count -gt 0
-        $hasArtifact = Test-Path $artifact -PathType Container -ErrorAction SilentlyContinue -and (Get-ChildItem -Path $artifact -Filter '*.db' -File -ErrorAction SilentlyContinue | Measure-Object).Count -gt 0
+        $hasLocal = $false
+        if (Test-Path $local -PathType Container -ErrorAction SilentlyContinue) {
+          $count = (Get-ChildItem -Path $local -Filter '*.db' -File -ErrorAction SilentlyContinue | Measure-Object).Count
+          if ($count -gt 0) { $hasLocal = $true }
+        }
+        $hasArtifact = $false
+        if (Test-Path $artifact -PathType Container -ErrorAction SilentlyContinue) {
+          $count = (Get-ChildItem -Path $artifact -Filter '*.db' -File -ErrorAction SilentlyContinue | Measure-Object).Count
+          if ($count -gt 0) { $hasArtifact = $true }
+        }
         if ($hasLocal -or $hasArtifact) {
           Write-Host "Backups found; running strict manifest verification..."
           pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/verify_audit_manifest.ps1 -RequireHmac
