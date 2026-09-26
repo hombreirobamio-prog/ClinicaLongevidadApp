@@ -96,9 +96,16 @@ jobs:
           // Safely read workflow_dispatch input 'release_tag' using github.context.payload when available.
           const tag = (github.context && github.context.payload && github.context.payload.inputs && github.context.payload.inputs.release_tag) ? github.context.payload.inputs.release_tag : process.env.RELEASE_TAG;
           try {
-            const res = await github.rest.repos.getReleaseByTag({ owner: github.context.repo.owner, repo: github.context.repo.repo, tag });
-            core.setOutput('exists','true');
-            core.setOutput('upload_url', res.data.upload_url);
+            const repoParts = (process.env.GITHUB_REPOSITORY || '').split('/');
+            const owner = repoParts[0];
+            const repo = repoParts[1];
+            if (!owner || !repo) {
+              core.setOutput('exists','false');
+            } else {
+              const res = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+              core.setOutput('exists','true');
+              core.setOutput('upload_url', res.data.upload_url);
+            }
           } catch (e) {
             if (e.status === 404) {
               core.setOutput('exists','false');
