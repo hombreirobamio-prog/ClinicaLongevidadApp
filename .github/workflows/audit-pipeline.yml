@@ -93,8 +93,8 @@ jobs:
       uses: actions/github-script@v6
       with:
         script: |
-          // Use the injected 'context' payload safely to read workflow_dispatch inputs.
-          const tag = (context && context.payload && context.payload.inputs && context.payload.inputs.release_tag) ? context.payload.inputs.release_tag : process.env.RELEASE_TAG;
+          // Safely read workflow_dispatch input 'release_tag' using github.context.payload when available.
+          const tag = (github.context && github.context.payload && github.context.payload.inputs && github.context.payload.inputs.release_tag) ? github.context.payload.inputs.release_tag : process.env.RELEASE_TAG;
           try {
             const res = await github.rest.repos.getReleaseByTag({ owner: github.context.repo.owner, repo: github.context.repo.repo, tag });
             core.setOutput('exists','true');
