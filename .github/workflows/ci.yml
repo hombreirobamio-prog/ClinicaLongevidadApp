@@ -32,6 +32,8 @@ jobs:
         if (-not $projects) { Write-Host "No tools projects found."; exit 0 }
         foreach ($p in $projects) {
           Write-Host "Building $p"
+          # Ensure NuGet packages for the tool project are restored before building.
+          dotnet restore $p
           dotnet build $p --no-restore --configuration Release
         }
 
