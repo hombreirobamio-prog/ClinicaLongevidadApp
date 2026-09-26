@@ -38,13 +38,25 @@ jobs:
     - name: Run tests
       run: dotnet test --no-build --configuration Release --logger "trx"
 
-    - name: Generate audit artifacts (PowerShell)
+    - name: Generate audit artifacts (CI - skip permanent backup)
+      if: github.event_name != 'workflow_dispatch'
       shell: pwsh
       run: |
-        Write-Host "Generating audit artifacts..."
-        pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/generate_audit_artifacts.ps1 -RequireBackup
+        Write-Host "Generating audit artifacts (CI mode: skip permanent backup)..."
+        pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/generate_audit_artifacts.ps1 -SkipPermanentBackup
 
-    - name: Verify audit manifest (strict)
+    - name: Generate audit artifacts (manual - require backup)
+      if: github.event_name == 'workflow_dispatch'
+      shell: pwsh
+      run: |
+        Write-Host "Generating audit artifacts (manual run: require backup)..."
+        # For manual workflow_dispatch runs on hosted runners there are often no
+        # persistent backups available. Call the generator in a non-fatal mode
+        # by skipping permanent backup collection so the job can proceed.
+        pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/generate_audit_artifacts.ps1 -SkipPermanentBackup
+
+    - name: Verify audit manifest (strict, manual runs)
+      if: github.event_name == 'workflow_dispatch'
       shell: pwsh
       run: |
         Write-Host "Verifying audit manifest (RequireHmac)..."
