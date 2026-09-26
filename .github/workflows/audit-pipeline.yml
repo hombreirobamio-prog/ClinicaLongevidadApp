@@ -147,14 +147,38 @@ jobs:
 
     - name: Upload audit ZIP to Release (if available)
       if: env.UPLOAD_URL != ''
-      uses: actions/upload-release-asset@v1
+      uses: actions/github-script@v6
       with:
-        # Provide token to authenticate release upload and avoid "Bad credentials" errors
-        token: ${{ secrets.GITHUB_TOKEN }}
-        upload_url: ${{ env.UPLOAD_URL }}
-        asset_path: ${{ env.ZIP_PATH }}
-        asset_name: ${{ env.ZIP_NAME }}
-        asset_content_type: application/zip
+        script: |
+          const fs = require('fs');
+          const zipPath = process.env.ZIP_PATH;
+          if (!zipPath) {
+            core.setFailed('ZIP_PATH not set; cannot upload release asset.');
+            return;
+          }
+          const repoParts = (process.env.GITHUB_REPOSITORY || '').split('/');
+          const owner = repoParts[0];
+          const repo = repoParts[1];
+          if (!owner || !repo) {
+            core.setFailed('GITHUB_REPOSITORY not set; cannot determine owner/repo');
+            return;
+          }
+          // Resolve release by tag and upload asset using the REST client
+          const tag = (github.context && github.context.payload && github.context.payload.inputs && github.context.payload.inputs.release_tag) ? github.context.payload.inputs.release_tag : process.env.RELEASE_TAG;
+          const rel = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+          const releaseId = rel.data.id;
+          const data = fs.readFileSync(zipPath);
+          await github.rest.repos.uploadReleaseAsset({
+            owner,
+            repo,
+            release_id: releaseId,
+            name: process.env.ZIP_NAME,
+            data,
+            headers: {
+              'content-type': 'application/zip',
+              'content-length': data.length
+            }
+          });
 
     - name: Log release skip
       if: env.UPLOAD_URL == ''
