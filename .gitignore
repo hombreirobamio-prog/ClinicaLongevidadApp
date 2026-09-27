@@ -364,4 +364,13 @@ FodyWeavers.xsd
 # Audit inspection artifacts (local only)
 _audit_inspect/
 
-n*to paso a paso*n
+# Ignore generated audit artifacts and large outputs
+/artifacts/
+/publish_output/
+/bin/
+/obj/
+/*.zip
+
+# Keep docs and scripts tracked
+!docs/
+!scripts/
