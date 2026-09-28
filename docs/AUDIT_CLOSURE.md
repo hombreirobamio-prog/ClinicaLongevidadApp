@@ -26,3 +26,5 @@
 
 - ValidatedBy: $(git config user.name)
 - Date: $(Get-Date -Format yyyy-MM-dd)
+
+- audit-artifacts_20260928_182037.zip sha256:
