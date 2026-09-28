@@ -559,3 +559,5 @@ Acción recomendada antes de cerrar sesión:
 
  - Audit finalizada: artefactos subidos al release `audit-rewrite-8684b20` (`audit-artifacts_20260928_150118.zip`).
 
+
+- Audit final: audit-artifacts_20260928_152437.zip sha256:988A712955D3FF2C9879458A3CDCD6993C97E134147C98013660894257A227E6
