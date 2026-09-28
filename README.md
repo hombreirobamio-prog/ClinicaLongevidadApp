@@ -557,3 +557,5 @@ Pendiente / siguiente pasos:
 Acción recomendada antes de cerrar sesión:
 - Confirmar que los logs y el informe de integridad no contienen problemas críticos. Si todo OK, commitear y push final.
 
+ - Audit finalizada: artefactos subidos al release `audit-rewrite-8684b20` (`audit-artifacts_20260928_150118.zip`).
+
