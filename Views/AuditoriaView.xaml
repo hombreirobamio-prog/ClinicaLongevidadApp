@@ -331,104 +331,115 @@
 
                 <!-- BOTONES -->
                 <StackPanel Grid.Row="3" Margin="0,0,0,12">
-                    <WrapPanel HorizontalAlignment="Center">
+                    <!-- Keep buttons on a single horizontal row; allow horizontal scrolling when window is narrow -->
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" HorizontalAlignment="Stretch">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
 
                     <Button Content="Filtrar"
                             Command="{Binding AplicarFiltrosCommand}"
                             Style="{StaticResource EstiloBotonPrincipal}"
-                            Width="110"
+                            Width="100"
                             Height="40"
-                            FontSize="14"
-                            Padding="0,10,0,0"
+                            FontSize="13"
+                            Padding="0,6,0,0"
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"
-                            Margin="5"/>
+                            Margin="4"/>
 
                     <Button Content="Limpiar"
                             Command="{Binding LimpiarFiltrosCommand}"
                             Style="{StaticResource EstiloBotonSecundario}"
-                            MinWidth="140"
+                            MinWidth="110"
                             Height="40"
-                            Padding="0"
+                            FontSize="13"
+                            Padding="0,6,0,0"
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"
-                            Margin="5"/>
+                            Margin="4"/>
 
                     <Button Content="Actualizar"
                             Command="{Binding ActualizarCommand}"
                             Style="{StaticResource EstiloBotonSecundario}"
-                            MinWidth="140"
+                            MinWidth="110"
                             Height="40"
-                            Padding="0"
+                            FontSize="13"
+                            Padding="0,6,0,0"
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"
-                            Margin="5"/>
+                            Margin="4"/>
 
-                    <Button Content="Últimos movimientos"
+                    <Button Content="Últimos"
                             Click="BtnRecentAudit_Click"
                             Style="{StaticResource EstiloBotonSecundario}"
-                            MinWidth="200"
-                            Height="45"
-                            Padding="0"
+                            MinWidth="160"
+                            Height="40"
+                            FontSize="13"
+                            Padding="0,6,0,0"
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"
-                            Margin="5"/>
+                            Margin="4"/>
 
                     <Button Content="Exportar CSV"
                             Command="{Binding ExportarCsvCommand}"
                             Style="{StaticResource EstiloBotonSecundario}"
-                            MinWidth="150"
+                            MinWidth="120"
                             Height="40"
-                            Padding="0"
+                            FontSize="13"
+                            Padding="0,6,0,0"
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"
-                            Margin="5,5,0,5"/>
+                            Margin="4"/>
 
-                    <Button Content="Generar diagnóstico"
+                    <Button Content="Diagnóstico"
                             Click="BtnGenerarDiagnostico_Click"
                             Style="{StaticResource EstiloBotonSecundario}"
-                            MinWidth="200"
+                            MinWidth="160"
                             Height="40"
-                            Padding="0"
+                            FontSize="13"
+                            Padding="0,6,0,0"
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"
-                            Margin="5"
+                            Margin="4"
                             Visibility="{Binding IsAdmin, Converter={StaticResource BoolToVis}}"/>
 
                     <Button Content="Abrir diagnósticos"
                             Click="BtnOpenDiagnostics_Click"
                             Style="{StaticResource EstiloBotonSecundario}"
-                            MinWidth="180"
+                            MinWidth="140"
                             Height="40"
-                            Padding="0"
+                            FontSize="13"
+                            Padding="0,6,0,0"
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"
-                            Margin="5"
+                            Margin="4"
                             Visibility="{Binding IsAdmin, Converter={StaticResource BoolToVis}}"/>
 
                     <Button Content="Rotar HMAC"
                             Command="{Binding RotateHmacCommand}"
                             Style="{StaticResource EstiloBotonSecundario}"
-                            MinWidth="150"
+                            MinWidth="120"
                             Height="40"
-                            Padding="0"
+                            FontSize="13"
+                            Padding="0,6,0,0"
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"
-                            Margin="5"
+                            Margin="4"
                             Visibility="{Binding IsAdmin, Converter={StaticResource BoolToVis}}"/>
 
                     <Button Content="Rotar ENC"
                             Command="{Binding RotateEncCommand}"
                             Style="{StaticResource EstiloBotonSecundario}"
-                            MinWidth="150"
+                            MinWidth="120"
                             Height="40"
-                            Padding="0"
+                            FontSize="13"
+                            Padding="0,6,0,0"
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"
-                            Margin="5"
+                            Margin="4"
                             Visibility="{Binding IsAdmin, Converter={StaticResource BoolToVis}}"/>
 
-                    </WrapPanel>
+                        </StackPanel>
+                    </ScrollViewer>
 
                     <!-- Backup controls are deliberately on their own line: the audit toolbar
                          can be wider than the window and previously clipped these commands. -->
