@@ -38,15 +38,9 @@ namespace ClinicaLongevidadApp.Views
         {
             try
             {
-                if (e.OldValue is ViewModels.AuditoriaViewModelV2 oldVm)
-                {
-                    try { oldVm.ListaAuditoria.CollectionChanged -= ListaAuditoria_CollectionChanged; } catch { }
-                }
-
-                if (e.NewValue is ViewModels.AuditoriaViewModelV2 newVm)
-                {
-                    try { newVm.ListaAuditoria.CollectionChanged += ListaAuditoria_CollectionChanged; } catch { }
-                }
+                // Delegate sorting responsibility to the ViewModel which enforces
+                // the collection view order. Keep a visual indicator in the grid.
+                ApplyDefaultSort();
             }
             catch { }
         }
