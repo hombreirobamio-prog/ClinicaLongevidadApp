@@ -73,13 +73,14 @@
                 </Grid.RowDefinitions>
 
                 <!-- TÍTULO -->
-                <TextBlock Grid.Row="0"
-                           Text="Auditoría del Sistema"
-                           FontSize="32"
-                           FontWeight="Bold"
-                           Foreground="{StaticResource Brush_TextoClaro}"
-                           HorizontalAlignment="Center"
-                           Margin="0,0,0,25"/>
+                <DockPanel Grid.Row="0" LastChildFill="False" Margin="0,0,0,25">
+                    <TextBlock Text="Auditoría del Sistema"
+                               FontSize="32"
+                               FontWeight="Bold"
+                               Foreground="{StaticResource Brush_TextoClaro}"
+                               VerticalAlignment="Center" />
+                    <Button x:Name="BtnOpenAuditorMenu" Content="Auditor" Width="100" Height="32" DockPanel.Dock="Right" Click="BtnOpenAuditorMenu_Click" Margin="8,0,0,0" />
+                </DockPanel>
 
                 <!-- FILTROS PRINCIPALES -->
                 <Border Grid.Row="1"
@@ -541,6 +542,7 @@
 
                         <DataGrid Grid.Row="1"
                                   x:Name="AuditoriaDataGrid"
+                                  CanUserSortColumns="True"
                                   ItemsSource="{Binding ListaAuditoria,
                                                         Mode=OneWay}"
                                   SelectedItem="{Binding RegistroSeleccionado,
@@ -568,6 +570,7 @@
                                                     Binding="{Binding FechaHora,
                                                         Mode=OneWay,
                                                         StringFormat={}{0:dd/MM/yyyy HH:mm:ss}}"
+                                                    SortMemberPath="FechaHora"
                                                     Width="180"/>
 
                                 <DataGridTextColumn Header="Usuario Admin"

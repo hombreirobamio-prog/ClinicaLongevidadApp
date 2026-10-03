@@ -44,7 +44,7 @@ namespace ClinicaLongevidadApp.Services
         private readonly IAuditExporter? _exporter;
         private readonly IWebhookForwarder? _forwarder;
 
-        public AuditoriaService(string connectionString, IKeyProvider? keyProvider = null, IAuditExporter? exporter = null, IWebhookForwarder? forwarder = null)
+        public AuditoriaService(string connectionString, IKeyProvider? keyProvider = null, IAuditExporter? exporter = null, IWebhookForwarder? forwarder = null, bool initializeSchema = true)
         {
             _connectionString = connectionString;
             try
@@ -113,6 +113,12 @@ namespace ClinicaLongevidadApp.Services
                 conn.Open();
 
                 using var cmd = conn.CreateCommand();
+                if (!initializeSchema)
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='Auditoria'";
+                    IsInitialized = Convert.ToInt32(cmd.ExecuteScalar()) == 1;
+                    return;
+                }
                 cmd.CommandText =
                     @"CREATE TABLE IF NOT EXISTS Auditoria (
                         Id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -173,6 +179,12 @@ END;";
                 IntentarAgregarColumna(conn, "Signature", "TEXT");
                 IntentarAgregarColumna(conn, "KeyVersion", "TEXT");
                 IntentarAgregarColumna(conn, "KeyVersionEnc", "TEXT");
+                IntentarAgregarColumna(conn, "PayloadVersion", "INTEGER NOT NULL DEFAULT 1");
+
+                if (_forwarder != null || _exporter != null)
+                {
+                    AuditForwardQueue.EnsureTables(conn);
+                }
 
                 // Initialization succeeded
                 IsInitialized = true;
@@ -497,14 +509,46 @@ END;";
         }
 
         public void RegistrarEvento(Models.AuditoriaEvento evento)
+            => RegistrarEventoCore(evento, null);
+
+        internal void RegistrarEventoConOperacion(string databasePath, Func<SqliteConnection, Models.AuditoriaEvento> operation)
+        {
+            ArgumentNullException.ThrowIfNull(operation);
+            var auditPath = new SqliteConnectionStringBuilder(_connectionString).DataSource;
+            if (!string.Equals(Path.GetFullPath(auditPath), Path.GetFullPath(databasePath), StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("La operación y su auditoría deben utilizar la misma base de datos.");
+            RegistrarEventoCore(null, operation);
+        }
+
+        private void RegistrarEventoCore(Models.AuditoriaEvento? evento, Func<SqliteConnection, Models.AuditoriaEvento>? operation)
         {
             try
             {
                 using var conn = new Microsoft.Data.Sqlite.SqliteConnection(_connectionString);
                 conn.Open();
 
+                // The connection rolls back on disposal if any business/audit step fails.
+                // The callback must only write through this connection, never commit it.
+                if (operation != null)
+                {
+                    using var beginOperation = conn.CreateCommand();
+                    beginOperation.CommandText = "BEGIN IMMEDIATE;";
+                    beginOperation.ExecuteNonQuery();
+                    evento = operation(conn);
+                }
+
+                ArgumentNullException.ThrowIfNull(evento);
+
                 // Build canonical payload used for hashing/signing
                 string resultadoStr = evento.Resultado ? "OK" : "ERROR";
+                var envName = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? string.Empty;
+                var allowPlain = string.Equals(envName, "Development", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(envName, "Test", StringComparison.OrdinalIgnoreCase);
+                var eventId = string.IsNullOrWhiteSpace(evento.EventId) ? Guid.NewGuid().ToString("N") : evento.EventId;
+                var hmacKey = _keyProvider?.GetHmacKey();
+                var keyVer = _keyProvider?.GetHmacKeyVersion();
+                if (hmacKey == null || hmacKey.Length == 0 || string.IsNullOrWhiteSpace(keyVer))
+                    throw new InvalidOperationException("Audit signing key and version are required.");
 
                 // Prepare plain/encrypted detalles. Encrypt first (if possible) so payload uses encrypted blob when available.
                 string? detallesEnc = null;
@@ -549,6 +593,8 @@ END;";
                 catch { }
                 string? keyVerEnc = null;
                 var encKey = _keyProvider?.GetEncryptionKey();
+                if (!allowPlain && !string.IsNullOrEmpty(evento.Detalles) && (encKey == null || encKey.Length == 0))
+                    throw new InvalidOperationException("Audit encryption key is required for details.");
                 if (encKey != null && encKey.Length > 0 && !string.IsNullOrEmpty(evento.Detalles))
                 {
                     try
@@ -556,7 +602,7 @@ END;";
                         // Use AES-GCM if available (key must be 16/24/32 bytes). We'll generate a random nonce.
                         byte[] nonce = new byte[12];
                         RandomNumberGenerator.Fill(nonce);
-                        byte[] plaintext = Encoding.UTF8.GetBytes(evento.Detalles ?? string.Empty);
+                        byte[] plaintext = Encoding.UTF8.GetBytes(detallesPlain ?? string.Empty);
                         byte[] cipher = new byte[plaintext.Length];
                         byte[] tag = new byte[16];
                         // Use constructor that specifies tag size to satisfy SYSLIB0053 guidance
@@ -571,14 +617,15 @@ END;";
                         Buffer.BlockCopy(tag, 0, combined, nonce.Length, tag.Length);
                         Buffer.BlockCopy(cipher, 0, combined, nonce.Length + tag.Length, cipher.Length);
                         detallesEnc = Convert.ToBase64String(combined);
-                        // Keep DetallesPlain for diagnostic/tests while storing encrypted blob in DetallesEnc.
-                        // Note: in production deployments you may prefer to avoid storing plaintext alongside the encrypted blob.
+                        // The plaintext copy is restricted to explicit Development/Test environments.
                         keyVerEnc = _keyProvider!.GetEncryptionKeyVersion();
+                        if (string.IsNullOrWhiteSpace(keyVerEnc))
+                            throw new InvalidOperationException("Audit encryption key version is required.");
                     }
                     catch
                     {
-                        // If encryption fails, fall back to plain text storage
-                        detallesEnc = null;
+                        // Never degrade a failed encryption operation to plaintext.
+                        throw;
                     }
                 }
 
@@ -587,12 +634,12 @@ END;";
 
                 var payloadObj = new
                 {
-                    evento.EventId,
-                    evento.UsuarioAdmin,
-                    evento.Accion,
+                    EventId = eventId,
+                    UsuarioAdmin = evento.UsuarioAdmin ?? string.Empty,
+                    Accion = evento.Accion ?? string.Empty,
                     FechaHora = evento.FechaHora.ToString("o", CultureInfo.InvariantCulture),
-                    evento.Modulo,
-                    evento.UsuarioAfectado,
+                    Modulo = evento.Modulo ?? string.Empty,
+                    UsuarioAfectado = evento.UsuarioAfectado ?? string.Empty,
                     Resultado = resultadoStr,
                     Detalles = detallesForPayload
                 };
@@ -600,7 +647,8 @@ END;";
                 string payloadJson = JsonSerializer.Serialize(payloadObj);
 
                 // We need to read the last hash and insert atomically to avoid race conditions.
-                // Compute expensive items (encryption, signature, payload) before taking DB lock.
+                // Standalone events prepare their payload before taking the DB lock.
+                // Business operations already hold it so both writes remain atomic.
                 string prevHash;
                 string hash;
                 try
@@ -608,10 +656,16 @@ END;";
                     // Acquire an immediate transaction to prevent concurrent writers from
                     // observing the same PrevHash and breaking the chain.
                     using var beginCmd = conn.CreateCommand();
-                    beginCmd.CommandText = "BEGIN IMMEDIATE;";
-                    beginCmd.ExecuteNonQuery();
+                    if (operation == null)
+                    {
+                        beginCmd.CommandText = "BEGIN IMMEDIATE;";
+                        beginCmd.ExecuteNonQuery();
+                    }
 
                     prevHash = ObtenerUltimoHash(conn) ?? string.Empty;
+                    payloadJson = BuildV2Payload(payloadObj, prevHash, evento.Tipo ?? string.Empty,
+                        effectiveRol, effectiveArea, effectiveSesionId, effectiveEquipo, effectiveVersion,
+                        keyVer, keyVerEnc ?? string.Empty, allowPlain ? detallesPlain : null, detallesEnc);
 
                     // Compute chained hash using the prevHash observed while holding the transaction
                     string hashInput = prevHash + "|" + payloadJson;
@@ -622,28 +676,21 @@ END;";
                 }
                 catch
                 {
-                    // If we cannot start the transaction, fail safe by computing with empty prevHash
-                    prevHash = string.Empty;
-                    using (var sha = SHA256.Create())
-                    {
-                        hash = Convert.ToHexString(sha.ComputeHash(Encoding.UTF8.GetBytes((prevHash ?? string.Empty) + "|" + payloadJson)));
-                    }
+                    // A failed transaction must never start an alternative chain.
+                    throw;
                 }
 
                 // Compute HMAC signature if key available
                 string signature = string.Empty;
-                string? keyVer = null;
-                var hmacKey = _keyProvider?.GetHmacKey();
                 if (hmacKey != null && hmacKey.Length > 0)
                 {
                     using var h = new HMACSHA256(hmacKey);
                     signature = Convert.ToHexString(h.ComputeHash(Encoding.UTF8.GetBytes(payloadJson)));
-                    keyVer = _keyProvider!.GetHmacKeyVersion();
                 }
 
                 using var cmd = conn.CreateCommand();
-                cmd.CommandText = @"INSERT INTO Auditoria (UsuarioAdmin, Accion, Fechahora, Modulo, UsuarioAfectado, Resultado, Detalles, DetallesPlain, DetallesEnc, Tipo, Rol, Area, SesionId, Equipo, VersionApp, EventId, PrevHash, Hash, Signature, KeyVersion, KeyVersionEnc)
-                                    VALUES (@u, @a, @f, @m, @ua, @r, @d, @dp, @de, @t, @rol, @area, @ses, @eq, @ver, @eid, @prev, @hash, @sig, @kver, @kverenc);";
+                cmd.CommandText = @"INSERT INTO Auditoria (UsuarioAdmin, Accion, Fechahora, Modulo, UsuarioAfectado, Resultado, Detalles, DetallesPlain, DetallesEnc, Tipo, Rol, Area, SesionId, Equipo, VersionApp, EventId, PrevHash, Hash, Signature, KeyVersion, KeyVersionEnc, PayloadVersion)
+                                    VALUES (@u, @a, @f, @m, @ua, @r, @d, @dp, @de, @t, @rol, @area, @ses, @eq, @ver, @eid, @prev, @hash, @sig, @kver, @kverenc, 2);";
 
                 // no console diagnostics during insert
 
@@ -657,10 +704,7 @@ END;";
                 // Legacy 'Detalles' will contain the value used for payload (encrypted blob when encryption enabled).
                 var legacyDetalles = (object?)detallesForPayload ?? DBNull.Value;
                 cmd.Parameters.AddWithValue("@d", legacyDetalles);
-                // Persist DetallesPlain only when allowed. Avoid storing plaintext in Production unless explicitly enabled.
-                var envName = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? string.Empty;
-                var isProd = string.Equals(envName, "Production", StringComparison.OrdinalIgnoreCase);
-                var allowPlain = !isProd || string.Equals(Environment.GetEnvironmentVariable("AUDIT_ALLOW_PLAINTEXT_DETAILS"), "1", StringComparison.OrdinalIgnoreCase);
+                // Production and unspecified environments never retain a plaintext copy.
                 cmd.Parameters.AddWithValue("@dp", (object?)(allowPlain ? detallesPlain : null) ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@de", (object?)detallesEnc ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@t", evento.Tipo ?? string.Empty);
@@ -669,7 +713,7 @@ END;";
                 cmd.Parameters.AddWithValue("@ses", effectiveSesionId ?? string.Empty);
                 cmd.Parameters.AddWithValue("@eq", effectiveEquipo ?? string.Empty);
                 cmd.Parameters.AddWithValue("@ver", effectiveVersion ?? string.Empty);
-                cmd.Parameters.AddWithValue("@eid", evento.EventId ?? Guid.NewGuid().ToString("N"));
+                cmd.Parameters.AddWithValue("@eid", eventId);
                 cmd.Parameters.AddWithValue("@prev", prevHash ?? string.Empty);
                 cmd.Parameters.AddWithValue("@hash", hash ?? string.Empty);
                 cmd.Parameters.AddWithValue("@sig", signature ?? string.Empty);
@@ -680,14 +724,20 @@ END;";
                 {
                     cmd.ExecuteNonQuery();
 
-                    // Commit explicit transaction if we started one
-                    try
+                    // The outbox row and the audit event share this transaction. A process
+                    // interruption can therefore leave both committed, or neither committed.
+                    // Delivery itself remains at-least-once: a worker deletes the row only
+                    // after every configured destination succeeds.
+                    if (_forwarder != null || _exporter != null)
                     {
-                        using var commitCmd = conn.CreateCommand();
-                        commitCmd.CommandText = "COMMIT;";
-                        commitCmd.ExecuteNonQuery();
+                        AuditForwardQueue.EnsureTables(conn);
+                        AuditForwardQueue.Enqueue(conn, eventId, payloadJson, signature ?? string.Empty);
                     }
-                    catch { /* best-effort commit */ }
+
+                    // Commit explicit transaction if we started one
+                    using var commitCmd = conn.CreateCommand();
+                    commitCmd.CommandText = "COMMIT;";
+                    commitCmd.ExecuteNonQuery();
                 }
                 catch
                 {
@@ -703,107 +753,11 @@ END;";
                     throw;
                 }
 
-                // Fire-and-forget forwarding/exporting to avoid blocking UI callers
-                var forwarderLocal = _forwarder;
-                var eventIdLocal = evento.EventId ?? Guid.NewGuid().ToString("N");
-                if (forwarderLocal != null)
-                {
-                    var signatureLocal = signature ?? string.Empty;
-                    var forwardPayload = payloadJson;
-                    Task.Run(async () =>
-                    {
-                        const int maxAttempts = 3;
-                        int attempt = 0;
-                        bool success = false;
-                        while (attempt < maxAttempts)
-                        {
-                            attempt++;
-                            try
-                            {
-                                await forwarderLocal.ForwardEventAsync(forwardPayload, signatureLocal).ConfigureAwait(false);
-                                success = true;
-                                break; // success
-                            }
-                            catch (Exception ex)
-                            {
-                                AuditLogHelper.Warning("AuditoriaService", $"Forward attempt {attempt} failed: {ex.Message}");
-                                if (attempt >= maxAttempts)
-                                {
-                                    AuditLogHelper.Error("AuditoriaService", "Failed to forward audit event after retries", ex);
-                                }
-                                else
-                                {
-                                    try { await Task.Delay(200 * attempt).ConfigureAwait(false); } catch { }
-                                }
-                            }
-                        }
-
-                        if (!success)
-                        {
-                            try
-                            {
-                                var q = new AuditForwardQueue(_connectionString);
-                                q.Enqueue(eventIdLocal, forwardPayload, signature ?? string.Empty);
-                            }
-                                catch (Exception ex)
-                                {
-                                    try { AuditLogHelper.Error("AuditoriaService", "Failed to enqueue forward after retries", ex); } catch { }
-                                }
-                        }
-                    });
-                }
-
-                var exporterLocal = _exporter;
-                if (exporterLocal != null)
-                {
-                    var signatureLocal = signature ?? string.Empty;
-                    var payloadLocal = payloadJson;
-                    Task.Run(async () =>
-                    {
-                        const int maxAttempts = 3;
-                        int attempt = 0;
-                        bool success = false;
-                        while (attempt < maxAttempts)
-                        {
-                            attempt++;
-                            try
-                            {
-                                await exporterLocal.ExportEventAsync(eventIdLocal, payloadLocal, signatureLocal).ConfigureAwait(false);
-                                success = true;
-                                break;
-                            }
-                            catch (Exception ex)
-                            {
-                                LogService.Warning("AuditoriaService", $"Export attempt {attempt} failed: {ex.Message}");
-                                if (attempt >= maxAttempts)
-                                {
-                                    LogService.Error("AuditoriaService", "Failed to export audit event after retries", ex);
-                                }
-                                else
-                                {
-                                    try { await Task.Delay(250 * attempt).ConfigureAwait(false); } catch { }
-                                }
-                            }
-                        }
-
-                        if (!success)
-                        {
-                            try
-                            {
-                                var q = new AuditForwardQueue(_connectionString);
-                                q.Enqueue(eventIdLocal, payloadLocal, signatureLocal);
-                            }
-                            catch (Exception ex)
-                            {
-                                try { LogService.Error("AuditoriaService", "Failed to enqueue export after retries", ex); } catch { }
-                            }
-                        }
-                    });
-                }
             }
             catch (Exception ex)
             {
                 LogService.Error("AuditoriaService", "RegistrarEvento failed", ex);
+                throw;
             }
         }
 
@@ -818,8 +772,28 @@ END;";
             }
             catch
             {
-                return null;
+                throw;
             }
+        }
+
+        private static string BuildV2Payload(object legacy, string prevHash, string tipo,
+            string rol, string area, string sesionId, string equipo, string versionApp,
+            string keyVersion, string keyVersionEnc, string? plain, string? encrypted)
+        {
+            var node = JsonSerializer.SerializeToNode(legacy)!.AsObject();
+            node["PayloadVersion"] = 2;
+            node["PrevHash"] = prevHash;
+            node["Tipo"] = tipo;
+            node["Rol"] = rol;
+            node["Area"] = area;
+            node["SesionId"] = sesionId;
+            node["Equipo"] = equipo;
+            node["VersionApp"] = versionApp;
+            node["KeyVersion"] = keyVersion;
+            node["KeyVersionEnc"] = keyVersionEnc;
+            node["DetallesPlain"] = plain;
+            node["DetallesEnc"] = encrypted;
+            return node.ToJsonString();
         }
 
         public List<string> VerifyIntegrity()
@@ -831,7 +805,16 @@ END;";
                 conn.Open();
 
                 // Include legacy 'Detalles' column to detect tampering in older deployments where payload was stored there
-                string q = "SELECT Id, PrevHash, Hash, Signature, KeyVersion, KeyVersionEnc, EventId, UsuarioAdmin, Accion, Fechahora, Modulo, UsuarioAfectado, Resultado, Detalles, DetallesPlain, DetallesEnc FROM Auditoria ORDER BY Id";
+                bool hasPayloadVersion = false;
+                using (var schema = conn.CreateCommand())
+                {
+                    schema.CommandText = "PRAGMA table_info('Auditoria')";
+                    using var columns = schema.ExecuteReader();
+                    while (columns.Read())
+                        if (string.Equals(columns.GetString(1), "PayloadVersion", StringComparison.OrdinalIgnoreCase)) hasPayloadVersion = true;
+                }
+                string versionColumn = hasPayloadVersion ? "PayloadVersion" : "1 AS PayloadVersion";
+                string q = "SELECT Id, PrevHash, Hash, Signature, KeyVersion, KeyVersionEnc, EventId, UsuarioAdmin, Accion, Fechahora, Modulo, UsuarioAfectado, Resultado, Detalles, DetallesPlain, DetallesEnc, " + versionColumn + ", Tipo, Rol, Area, SesionId, Equipo, VersionApp FROM Auditoria ORDER BY Id";
                 using var cmd = conn.CreateCommand();
                 cmd.CommandText = q;
                 using var reader = cmd.ExecuteReader();
@@ -845,6 +828,11 @@ END;";
                     string storedSig = reader.IsDBNull(3) ? string.Empty : reader.GetString(3);
                     string keyVer = reader.IsDBNull(4) ? string.Empty : reader.GetString(4);
                     string keyVerEnc = reader.IsDBNull(5) ? string.Empty : reader.GetString(5);
+
+                    if (!string.Equals(prev, lastHash, StringComparison.OrdinalIgnoreCase))
+                    {
+                        errors.Add($"Id={id}: previous hash does not match preceding row");
+                    }
 
                     // Recreate payload used for hash/signature
                     // Field indexes after SELECT: 0:Id,1:PrevHash,2:Hash,3:Signature,4:KeyVersion,5:KeyVersionEnc,6:EventId,7:UsuarioAdmin,8:Accion,9:Fechahora,10:Modulo,11:UsuarioAfectado,12:Resultado,13:Detalles(legacy),14:DetallesPlain,15:DetallesEnc
@@ -869,6 +857,13 @@ END;";
                     };
 
                     string payloadJson = JsonSerializer.Serialize(payload);
+                    var payloadVersion = reader.IsDBNull(16) ? 1 : reader.GetInt32(16);
+                    string Text(int index) => reader.IsDBNull(index) ? string.Empty : reader.GetString(index);
+                    if (payloadVersion == 2)
+                        payloadJson = BuildV2Payload(payload, prev, Text(17), Text(18), Text(19), Text(20), Text(21), Text(22),
+                            keyVer, keyVerEnc, reader.IsDBNull(14) ? null : reader.GetString(14), reader.IsDBNull(15) ? null : reader.GetString(15));
+                    else if (payloadVersion != 1)
+                        errors.Add($"Id={id}: unsupported payload version {payloadVersion}");
 
                     // compute expected hash
                     string expectedHash;
@@ -884,7 +879,7 @@ END;";
                     }
 
                     // verify signature if key available
-                    byte[]? key = _keyProvider?.GetHmacKeyByVersion(string.IsNullOrEmpty(keyVer) ? null : keyVer) ?? _keyProvider?.GetHmacKey();
+                    byte[]? key = string.IsNullOrWhiteSpace(keyVer) ? null : _keyProvider?.GetHmacKeyByVersion(keyVer);
                     if (key != null && key.Length > 0)
                     {
                         using var h = new HMACSHA256(key);
@@ -893,6 +888,11 @@ END;";
                         {
                             errors.Add($"Id={id}: signature mismatch");
                         }
+                    }
+
+                    else
+                    {
+                        errors.Add($"Id={id}: signature unverifiable (exact key version unavailable)");
                     }
 
                     lastHash = storedHash ?? string.Empty;

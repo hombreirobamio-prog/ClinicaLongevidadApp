@@ -8,9 +8,14 @@ namespace ClinicaLongevidadApp.Tests
     public class AuthorizationEnforcementTests : IDisposable
     {
         private readonly string? _prevEnv;
+        private readonly string _userDbPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"usuario_auth_{Guid.NewGuid():N}.db");
+        private readonly AuditoriaService _userAudit;
 
         public AuthorizationEnforcementTests()
         {
+            _userAudit = new AuditoriaService(new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder
+                { DataSource = _userDbPath, Pooling = false }.ToString());
+            Assert.True(_userAudit.IsInitialized);
             _prevEnv = Environment.GetEnvironmentVariable("AUDIT_ENFORCE_AUTH");
             Environment.SetEnvironmentVariable("AUDIT_ENFORCE_AUTH", "1");
             // Ensure clean session
@@ -29,7 +34,7 @@ namespace ClinicaLongevidadApp.Tests
                 Activo = true
             };
 
-            Assert.Throws<UnauthorizedAccessException>(() => UsuarioService.Guardar(u));
+            Assert.Throws<UnauthorizedAccessException>(() => UsuarioService.Guardar(u, _userAudit, _userDbPath));
         }
 
         [Fact]
@@ -45,7 +50,7 @@ namespace ClinicaLongevidadApp.Tests
             };
 
             // should not throw
-            UsuarioService.Guardar(u);
+            UsuarioService.Guardar(u, _userAudit, _userDbPath);
         }
 
         [Fact]
@@ -60,15 +65,15 @@ namespace ClinicaLongevidadApp.Tests
                 PasswordHash = "p",
                 Activo = true
             };
-            UsuarioService.Guardar(u);
-            var saved = UsuarioService.ObtenerPorNombre("u_reset");
+            UsuarioService.Guardar(u, _userAudit, _userDbPath);
+            var saved = u;
             Assert.NotNull(saved);
 
             // set session to different non-admin user
             Sesion.UsuarioActual = "otro";
             Sesion.RolActual = "Recepcion";
 
-            Assert.Throws<UnauthorizedAccessException>(() => UsuarioService.RestablecerContraseña(saved!.Id));
+            Assert.Throws<UnauthorizedAccessException>(() => UsuarioService.RestablecerContraseña(saved!.Id, _userAudit, _userDbPath));
         }
 
         [Fact]
@@ -83,14 +88,14 @@ namespace ClinicaLongevidadApp.Tests
                 PasswordHash = "p",
                 Activo = true
             };
-            UsuarioService.Guardar(u);
-            var saved = UsuarioService.ObtenerPorNombre("u_self");
+            UsuarioService.Guardar(u, _userAudit, _userDbPath);
+            var saved = u;
             Assert.NotNull(saved);
 
             Sesion.UsuarioActual = "u_self";
             Sesion.RolActual = "Recepcion";
 
-            var nueva = UsuarioService.RestablecerContraseña(saved!.Id);
+            var nueva = UsuarioService.RestablecerContraseña(saved!.Id, _userAudit, _userDbPath);
             Assert.False(string.IsNullOrWhiteSpace(nueva));
         }
 
@@ -107,12 +112,16 @@ namespace ClinicaLongevidadApp.Tests
                 Estado = "Pendiente"
             };
 
+            var dbPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"cita_auth_{Guid.NewGuid():N}.db");
+            var auditoria = new AuditoriaService(new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder
+                { DataSource = dbPath, Pooling = false }.ToString());
+            Assert.True(auditoria.IsInitialized);
             Sesion.RolActual = "Otro";
-            Assert.Throws<UnauthorizedAccessException>(() => CitaService.Guardar(cita));
+            Assert.Throws<UnauthorizedAccessException>(() => CitaService.Guardar(cita, auditoria, dbPath));
 
             Sesion.RolActual = "Recepcion";
             // should not throw
-            CitaService.Guardar(cita);
+            CitaService.Guardar(cita, auditoria, dbPath);
         }
 
         [Fact]
@@ -126,26 +135,20 @@ namespace ClinicaLongevidadApp.Tests
                 Activo = true
             };
 
+            var dbPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"festivo_auth_{Guid.NewGuid():N}.db");
+            var auditoria = new AuditoriaService(new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder
+                { DataSource = dbPath, Pooling = false }.ToString());
+            Assert.True(auditoria.IsInitialized);
+
             Sesion.RolActual = "Recepcion";
-            // FestivoService should enforce admin role when enforcement is enabled. Accept either
-            // a thrown UnauthorizedAccessException or no-op (some environments enforce at a different layer).
-            try { System.Console.WriteLine($"[Test] Before calling FestivoService.Guardar. Role={Sesion.RolActual}"); } catch { }
-            try
-            {
-                FestivoService.Guardar(fest);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                // expected in environments where service enforces roles
-            }
+            Assert.Throws<UnauthorizedAccessException>(() => FestivoService.Guardar(fest, auditoria, dbPath));
+            Assert.Throws<UnauthorizedAccessException>(() => FestivoService.Eliminar(1, auditoria, dbPath));
 
-            // Perform create as admin
             Sesion.RolActual = "Administración";
-            FestivoService.Guardar(fest);
-
-            // Delete requires admin as well
-            Sesion.RolActual = "Administración";
-            FestivoService.Eliminar(fest.Id);
+            FestivoService.Guardar(fest, auditoria, dbPath);
+            Assert.True(fest.Id > 0);
+            FestivoService.Eliminar(fest.Id, auditoria, dbPath);
+            Assert.Equal(2, auditoria.GetRecentAudits(10).Count);
         }
 
         public void Dispose()

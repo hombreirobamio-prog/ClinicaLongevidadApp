@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.Windows;
 using ClinicaLongevidadApp.Commands;
@@ -13,9 +13,6 @@ namespace ClinicaLongevidadApp.ViewModels
         public Usuario Usuario { get; }
 
         private string? _mensajeError;
-        private readonly string _rolOriginal;
-        private readonly string _areaOriginal;
-        private readonly bool _activoOriginal;
         private readonly bool _esUsuarioNuevo;
 
         public string? MensajeError
@@ -57,9 +54,6 @@ namespace ClinicaLongevidadApp.ViewModels
             MensajeError = string.Empty;
 
             _esUsuarioNuevo = Usuario.Id == 0;
-            _rolOriginal = Usuario.Rol;
-            _areaOriginal = Usuario.Area;
-            _activoOriginal = Usuario.Activo;
 
             GuardarCommand = new RelayCommand(_ => Guardar());
 
@@ -141,8 +135,6 @@ namespace ClinicaLongevidadApp.ViewModels
             {
                 UsuarioService.Guardar(Usuario);
 
-                RegistrarCambiosDeUsuario();
-
                 App.DashboardViewModel!.CurrentView =
                     new UsuariosView
                     {
@@ -161,105 +153,6 @@ namespace ClinicaLongevidadApp.ViewModels
 
                 MensajeError =
                     $"No se pudo guardar el usuario: {ex.Message}";
-            }
-        }
-
-        private void RegistrarCambiosDeUsuario()
-        {
-            string usuarioAdmin =
-                Sesion.UsuarioActual ?? "Sistema";
-
-            if (_esUsuarioNuevo)
-            {
-                RegistrarEventoUsuario(
-                    "Usuario.Crear",
-                    true,
-                    Usuario.NombreUsuario,
-                    AuditoriaDetallesHelper.CrearJson(
-                        ("UsuarioId", Usuario.Id),
-                        ("Rol", Usuario.Rol),
-                        ("Area", Usuario.Area)));
-
-                return;
-            }
-
-            bool seHaRegistradoUnCambio = false;
-
-            bool cambioPassword =
-                !string.IsNullOrWhiteSpace(Usuario.PasswordHash) &&
-                !Usuario.PasswordHash.StartsWith(
-                    "PBKDF2$",
-                    StringComparison.Ordinal);
-
-            if (cambioPassword)
-            {
-                RegistrarEventoUsuario(
-                    "Usuario.CambiarPassword",
-                    true,
-                    Usuario.NombreUsuario,
-                    AuditoriaDetallesHelper.CrearJson(
-                        ("UsuarioId", Usuario.Id)));
-
-                seHaRegistradoUnCambio = true;
-            }
-
-            if (!string.Equals(
-                    _rolOriginal,
-                    Usuario.Rol,
-                    StringComparison.Ordinal))
-            {
-                RegistrarEventoUsuario(
-                    "Usuario.CambiarRol",
-                    true,
-                    Usuario.NombreUsuario,
-                    AuditoriaDetallesHelper.CrearJson(
-                        ("UsuarioId", Usuario.Id),
-                        ("RolAnterior", _rolOriginal),
-                        ("RolNuevo", Usuario.Rol)));
-
-                seHaRegistradoUnCambio = true;
-            }
-
-            if (!string.Equals(
-                    _areaOriginal,
-                    Usuario.Area,
-                    StringComparison.Ordinal))
-            {
-                RegistrarEventoUsuario(
-                    "Usuario.CambiarArea",
-                    true,
-                    Usuario.NombreUsuario,
-                    AuditoriaDetallesHelper.CrearJson(
-                        ("UsuarioId", Usuario.Id),
-                        ("AreaAnterior", _areaOriginal),
-                        ("AreaNueva", Usuario.Area)));
-
-                seHaRegistradoUnCambio = true;
-            }
-
-            if (_activoOriginal != Usuario.Activo)
-            {
-                RegistrarEventoUsuario(
-                    Usuario.Activo
-                        ? "Usuario.Activar"
-                        : "Usuario.Desactivar",
-                    true,
-                    Usuario.NombreUsuario,
-                    AuditoriaDetallesHelper.CrearJson(
-                        ("UsuarioId", Usuario.Id),
-                        ("Activo", Usuario.Activo)));
-
-                seHaRegistradoUnCambio = true;
-            }
-
-            if (!seHaRegistradoUnCambio)
-            {
-                RegistrarEventoUsuario(
-                    "Usuario.Editar",
-                    true,
-                    Usuario.NombreUsuario,
-                    AuditoriaDetallesHelper.CrearJson(
-                        ("UsuarioId", Usuario.Id)));
             }
         }
 
@@ -286,12 +179,6 @@ namespace ClinicaLongevidadApp.ViewModels
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
 
-                RegistrarEventoUsuario(
-                    "Usuario.RestablecerPassword",
-                    true,
-                    Usuario.NombreUsuario,
-                    AuditoriaDetallesHelper.CrearJson(
-                        ("UsuarioId", Usuario.Id)));
             }
             catch (Exception ex)
             {

@@ -1,0 +1,39 @@
+Asunto: Cierre auditoría — audit-rewrite-8684b20 (artefactos y verificación)
+
+Hola,
+
+Hemos finalizado la generación y verificación de los artefactos de auditoría para la etiqueta `audit-rewrite-8684b20`.
+Adjunto aquí las evidencias y pasos para su comprobación.
+
+Artefactos subidos al release:
+- audit-artifacts_20260928_152437.zip — sha256: 988A712955D3FF2C9879458A3CDCD6993C97E134147C98013660894257A227E6
+- audit-artifacts_20260928_150118.zip — sha256: 533E9B6AEBA5E6622E6C7EE99DDEC475F54FEA41810E975D9F0E15D787C1B62B
+
+Manifiestos incluidos:
+- audit_manifest_20260928_152437.txt
+- audit_manifest_20260928_150118.txt
+(ambos verificados: Errors:0, Warnings:0)
+
+Ubicaciones archivadas (local):
+- Final archive: C:\ProgramData\ClinicaLongevidadApp\AuditArtifacts
+- Secure backup: C:\SecureArchives\ClinicaLongevidadApp\AuditArtifacts_20260928_172901
+
+Pasos recomendados para la verificación (ejecutar localmente):
+1) Comprobar SHA256 del ZIP:
+   Get-FileHash 'C:\ruta\a\audit-artifacts_20260928_152437.zip' -Algorithm SHA256
+   -> debe coincidir con la suma indicada arriba.
+
+2) Verificar manifest:
+   powershell -NoProfile -ExecutionPolicy Bypass -Command "& '.\\scripts\\verify_audit_manifest.ps1' -ManifestPath '.\\audit_manifest_20260928_152437.txt'"
+   -> Resultado esperado: Errors: 0  Warnings: 0
+
+3) Revisar informe de integridad JSON (opcional):
+   C:\ProgramData\ClinicaLongevidadApp\AuditIntegrityReports\IntegrityReport_*.json
+
+Solicitamos:
+- Confirmación de recepción y validación (respuesta con "Aceptado" o lista de incidencias).
+
+Si prefiere otro formato o ubicación para entrega (S3, SharePoint, zip por SFTP), indíquelo y lo preparo.
+
+Gracias,
+Equipo de desarrollo

@@ -58,9 +58,9 @@ namespace ClinicaLongevidadApp.Services
 
         public byte[]? GetHmacKeyByVersion(string? version)
         {
-            // Local provider only keeps the current key in environment; return it if versions match or if version is null/"local"
+            // An explicit historical version must match exactly; "local" is not an alias for any key.
             var currentVer = GetHmacKeyVersion();
-            if (string.IsNullOrEmpty(version) || string.Equals(version, currentVer, StringComparison.OrdinalIgnoreCase) || string.Equals(version, "local", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrEmpty(version) || string.Equals(version, currentVer, StringComparison.Ordinal))
             {
                 return GetHmacKey();
             }
@@ -71,7 +71,7 @@ namespace ClinicaLongevidadApp.Services
         public byte[]? GetEncryptionKeyByVersion(string? version)
         {
             var currentVer = GetEncryptionKeyVersion();
-            if (string.IsNullOrEmpty(version) || string.Equals(version, currentVer, StringComparison.OrdinalIgnoreCase) || string.Equals(version, "local", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrEmpty(version) || string.Equals(version, currentVer, StringComparison.Ordinal))
             {
                 return GetEncryptionKey();
             }

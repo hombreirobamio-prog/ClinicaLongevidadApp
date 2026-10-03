@@ -46,7 +46,7 @@ namespace ClinicaLongevidadApp.Tests
 
             // Ensure admin when authorization enforcement might be active
             Sesion.RolActual = "Administración";
-            UsuarioService.Guardar(usuario);
+            UsuarioService.Guardar(usuario, App.AuditoriaService, _dbPath);
 
             // Read audits
             var auditoria = new AuditoriaService(_connectionString);
@@ -85,13 +85,13 @@ namespace ClinicaLongevidadApp.Tests
 
             // Ensure admin when authorization enforcement might be active
             Sesion.RolActual = "Administración";
-            UsuarioService.Guardar(usuario);
+            UsuarioService.Guardar(usuario, App.AuditoriaService, _dbPath);
 
             // Reload to get id
-            var saved = UsuarioService.ObtenerPorNombre("usuario_reset");
+            var saved = usuario;
             Assert.NotNull(saved);
 
-            var nueva = UsuarioService.RestablecerContraseña(saved!.Id);
+            var nueva = UsuarioService.RestablecerContraseña(saved!.Id, App.AuditoriaService, _dbPath);
             Assert.False(string.IsNullOrWhiteSpace(nueva));
 
             var auditoria2 = new AuditoriaService(_connectionString);
@@ -132,11 +132,11 @@ namespace ClinicaLongevidadApp.Tests
 
             // Ensure admin when authorization enforcement might be active
             Sesion.RolActual = "Administración";
-            UsuarioService.Guardar(usuario);
-            var saved = UsuarioService.ObtenerPorNombre("usuario_delete");
+            UsuarioService.Guardar(usuario, App.AuditoriaService, _dbPath);
+            var saved = usuario;
             Assert.NotNull(saved);
 
-            UsuarioService.Eliminar(saved!.Id);
+            UsuarioService.Eliminar(saved!.Id, App.AuditoriaService, _dbPath);
 
             var auditoria3 = new AuditoriaService(_connectionString);
             var recent3 = auditoria3.GetRecentAudits(5);

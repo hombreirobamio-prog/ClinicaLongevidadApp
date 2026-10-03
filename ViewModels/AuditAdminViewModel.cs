@@ -24,7 +24,13 @@ namespace ClinicaLongevidadApp.ViewModels
         public AuditQueueRowDto? SelectedDead
         {
             get => _selectedDead;
-            set { _selectedDead = value; OnPropertyChanged(nameof(SelectedDead)); }
+            set
+            {
+                if (_selectedDead == value) return;
+                _selectedDead = value;
+                OnPropertyChanged(nameof(SelectedDead));
+                CommandManager.InvalidateRequerySuggested();
+            }
         }
 
         public AuditAdminViewModel(string connectionString)
@@ -32,8 +38,8 @@ namespace ClinicaLongevidadApp.ViewModels
             _connectionString = connectionString;
             _service = new AuditAdminService(connectionString);
             RefreshCommand = new RelayCommand(async _ => await RefreshAsync());
-            RequeueCommand = new RelayCommand(async _ => await RequeueSelectedAsync(), _ => SelectedDead != null);
-            DeleteCommand = new RelayCommand(async _ => await DeleteSelectedAsync(), _ => SelectedDead != null);
+            RequeueCommand = new RelayCommand(async _ => await RequeueSelectedAsync());
+            DeleteCommand = new RelayCommand(async _ => await DeleteSelectedAsync());
             GenerateDiagnosticsCommand = new RelayCommand(async _ => await GenerateDiagnosticsAsync());
         }
 
@@ -56,18 +62,28 @@ namespace ClinicaLongevidadApp.ViewModels
 
         public async Task RequeueSelectedAsync()
         {
-            if (SelectedDead == null) return;
+            if (SelectedDead == null)
+            {
+                DialogHelper.ShowWarning("Cola de auditoría", "Seleccione primero un registro de Dead Letter.");
+                return;
+            }
             var id = SelectedDead.Id;
             var ok = await Task.Run(() => _service.RequeueDeadLetter(id));
             if (ok) await RefreshAsync();
+            else DialogHelper.ShowError("Cola de auditoría", "No se pudo completar la operación. Compruebe los permisos, el registro seleccionado y el servicio de auditoría.");
         }
 
         public async Task DeleteSelectedAsync()
         {
-            if (SelectedDead == null) return;
+            if (SelectedDead == null)
+            {
+                DialogHelper.ShowWarning("Cola de auditoría", "Seleccione primero un registro de Dead Letter.");
+                return;
+            }
             var id = SelectedDead.Id;
             var ok = await Task.Run(() => _service.DeleteDeadLetter(id));
             if (ok) await RefreshAsync();
+            else DialogHelper.ShowError("Cola de auditoría", "No se pudo completar la operación. Compruebe los permisos, el registro seleccionado y el servicio de auditoría.");
         }
 
         private async Task GenerateDiagnosticsAsync()

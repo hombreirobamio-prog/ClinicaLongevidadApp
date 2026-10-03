@@ -1060,6 +1060,17 @@ namespace ClinicaLongevidadApp.ViewModels
             return true;
         }
 
+        private static Cita CopiarCita(Cita cita) => new()
+        {
+            Id = cita.Id,
+            PacienteId = cita.PacienteId,
+            PacienteNombre = cita.PacienteNombre,
+            Fecha = cita.Fecha,
+            Hora = cita.Hora,
+            Profesional = cita.Profesional,
+            Estado = cita.Estado,
+            FechaCreacion = cita.FechaCreacion
+        };
         /// <summary>
         /// Guarda la cita en base de datos y actualiza la interfaz.
         /// </summary>
@@ -1069,7 +1080,7 @@ namespace ClinicaLongevidadApp.ViewModels
             Cita cita;
             try
             {
-                cita = _citaEnEdicion ?? CrearNuevaCita();
+                cita = _citaEnEdicion is null ? CrearNuevaCita() : CopiarCita(_citaEnEdicion);
             }
             catch (InvalidOperationException ex)
             {
@@ -1099,31 +1110,6 @@ namespace ClinicaLongevidadApp.ViewModels
             string mensaje = estabaEditando ? "La cita se ha actualizado correctamente." : "La cita se ha creado correctamente.";
             LogService.Info("GuardarCita", $"Cita {(estabaEditando ? "actualizada" : "creada")}: {cita.Id}");
             MostrarInformacion("Crear cita", mensaje);
-
-            // Auditoría enriquecida
-            try
-            {
-                _auditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
-                {
-                    UsuarioAdmin = Sesion.UsuarioActual ?? "Sistema",
-                    Accion = estabaEditando ? "Cita.Editar" : "Cita.Crear",
-                    Modulo = "Recepción",
-                    UsuarioAfectado = _pacienteActual?.NombreCompleto ?? string.Empty,
-                    Resultado = true,
-                    FechaHora = DateTime.Now,
-                    Detalles = AuditoriaDetallesHelper.CrearJson(
-                        ("CitaId", cita.Id),
-                        ("PacienteId", cita.PacienteId),
-                        ("Profesional", cita.Profesional),
-                        ("Fecha", cita.Fecha.ToString("yyyy-MM-dd")),
-                        ("Hora", cita.Hora)),
-                    Tipo = "Cita"
-                });
-            }
-            catch
-            {
-                // No interrumpir flujo si falla auditoría.
-            }
         }
 
         /// <summary>
@@ -1244,54 +1230,19 @@ namespace ClinicaLongevidadApp.ViewModels
             try
             {
                 int citaId = CitaSeleccionada.Id;
-                CitaSeleccionada.Estado = nuevoEstado;
-                _citaService.Guardar(CitaSeleccionada);
+                var cita = CopiarCita(CitaSeleccionada);
+                cita.Estado = nuevoEstado;
+                _citaService.Guardar(cita);
                 _ = CargarCitasDelDiaAsync(citaId);
                 ActualizarFichaPaciente();
                 CommandManager.InvalidateRequerySuggested();
                 LogService.Info("CambiarEstadoCitaSeleccionada", $"Estado cambiado a '{nuevoEstado}' para cita {citaId}");
-
-                // Auditoría del cambio de estado
-                try
-                {
-                    _auditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
-                    {
-                        UsuarioAdmin = Sesion.UsuarioActual ?? "Sistema",
-                        Accion = ObtenerAccionCambioEstadoCita(nuevoEstado),
-                        Modulo = titulo ?? "Recepción",
-                        UsuarioAfectado = CitaSeleccionada.PacienteNombre ?? string.Empty,
-                        Resultado = true,
-                        FechaHora = DateTime.Now,
-                        Detalles = AuditoriaDetallesHelper.CrearJson(
-                            ("CitaId", citaId),
-                            ("NuevoEstado", nuevoEstado)),
-                        Tipo = "Cita"
-                    });
-                }
-                catch
-                {
-                    // ignorar fallos de auditoría
-                }
             }
             catch (Exception ex)
             {
                 LogService.Error("CambiarEstadoCitaSeleccionada", $"Error al cambiar estado a '{nuevoEstado}'", ex);
                 MostrarError(titulo, $"Error: {ex.Message}");
             }
-        }
-
-        private static string ObtenerAccionCambioEstadoCita(string nuevoEstado)
-        {
-            return NormalizarEstado(nuevoEstado).ToLowerInvariant() switch
-            {
-                "confirmada" => "Cita.Confirmar",
-                "sala espera" or "sala de espera" => "Cita.MarcarSalaEspera",
-                "en consulta" => "Cita.MarcarEnConsulta",
-                "finalizada" or "finalizado" or "terminado" or "terminada" => "Cita.MarcarFinalizada",
-                "facturada" => "Cita.Facturar",
-                "cancelada" => "Cita.Cancelar",
-                _ => "Cita.CambiarEstado"
-            };
         }
 
         private void ActualizarFichaPaciente()
@@ -1373,43 +1324,21 @@ namespace ClinicaLongevidadApp.ViewModels
 
             try
             {
-                Cita cita = ProximaCitaSeleccionada;
+                Cita cita = CopiarCita(ProximaCitaSeleccionada);
+
+                cita.Estado = ESTADO_CANCELADA;
+                _citaService.Guardar(cita);
 
                 if (_citaEnEdicion is not null && _citaEnEdicion.Id == cita.Id)
                 {
                     CancelarEdicionCitaInterna();
                 }
 
-                cita.Estado = ESTADO_CANCELADA;
-                _citaService.Guardar(cita);
-
                 _ = CargarCitasDelDiaAsync();
                 ActualizarFichaPaciente();
                 _ = CargarHorasDisponiblesAsync();
                 CommandManager.InvalidateRequerySuggested();
                 LogService.Info("EliminarProximaCitaSeleccionada", $"Cita cancelada: {cita.Id}");
-
-                // Auditoría de la cancelación
-                try
-                {
-                    _auditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
-                    {
-                        UsuarioAdmin = Sesion.UsuarioActual ?? "Sistema",
-                        Accion = "Cita.CancelarProxima",
-                        Modulo = "Recepción",
-                        UsuarioAfectado = cita.PacienteNombre ?? string.Empty,
-                        Resultado = true,
-                        FechaHora = DateTime.Now,
-                        Detalles = AuditoriaDetallesHelper.CrearJson(
-                            ("CitaId", cita.Id),
-                            ("PacienteId", cita.PacienteId)),
-                        Tipo = "Cita"
-                    });
-                }
-                catch
-                {
-                    // ignorar fallos de auditoría
-                }
             }
             catch (Exception ex)
             {
@@ -1439,31 +1368,9 @@ namespace ClinicaLongevidadApp.ViewModels
 
             try
             {
-                var cita = CitaSeleccionada;
+                var cita = CopiarCita(CitaSeleccionada);
                 int citaId = cita.Id;
                 cita.Estado = ESTADO_CONFIRMADA;
-
-                // Registrar auditoría antes de persistir para garantizar trazabilidad incluso si el guardado falla
-                try
-                {
-                    _auditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
-                    {
-                        UsuarioAdmin = Sesion.UsuarioActual ?? "Sistema",
-                        Accion = "Cita.Confirmar",
-                        Modulo = "Recepción",
-                        UsuarioAfectado = cita.PacienteNombre ?? string.Empty,
-                        Resultado = true,
-                        FechaHora = DateTime.Now,
-                        Detalles = AuditoriaDetallesHelper.CrearJson(
-                            ("CitaId", citaId),
-                            ("PacienteId", cita.PacienteId)),
-                        Tipo = "Cita"
-                    });
-                }
-                catch
-                {
-                    // ignorar fallos de auditoría
-                }
                 _citaService.Guardar(cita);
 
                 ValidarProteccionDatosDelPaciente(cita);
@@ -1472,8 +1379,6 @@ namespace ClinicaLongevidadApp.ViewModels
                 ActualizarFichaPaciente();
                 CommandManager.InvalidateRequerySuggested();
                 LogService.Info("ConfirmarCitaSeleccionada", $"Cita confirmada: {citaId}");
-
-                // Nota: la auditoría ya se registró antes de persistir la cita para garantizar trazabilidad.
             }
             catch (Exception ex)
             {
@@ -1585,29 +1490,6 @@ namespace ClinicaLongevidadApp.ViewModels
                 OnPropertyChanged(nameof(PacienteParaCita));
                 OnPropertyChanged(nameof(RequiereRegularizarProteccionDatos));
                 LogService.Info("AsegurarPacienteParaCita", $"Nuevo paciente creado: {_pacienteActual.Id}");
-
-                // Auditoría de creación de paciente (cuando se crea implícitamente al aceptar cita)
-                try
-                {
-                    _auditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
-                    {
-                        UsuarioAdmin = Sesion.UsuarioActual ?? "Sistema",
-                        Accion = "Paciente.Crear",
-                        Modulo = "Recepción",
-                        UsuarioAfectado = _pacienteActual.NombreCompleto ?? string.Empty,
-                        Resultado = true,
-                        FechaHora = DateTime.Now,
-                        Detalles = AuditoriaDetallesHelper.CrearJson(
-                            ("PacienteId", _pacienteActual.Id),
-                            ("Email", _pacienteActual.Email),
-                            ("Telefono", _pacienteActual.Telefono)),
-                        Tipo = "Paciente"
-                    });
-                }
-                catch
-                {
-                    // ignorar fallos de auditoría
-                }
 
                 return true;
             }
@@ -1732,29 +1614,7 @@ namespace ClinicaLongevidadApp.ViewModels
                 pacienteLocal.Firma = Firma?.Trim() ?? string.Empty;
                 pacienteLocal.FechaAlta = FechaAlta;
 
-                bool esNuevoPaciente = pacienteLocal.Id <= 0;
-
-                // Registrar auditoría antes del guardado (no debe depender de _pacienteActual)
-                try
-                {
-                    _auditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
-                    {
-                        UsuarioAdmin = Sesion.UsuarioActual ?? "Sistema",
-                        Accion = esNuevoPaciente ? "Paciente.Crear" : "Paciente.Editar",
-                        Modulo = "Recepción",
-                        UsuarioAfectado = pacienteLocal.NombreCompleto ?? string.Empty,
-                        Resultado = true,
-                        FechaHora = DateTime.Now,
-                        Detalles = AuditoriaDetallesHelper.CrearJson(("PacienteId", pacienteLocal.Id)),
-                        Tipo = "Paciente"
-                    });
-                }
-                catch
-                {
-                    // ignorar fallos auditoría
-                }
-
-                // Guardar paciente
+                // El servicio confirma el paciente y su auditoría en la misma transacción.
                 _pacienteService.Guardar(pacienteLocal);
 
                 // Solo actualizar el estado compartido si el guardado fue exitoso
@@ -1766,26 +1626,6 @@ namespace ClinicaLongevidadApp.ViewModels
 
                 MostrarInformacion("Datos del paciente", "Los datos del paciente se han guardado correctamente.");
                 AuditLogHelper.Info("GuardarDatos", $"Datos guardados para paciente: {_pacienteActual?.Id}");
-
-                // Registrar auditoría posterior al guardado
-                try
-                {
-                    _auditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
-                    {
-                        UsuarioAdmin = Sesion.UsuarioActual ?? "Sistema",
-                        Accion = esNuevoPaciente ? "Paciente.Crear" : "Paciente.Editar",
-                        Modulo = "Recepción",
-                        UsuarioAfectado = _pacienteActual?.NombreCompleto ?? string.Empty,
-                        Resultado = true,
-                        FechaHora = DateTime.Now,
-                        Detalles = AuditoriaDetallesHelper.CrearJson(("PacienteId", _pacienteActual?.Id ?? 0)),
-                        Tipo = "Paciente"
-                    });
-                }
-                catch
-                {
-                    // ignorar fallos auditoría
-                }
             }
             catch (Exception ex)
             {

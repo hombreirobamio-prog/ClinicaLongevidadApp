@@ -11,7 +11,7 @@ namespace ClinicaLongevidadApp.Views
         public AuditoriaView()
         {
             InitializeComponent();
-
+            this.Loaded += AuditoriaView_Loaded;
             this.Unloaded += AuditoriaView_Unloaded;
 
             AuditoriaDataGrid.AddHandler(
@@ -19,6 +19,24 @@ namespace ClinicaLongevidadApp.Views
                 new MouseWheelEventHandler(
                     AuditoriaDataGrid_PreviewMouseWheel),
                 true);
+        }
+
+        private void AuditoriaView_Loaded(object? sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Apply initial sort by FechaHora descending
+                AuditoriaDataGrid.Items.SortDescriptions.Clear();
+                AuditoriaDataGrid.Items.SortDescriptions.Add(new System.ComponentModel.SortDescription("FechaHora", System.ComponentModel.ListSortDirection.Descending));
+                if (AuditoriaDataGrid.Columns.Count > 0)
+                {
+                    // Clear existing indicators
+                    foreach (var c in AuditoriaDataGrid.Columns) c.SortDirection = null;
+                    AuditoriaDataGrid.Columns[0].SortDirection = System.ComponentModel.ListSortDirection.Descending;
+                }
+                AuditoriaDataGrid.Items.Refresh();
+            }
+            catch { }
         }
 
         private void BtnOpenDiagnostics_Click(object sender, RoutedEventArgs e)
@@ -109,6 +127,20 @@ namespace ClinicaLongevidadApp.Views
             catch (Exception ex)
             {
                 try { Services.DialogHelper.ShowError("Generar diagnóstico", "Error abriendo administración de auditoría: " + ex.Message); } catch { }
+            }
+        }
+
+        private void BtnOpenAuditorMenu_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var w = new AuditorMenuWindow();
+                w.Owner = Window.GetWindow(this);
+                w.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                try { Services.DialogHelper.ShowError("Auditor", "No se pudo abrir el menú de auditor: " + ex.Message); } catch { }
             }
         }
 

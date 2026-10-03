@@ -20,19 +20,28 @@ namespace ClinicaLongevidadApp.Services.KeyRotation
         public static IRotationExecutor Create(AuditoriaService? auditoriaService = null)
         {
             var kv = Environment.GetEnvironmentVariable("KEYVAULT_URI");
-            var require = (Environment.GetEnvironmentVariable("REQUIRE_KEYVAULT") ?? string.Empty).Equals("true", StringComparison.OrdinalIgnoreCase);
+            var require = IsKeyVaultRequired(Environment.GetEnvironmentVariable("REQUIRE_KEYVAULT"));
+            var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+                ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            var isProduction = string.Equals(environment, "Production", StringComparison.OrdinalIgnoreCase);
 
             if (!string.IsNullOrWhiteSpace(kv))
             {
                 return new KeyVaultExecutor();
             }
 
-            if (require)
+            if (require || isProduction)
             {
-                throw new InvalidOperationException("Key Vault is required by configuration (REQUIRE_KEYVAULT=true) but KEYVAULT_URI is not set.");
+                throw new InvalidOperationException("Key Vault is required by configuration or production environment but KEYVAULT_URI is not set.");
             }
 
             return new LocalExecutor(auditoriaService);
+        }
+
+        internal static bool IsKeyVaultRequired(string? value)
+        {
+            return string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
         }
 
         private class KeyVaultExecutor : IRotationExecutor
@@ -63,12 +72,13 @@ namespace ClinicaLongevidadApp.Services.KeyRotation
             {
                 // Use the LocalKeyRotationProvider to persist key and produce a RotationPlan compatible with KeyVault path
                 var provider = new LocalKeyRotationProvider();
+                var oldVersion = Environment.GetEnvironmentVariable("AUDIT_HMAC_KEY_VERSION");
                 provider.PersistHmacKey(newHmacKey);
 
                 var plan = new RotationPlan
                 {
                     KeyType = RotationKeyType.Hmac,
-                    OldVersion = Environment.GetEnvironmentVariable("AUDIT_HMAC_KEY_VERSION"),
+                    OldVersion = oldVersion,
                     NewVersion = Environment.GetEnvironmentVariable("AUDIT_HMAC_KEY_VERSION") ?? newVersion,
                     AffectedRowCountEstimate = 0,
                     Notes = "Applied local rotation: key persisted to AppData (development fallback)."
@@ -82,12 +92,13 @@ namespace ClinicaLongevidadApp.Services.KeyRotation
             public Task<RotationPlan> ApplyRotateEncAsync(byte[] newEncKey, string newVersion)
             {
                 var provider = new LocalKeyRotationProvider();
+                var oldVersion = Environment.GetEnvironmentVariable("AUDIT_ENC_KEY_VERSION");
                 provider.PersistEncryptionKey(newEncKey);
 
                 var plan = new RotationPlan
                 {
                     KeyType = RotationKeyType.Encryption,
-                    OldVersion = Environment.GetEnvironmentVariable("AUDIT_ENC_KEY_VERSION"),
+                    OldVersion = oldVersion,
                     NewVersion = Environment.GetEnvironmentVariable("AUDIT_ENC_KEY_VERSION") ?? newVersion,
                     AffectedRowCountEstimate = 0,
                     Notes = "Applied local rotation: encryption key persisted to AppData (development fallback)."

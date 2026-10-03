@@ -62,7 +62,7 @@ namespace ClinicaLongevidadApp.Services.KeyRotation
             }
             else
             {
-                throw new InvalidOperationException("Key Vault is not configured (KEYVAULT_URI missing). Aborting apply to avoid storing keys insecurely.");
+                throw new InvalidOperationException("Key Vault or the configured audit secret names are unavailable. Aborting apply to avoid storing keys in a different location.");
             }
 
             var plan = new RotationPlan
@@ -92,7 +92,7 @@ namespace ClinicaLongevidadApp.Services.KeyRotation
             }
             else
             {
-                throw new InvalidOperationException("Key Vault is not configured (KEYVAULT_URI missing). Aborting apply to avoid storing keys insecurely.");
+                throw new InvalidOperationException("Key Vault or the configured audit secret names are unavailable. Aborting apply to avoid storing keys in a different location.");
             }
 
             var plan = new RotationPlan

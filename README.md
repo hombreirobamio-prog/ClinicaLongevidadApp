@@ -1,13 +1,22 @@
 # ClinicaLongevidadApp
 
--> Nota: al reanudar, lea `docs/BACKFILL_SESSION_SUMMARY.md` para el contexto de la última sesión.
+## Auditoría: estado vigente al 30/09/2026
 
--> Nota para el auditor: para ejecutar la comprobación de auditoría sin tocar código, doble clic en `scripts\\run_audit_for_auditor.bat` o siga `docs/AUDIT_GUIDE.md`. Si desea que los artefactos se suban automáticamente al release, asegúrese de tener `gh` autenticado con permisos `repo`.
+**Auditoría operativa abierta.** Consultar el [estado de cierre](docs/AUDIT_CLOSURE.md), la [guía operativa](docs/AUDIT_GUIDE.md), el [checklist](docs/AUDIT_CHECKLIST.md), el [roadmap](AUDIT_ROADMAP.md) y el [recordatorio de seguridad](AUDIT_HARDENING_REMINDER.md).
 
-One-click audit (recommended)
-- `scripts\\run_audit_for_auditor.bat` — doble clic para ejecutar el runner: arranca la app en modo auditor, espera la generación de diagnósticos, empaqueta `logs`/`backups`/`AuditIntegrityReports` en un ZIP y (opcional) sube el ZIP al release `audit-rewrite-8684b20` si `gh` está disponible.
-- `scripts\\generate_audit_artifacts.ps1` — script PowerShell invocado por el runner; puede ejecutarse directamente para ajustar timeout o desactivar la subida automática.
-## Resumen de la última sesión (acciones realizadas)
+El inicio de sesión exige confirmar su auditoría antes de publicar la sesión. Las entregas documentadas incorporan transacciones conjuntas de negocio y auditoría para festivos, pacientes, citas, usuarios, horarios y administración de cola; el reenvío usa una bandeja de salida transaccional, con entrega al menos una vez. La última suite Release aprobó **196/196 pruebas**, sin fallidas ni omitidas. El [ensayo sintético de recuperación](docs/AUDIT_RECOVERY_DRILL_2026-09-29.md) se amplió a trece escenarios. Son resultados locales conservados, no una aprobación de producción.
+
+Se endureció la rotación: la aplicación exige Key Vault cuando corresponde, usa los mismos nombres de secreto para auditoría y rotación, y no informa éxito si la clave se persiste pero falla su evento de auditoría. Se creó y validó un Key Vault de prueba con `audit-hmac-key` y `audit-enc-key`; la comprobación de solo lectura confirmó acceso por versión a ambos secretos sin mostrar material sensible. Antes de activar Key Vault en la base de auditoría actual queda definir la transición y disponibilidad de las claves históricas locales. El detalle y punto de reanudación constan en [las sesiones de auditoría](docs/AUDIT_SESSIONS.md#validacion-manual-h04-key-vault-2026-09-30).
+
+El [pipeline vigente](docs/AUDIT_PIPELINE_CURRENT.md) genera exclusivamente un paquete técnico autenticado a partir de un TRX concreto y su hora de inicio. `scripts/run_audit_for_auditor.bat` pasa los argumentos `-TestResultsPath` y `-RunStartedUtc` al generador: no inicia la aplicación, recopila backups ni publica Releases. Seguir la guía para aprovisionar la clave de firma y verificar el ZIP; el doble clic sin los datos requeridos no completa el flujo.
+
+La configuración y ejecución remotas de CI, el ensayo operativo representativo, el anclaje externo, la relación durable negocio/auditoría y la revisión independiente siguen pendientes según el estado de cierre. Las copias antiguas del roadmap y del recordatorio dentro de `docs/` no se han actualizado en esta tarea; utilizar los enlaces anteriores.
+
+## Historial de sesiones anteriores
+
+Los resúmenes y resultados siguientes se conservan como historial. Sus cifras, pendientes y referencias a publicaciones corresponden a sus respectivas sesiones y no sustituyen las instrucciones vigentes enlazadas arriba. `docs/BACKFILL_SESSION_SUMMARY.md` también es contexto histórico, no autorización para modificar evidencias.
+
+## Resumen histórico de sesión (acciones realizadas)
 
 - UI: `AuditoriaView` — movido el `CheckBox` largo para que quede debajo de los filtros y evitar solapamientos; ajustes de tamaños, `MinWidth` y padding en controles y botones.  
 - ViewModel: consolidada la lógica en `ViewModels/AuditoriaViewModelV2` y eliminado el `AuditoriaViewModel` legacy (PR #14).  
@@ -53,7 +62,7 @@ Las tareas anteriores están registradas también en la PR y en `CHANGELOG.md`.
   - Escritura atómica del `PrevHash` + `INSERT` para evitar condiciones de carrera.
   - Firma HMAC del payload y almacenamiento de `KeyVersion`/`KeyVersionEnc`.
   - Cifrado AES‑GCM de `Detalles` cuando hay clave de encriptación.
-  - Retries simples y backoff en forwarding/exporting (cola en memoria, 3 intentos).
+  - Bandeja de salida SQLite y reintentos con backoff para forwarding/exporting; el worker elimina la fila solo tras entregar a todos los destinos configurados.
   - Test de concurrencia que valida la cadena de hashes bajo escrituras paralelas.
 
 
@@ -95,7 +104,7 @@ La aplicación `ClinicaLongevidadApp` está orientada a servir como software cl�
 - `Facturada`
 - `Cancelada`
 
-### Estado actual de la auditoría
+### Cobertura de auditoría descrita en sesiones anteriores
 
 #### Ya auditado
 - Login correcto/fallido y acceso no autorizado (`Login.*`).
@@ -123,7 +132,7 @@ Estado actual:
 
 - Variables de entorno relevantes para el comportamiento de auditoría (resumido):
   - `REQUIRE_KEYVAULT=1` — exigir Azure Key Vault al inicializar `AuditoriaService` (fallará rápido si no está disponible).
-  - `AUDIT_ALLOW_PLAINTEXT_DETAILS=1` — permitir almacenar `DetallesPlain` en entornos de `Production` cuando sea necesario para diagnósticos.
+  - `AUDIT_ALLOW_PLAINTEXT_DETAILS` — ya no permite guardar detalles sin cifrar en producción. Solo Development/Test permiten copia en claro; las nuevas escrituras requieren HMAC y versión, y fuera de esos entornos los detalles requieren cifrado.
   - `AUDIT_INCLUDE_DETAILS_IN_REPORTS=1` — incluir el campo `Detalles` en los informes completos de integridad (por defecto está redactado).
   - `AUDIT_INCLUDE_DETAILS_IN_DIAGNOSTICS=1` — incluir `Detalles` en los CSV/diagnósticos rápidos (por defecto está redactado).
   - `AUDIT_INCLUDE_DETAILS_IN_LOGS=1` — permitir que `AuditLogHelper` escriba detalles completos en logs (por defecto `AuditLogHelper` redacta payloads sensibles).
@@ -155,7 +164,7 @@ Para auditores y administradores la aplicación dispone de un flujo profesional 
 - Buenas prácticas tras un diagnóstico:
   1. No modificar la base de datos de producción directamente. Hacer copia de la BD antes de cualquier reparación.
   2. Clasificar problemas (hash faltante, firma inválida, desalineado de PrevHash) y priorizar por impacto.
-  3. Preparar un plan de recuperación sobre copia: backfill de hashes o marcar filas como `suspect` para análisis manual.
+  3. Conservar la evidencia original y preparar un plan de recuperación autorizado sobre copia. No recalcular hashes, refirmar ni modificar filas para presentar históricos como íntegros.
   4. Mantener artefactos generados con marca de tiempo para auditoría y trazabilidad.
 
 ### Convención actual de `Detalles` (JSON)
@@ -411,31 +420,9 @@ Acciones recomendadas antes de cerrar sesión
 
 Mañana seguimos con las pruebas y ajustes de filtros. Cierro sesión.
 
-## Pruebas locales: opción `FORCE_ADMIN` (opt-in)
+## Acceso administrativo para pruebas
 
-Se ha añadido en la rama `feature/force-admin` una ayuda para pruebas localmente que permite forzar
-la sesión como `Administración` sin pasar por el flujo de login. Esto es estrictamente para pruebas
-locales y debe activarse de forma explícita.
-
-Uso:
-
-- PowerShell:
-  - `$env:FORCE_ADMIN='1'; dotnet run --project ClinicaLongevidadApp.csproj --configuration Debug --no-launch-profile`
-- CMD:
-  - `set FORCE_ADMIN=1 && dotnet run --project ClinicaLongevidadApp.csproj --configuration Debug --no-launch-profile`
-
-Comportamiento:
-
-- Si `FORCE_ADMIN=1` está presente en el entorno al arrancar la aplicación, `App` establece `Sesion.RolActual`
-  y `Sesion.AreaActual` a `Administración` para facilitar pruebas de las vistas y comandos restringidos.
-- La lógica está contenida en `App.xaml.cs` en la rama `feature/force-admin` y no está aplicada en `master`.
-
-Advertencias de seguridad:
-
-- No aplicar esta variable en entornos compartidos ni en producción.
-- Revisar y aprobar mediante PR antes de considerar mantener la opción en el repositorio principal.
-
-Si quieres, creo el PR automáticamente con esta documentación y la rama `feature/force-admin` listos para revisión.
+`FORCE_ADMIN` fue retirado. Iniciar sesión mediante el flujo normal con una cuenta autorizada de Administración. `SILENT_MODE` oculta diálogos y deniega confirmaciones; no autoriza operaciones. `AUDIT_RUN_DIAGNOSTICS=1` habilita diagnósticos automáticos sin crear una sesión administrativa. Consultar la [guía vigente](docs/AUDIT_GUIDE.md).
 
 ## Cierre de sesión (GitHub)
 
@@ -518,14 +505,14 @@ Breve referencia para desarrolladores/operadores. Leer antes de modificar audito
 - `AUDIT_INCLUDE_DETAILS_IN_REPORTS=1`: include `Detalles` in integrity reports (disabled by default).
 - `AUDIT_INCLUDE_DETAILS_IN_DIAGNOSTICS=1`: include `Detalles` in quick diagnostics CSV (disabled by default).
 - `AUDIT_INCLUDE_DETAILS_IN_LOGS=1`: allow writing `Detalles` into application logs (disabled by default).
-- `AUDIT_ALLOW_PLAINTEXT_DETAILS=1`: permit persisting `DetallesPlain` in Production (disabled by default; avoid in prod).
+- `AUDIT_ALLOW_PLAINTEXT_DETAILS`: no permite eludir el cifrado obligatorio fuera de Development/Test.
 - `AUDIT_HMAC_KEY`, `AUDIT_ENC_KEY`: local-only keys for `LocalKeyProvider` (development/testing only).
-- `FORCE_ADMIN=1`: development helper to force admin session for local testing (do not use in shared environments).
+- `FORCE_ADMIN`: retirado; usar autenticación normal. `SILENT_MODE` deniega las confirmaciones suprimidas.
 
 Quick run (development):
 
-- Force admin and run:
-  - PowerShell: `$env:FORCE_ADMIN='1'; dotnet run --project ClinicaLongevidadApp.csproj --configuration Debug`
+- Iniciar la aplicación y autenticarse normalmente:
+  - PowerShell: `dotnet run --project ClinicaLongevidadApp.csproj --configuration Debug`
 - Enable workers locally:
   - PowerShell: `$env:AUDIT_FORWARD_ENABLED='1'; $env:AUDIT_INTEGRITY_ENABLED='1'; dotnet run --project ClinicaLongevidadApp.csproj --configuration Debug`
 
@@ -557,7 +544,18 @@ Pendiente / siguiente pasos:
 Acción recomendada antes de cerrar sesión:
 - Confirmar que los logs y el informe de integridad no contienen problemas críticos. Si todo OK, commitear y push final.
 
- - Audit finalizada: artefactos subidos al release `audit-rewrite-8684b20` (`audit-artifacts_20260928_150118.zip`).
+ - Referencia histórica de publicación, sin acreditar cierre operativo: artefactos registrados como subidos al release `audit-rewrite-8684b20` (`audit-artifacts_20260928_150118.zip`).
 
 
-- Audit final: audit-artifacts_20260928_152437.zip sha256:988A712955D3FF2C9879458A3CDCD6993C97E134147C98013660894257A227E6
+- Referencia histórica, no revalidada: audit-artifacts_20260928_152437.zip sha256:988A712955D3FF2C9879458A3CDCD6993C97E134147C98013660894257A227E6
+
+## Auditoría — cambios recientes
+
+Resumen rápido de cambios realizados en la sesión de auditoría (2026-10-02):
+
+- Archivo modificado: `Views/AuditorMenuWindow.xaml.cs`
+- Se añadieron utilidades para ordenar logs y para forzar orden en el DataGrid de manifiesto en ejecución.
+- Se añadió una utilidad para ordenar un fichero de log en disco y crear copia de seguridad `.bak`.
+- Informe detallado y lista de tareas en `reports/audit_fix_report_20261002_011700.txt` y `reports/audit_fix_todo_20261002_011700.txt`.
+
+Estado: cambios aplicados al código y compilación OK. Queda pendiente aplicar el ajuste final en la pantalla principal de Auditoría para usar `SortMemberPath`/binding de una propiedad `DateTime` en la columna de fecha/hora.

@@ -20,6 +20,11 @@ namespace ClinicaLongevidadApp.Services
         {
             using var conn = new SqliteConnection(_connectionString);
             conn.Open();
+            EnsureTables(conn);
+        }
+
+        internal static void EnsureTables(SqliteConnection conn)
+        {
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"CREATE TABLE IF NOT EXISTS AuditForwardQueue (
                                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,21 +49,26 @@ namespace ClinicaLongevidadApp.Services
             cmd.ExecuteNonQuery();
         }
 
+        internal static void Enqueue(SqliteConnection conn, string eventId, string payload, string signature)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"INSERT INTO AuditForwardQueue (EventId, Payload, Signature, Attempts, NextAttemptAt, CreatedAt)
+                                VALUES (@eid, @p, @s, 0, @next, @created);";
+            cmd.Parameters.AddWithValue("@eid", eventId ?? string.Empty);
+            cmd.Parameters.AddWithValue("@p", payload ?? string.Empty);
+            cmd.Parameters.AddWithValue("@s", signature ?? string.Empty);
+            cmd.Parameters.AddWithValue("@next", DateTime.UtcNow.ToString("o"));
+            cmd.Parameters.AddWithValue("@created", DateTime.UtcNow.ToString("o"));
+            cmd.ExecuteNonQuery();
+        }
+
         public void Enqueue(string eventId, string payload, string signature)
         {
             try
             {
                 using var conn = new SqliteConnection(_connectionString);
                 conn.Open();
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = @"INSERT INTO AuditForwardQueue (EventId, Payload, Signature, Attempts, NextAttemptAt, CreatedAt)
-                                    VALUES (@eid, @p, @s, 0, @next, @created);";
-                cmd.Parameters.AddWithValue("@eid", eventId ?? string.Empty);
-                cmd.Parameters.AddWithValue("@p", payload ?? string.Empty);
-                cmd.Parameters.AddWithValue("@s", signature ?? string.Empty);
-                cmd.Parameters.AddWithValue("@next", DateTime.UtcNow.ToString("o"));
-                cmd.Parameters.AddWithValue("@created", DateTime.UtcNow.ToString("o"));
-                cmd.ExecuteNonQuery();
+                Enqueue(conn, eventId, payload, signature);
             }
             catch (Exception ex)
             {
@@ -167,6 +177,7 @@ namespace ClinicaLongevidadApp.Services
         private readonly System.Threading.Timer? _timer;
         private readonly int _intervalMs;
         private readonly int _maxAttempts = 5;
+        private readonly System.Threading.SemaphoreSlim _processing = new(1, 1);
 
         public AuditForwardQueueWorker(string connectionString, IWebhookForwarder? forwarder, IAuditExporter? exporter, int intervalSeconds = 30)
         {
@@ -180,6 +191,8 @@ namespace ClinicaLongevidadApp.Services
 
         public async Task ProcessOnceAsync()
         {
+            if (!await _processing.WaitAsync(0).ConfigureAwait(false))
+                return;
             try
             {
                 var pending = _queue.GetPending(25);
@@ -224,11 +237,16 @@ namespace ClinicaLongevidadApp.Services
             {
                 try { AuditLogHelper.Error("AuditForwardQueueWorker", "Processing failed", ex); } catch { }
             }
+            finally
+            {
+                _processing.Release();
+            }
         }
 
         public void Dispose()
         {
             try { _timer?.Dispose(); } catch { }
+            _processing.Dispose();
         }
     }
 }

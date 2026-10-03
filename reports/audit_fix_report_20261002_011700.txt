@@ -1,0 +1,52 @@
+Resumen de cambios: Auditoría - sesión de trabajo
+Fecha: 2026-10-02 01:17 (local)
+
+Archivos modificados:
+- Views/AuditorMenuWindow.xaml.cs
+
+Cambios realizados (resumen):
+- Añadidos usings: System.Text.RegularExpressions y System.Globalization.
+- Añadido método BtnSortAuditLog_Click(file-based): ordena un fichero de audit log por timestamp (crea .bak y sobrescribe).
+- Añadidos utilitarios para ordenar el DataGrid en tiempo de ejecución:
+  - RegisterAuditGridSorter(): busca DataGrid en el árbol visual y engancha un handler.
+  - AuditGrid_LayoutUpdated(): handler que aplica orden descendente sobre la columna de fecha/hora.
+  - FindVisualChildren<T>(): utilidad para recorrer el árbol visual.
+- Registro de la función RegisterAuditGridSorter() desde AuditorMenuWindow_Loaded.
+- La solución compiló correctamente tras los cambios (build OK).
+
+Qué se hizo (estado):
+- Exploración y edición del código fuente en Views/AuditorMenuWindow.xaml.cs: implementado y probado (compilación OK).
+- Implementación de dos estrategias de ordenado:
+  1) Ordenado de fichero externo (.log/.txt) (BtnSortAuditLog_Click) — utilizable si se quiere ordenar logs en disco.
+  2) Ordenado en la UI: detecta DataGrid con encabezado con "Fecha"/"Hora" y aplica sort descendente en LayoutUpdated.
+
+Qué está pendiente (lo que falta):
+1) Ajustes en la pantalla real de Auditoría (captura):
+   - La ventana que muestras en la captura («Auditoría del Sistema») parece usar otro control DataGrid distinto al de `AuditorMenuWindow.xaml` (la ventana donde trabajamos contiene `DgManifest`). Es necesario identificar el nombre XAML del DataGrid principal de la pantalla de auditoría (p. ej. `DgAudit` o similar) y aplicar uno de los siguientes:
+     • Establecer `SortMemberPath` en la columna de fecha/hora (XAML) y/o dar el binding correcto a una propiedad DateTime.
+     • Si la columna contiene cadenas, convertirlas a DateTime o exponer una propiedad DateTime en el modelo de fila.
+     • Asegurar que el encabezado contiene la palabra "Fecha" o "Hora", o adaptar la detección del grid para usar el nombre del control.
+2) Añadir un botón en la UI de la pantalla de auditoría (o en esta ventana si procede) que fuerce el re-ordenado cuando el usuario pulse "Actualizar" / "Filtrar".
+3) Pruebas en ejecución: arrancar la app, navegar a la pantalla de Auditoría, verificar que el orden es continuo tras cargar/filtrar/actualizar.
+4) Posible limpieza: eliminar/ajustar la lógica de ordenado por fichero si no se desea mantenerla.
+5) Commit de cambios en branch de Git y push remoto (no realizado todavía).
+
+Pasos recomendados para mañana (prioridad):
+- Abrir el fichero XAML de la pantalla "Auditoría del Sistema" (la que muestra la tabla grande en la captura) y localizar el DataGrid y la columna temporal.
+- En el XAML, para la columna de Fecha/Hora, establecer `Binding` a la propiedad DateTime del modelo y `SortMemberPath="<PropName>"`.
+- Si no hay propiedad DateTime, añadir una propiedad calculada en el modelo que exponga la fecha como DateTime para que DataGrid pueda ordenar nativamente.
+- Alternativa: adaptar `RegisterAuditGridSorter` para detectar esa DataGrid por `x:Name` en lugar del encabezado.
+- Ejecutar la app, comprobar orden tras pulsar "Filtrar" o "Actualizar".
+- Crear branch git: `git checkout -b fix/audit-grid-sorting`, `git add .`, `git commit -m "UI: auto-sort audit grid by timestamp"`, `git push -u origin fix/audit-grid-sorting`.
+
+Notas operativas / riesgos:
+- El handler `LayoutUpdated` se ejecuta frecuentemente; implementé checks para minimizar trabajo redundante (comprueba si el sort ya está aplicado). Si hay problemas de rendimiento, cambiar a un evento menos frecuente (por ejemplo, tras datos cargados o al finalizar el filtrado).
+- El orden en disco (BtnSortAuditLog_Click) no afecta la UI salvo que el usuario vuelva a cargar el fichero; es una utilidad separada.
+
+Si quieres, mañana puedo:
+- Abrir y editar el XAML de la pantalla de Auditoría que muestras en la captura y aplicar `SortMemberPath`/binding correcto.
+- Añadir un botón "Forzar orden" en esa pantalla.
+- Crear el branch Git y realizar el commit.
+
+---
+Fin del informe.

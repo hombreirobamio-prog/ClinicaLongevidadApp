@@ -10,19 +10,20 @@ namespace ClinicaLongevidadApp.Tests
 {
     public class AuditoriaTests
     {
-        [Fact]
-        public async Task GuardarCita_Invoca_Auditoria()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task GuardarCita_Delega_Auditoria_En_Servicio(bool fallaGuardado)
         {
             // Arrange
             var mockPacienteService = new Mock<IPacienteService>();
             var mockCitaService = new Mock<ICitaService>();
             var mockAuditoria = new Mock<IAuditoriaService>();
+            if (fallaGuardado)
+                mockCitaService.Setup(s => s.Guardar(It.IsAny<Cita>()))
+                    .Throws(new InvalidOperationException("Fallo sintético de persistencia/auditoría"));
 
             var paciente = new Paciente { Id = 10, NombreCompleto = "Test Paciente" };
-
-            bool called = false;
-            mockAuditoria.Setup(a => a.RegistrarEvento(It.IsAny<AuditoriaEvento>()))
-                .Callback<AuditoriaEvento>(e => { called = true; });
 
             var vm = new PanelRecepcionViewModel(PanelRecepcionModo.Completo, mockPacienteService.Object, mockCitaService.Object, mockAuditoria.Object, autoInitialize: false);
 
@@ -40,24 +41,24 @@ namespace ClinicaLongevidadApp.Tests
 
             // Assert
             mockCitaService.Verify(s => s.Guardar(It.IsAny<Cita>()), Times.Once);
-            mockAuditoria.Verify(a => a.RegistrarEvento(It.Is<AuditoriaEvento>(e => e.Accion.Contains("Cita"))), Times.Once);
-            Assert.True(called, "Auditoría no fue invocada (flag)");
+            if (fallaGuardado) Assert.Equal("10:00", vm.HoraCita);
+            mockAuditoria.Verify(a => a.RegistrarEvento(It.IsAny<AuditoriaEvento>()), Times.Never);
         }
 
-        [Fact]
-        public async Task CambiarEstadoCita_Invoca_Auditoria()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task CambiarEstadoCita_Delega_Auditoria_En_Servicio(bool fallaGuardado)
         {
             // Arrange
             var mockPacienteService = new Mock<IPacienteService>();
             var mockCitaService = new Mock<ICitaService>();
             var mockAuditoria = new Mock<IAuditoriaService>();
+            if (fallaGuardado)
+                mockCitaService.Setup(s => s.Guardar(It.IsAny<Cita>()))
+                    .Throws(new InvalidOperationException("Fallo sintético de persistencia/auditoría"));
 
             var cita = new Cita { Id = 5, PacienteId = 10, PacienteNombre = "Paciente X", Fecha = DateTime.Today, Hora = "11:00", Profesional = "Dr. Y", Estado = "Pendiente" };
-
-
-            bool called = false;
-            mockAuditoria.Setup(a => a.RegistrarEvento(It.IsAny<AuditoriaEvento>()))
-                .Callback<AuditoriaEvento>(e => { called = true; });
 
             var vm = new PanelRecepcionViewModel(PanelRecepcionModo.Completo, mockPacienteService.Object, mockCitaService.Object, mockAuditoria.Object, autoInitialize: false);
 
@@ -65,11 +66,15 @@ namespace ClinicaLongevidadApp.Tests
 
             // Act
             await vm.ConfirmarCitaSeleccionadaAsync();
+            if (fallaGuardado)
+            {
+                Assert.Equal("Pendiente", cita.Estado);
+                Assert.Same(cita, vm.CitaSeleccionada);
+            }
 
             // Assert
             mockCitaService.Verify(s => s.Guardar(It.Is<Cita>(c => c.Id == 5 && c.Estado == "Confirmada")), Times.Once);
-            Assert.True(called, "Auditoría no fue invocada (flag)");
-            mockAuditoria.Verify(a => a.RegistrarEvento(It.Is<AuditoriaEvento>(e => e.Accion == "Cita.Confirmar")), Times.Once);
+            mockAuditoria.Verify(a => a.RegistrarEvento(It.IsAny<AuditoriaEvento>()), Times.Never);
         }
     }
 }

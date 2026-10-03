@@ -22,10 +22,9 @@ namespace ClinicaLongevidadApp.Tests
 
             // Ensure predictable keys for HMAC/encryption
             Environment.SetEnvironmentVariable("AUDIT_HMAC_KEY", "worker-test-key-0123456789");
-            Environment.SetEnvironmentVariable("AUDIT_ENC_KEY", Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("encryptionkey1234567890123456")));
+            Environment.SetEnvironmentVariable("AUDIT_ENC_KEY", Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("0123456789abcdef0123456789abcdef")));
 
-            _reportDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "ClinicaLongevidadApp", "AuditIntegrityReports");
-            try { if (Directory.Exists(_reportDir)) Directory.Delete(_reportDir, true); } catch { }
+            _reportDir = Path.Combine(Path.GetTempPath(), "audit-worker-test-" + Guid.NewGuid().ToString("N"));
         }
 
         [Fact]
@@ -48,7 +47,7 @@ namespace ClinicaLongevidadApp.Tests
                 cmd.ExecuteNonQuery();
             }
 
-            var worker = new AuditoriaIntegrityWorker(service, TimeSpan.FromSeconds(1));
+            var worker = new AuditoriaIntegrityWorker(service, TimeSpan.FromSeconds(1), _reportDir);
             try
             {
                 bool eventFired = false;
@@ -93,7 +92,7 @@ namespace ClinicaLongevidadApp.Tests
             var evento1 = new AuditoriaEvento { UsuarioAdmin = "u1", Accion = "A1", Modulo = "M", Detalles = "{\"a\":1}" };
             service.RegistrarEvento(evento1);
 
-            var worker = new AuditoriaIntegrityWorker(service, TimeSpan.FromSeconds(1));
+            var worker = new AuditoriaIntegrityWorker(service, TimeSpan.FromSeconds(1), _reportDir);
             try
             {
                 bool eventFired = false;
@@ -111,7 +110,7 @@ namespace ClinicaLongevidadApp.Tests
 
         public void Dispose()
         {
-            try { if (Directory.Exists(_reportDir)) Directory.Delete(_reportDir, true); } catch { }
+            // Retain isolated reports for diagnosis; never delete shared operational evidence.
             try { if (File.Exists(_dbPath)) File.Delete(_dbPath); } catch { }
         }
     }
