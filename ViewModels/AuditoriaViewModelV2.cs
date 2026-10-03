@@ -904,6 +904,8 @@ namespace ClinicaLongevidadApp.ViewModels
                     TryPopulateMetadataFromDetalles(m);
                 }
 
+                // Ensure rows are ordered by FechaHora DESC so UI shows newest first
+                rows = rows.OrderByDescending(r => r.FechaHora).ToList();
                 // cache full dataset
                 _rowsAll = rows.ToList();
 
@@ -914,6 +916,19 @@ namespace ClinicaLongevidadApp.ViewModels
                 // update counters/metrics
                 UpdateMetrics(rows);
                 ShowSnackbar($"Auditoría actualizada: {rows.Count} registros cargados.", 4);
+
+                // Ensure UI view is sorted by FechaHora DESC so newest records appear first
+                try
+                {
+                    var cv = System.Windows.Data.CollectionViewSource.GetDefaultView(ListaAuditoria);
+                    if (cv != null)
+                    {
+                        cv.SortDescriptions.Clear();
+                        cv.SortDescriptions.Add(new System.ComponentModel.SortDescription(nameof(Models.AuditoriaModel.FechaHora), System.ComponentModel.ListSortDirection.Descending));
+                        cv.Refresh();
+                    }
+                }
+                catch { }
 
                 // Populate filter lists from superset
                 try { Application.Current?.Dispatcher?.Invoke(() => PopulateFilterCollectionsInPlace(_rowsAll)); } catch { }
@@ -969,6 +984,19 @@ namespace ClinicaLongevidadApp.ViewModels
 
                 // update counters
                 UpdateMetrics(filtered);
+
+                // Ensure UI view preserves FechaHora DESC after applying filters
+                try
+                {
+                    var cv = System.Windows.Data.CollectionViewSource.GetDefaultView(ListaAuditoria);
+                    if (cv != null)
+                    {
+                        cv.SortDescriptions.Clear();
+                        cv.SortDescriptions.Add(new System.ComponentModel.SortDescription(nameof(Models.AuditoriaModel.FechaHora), System.ComponentModel.ListSortDirection.Descending));
+                        cv.Refresh();
+                    }
+                }
+                catch { }
             }
             catch (Exception ex)
             {
@@ -1018,6 +1046,18 @@ namespace ClinicaLongevidadApp.ViewModels
             foreach (var r in _rowsAll) ListaAuditoria.Add(r);
 
             UpdateMetrics(_rowsAll);
+            // Ensure UI view preserves FechaHora DESC after clearing filters
+            try
+            {
+                var cv = System.Windows.Data.CollectionViewSource.GetDefaultView(ListaAuditoria);
+                if (cv != null)
+                {
+                    cv.SortDescriptions.Clear();
+                    cv.SortDescriptions.Add(new System.ComponentModel.SortDescription(nameof(Models.AuditoriaModel.FechaHora), System.ComponentModel.ListSortDirection.Descending));
+                    cv.Refresh();
+                }
+            }
+            catch { }
             ShowSnackbar($"Filtros limpiados. Mostrando {_rowsAll.Count} registros.", 4);
             return Task.CompletedTask;
         }

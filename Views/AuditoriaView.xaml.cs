@@ -3,6 +3,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Linq;
+using System.Collections.Specialized;
 
 namespace ClinicaLongevidadApp.Views
 {
@@ -13,6 +15,7 @@ namespace ClinicaLongevidadApp.Views
             InitializeComponent();
             this.Loaded += AuditoriaView_Loaded;
             this.Unloaded += AuditoriaView_Unloaded;
+            this.DataContextChanged += AuditoriaView_DataContextChanged;
 
             AuditoriaDataGrid.AddHandler(
                 Mouse.PreviewMouseWheelEvent,
@@ -26,14 +29,50 @@ namespace ClinicaLongevidadApp.Views
             try
             {
                 // Apply initial sort by FechaHora descending
+                ApplyDefaultSort();
+            }
+            catch { }
+        }
+
+        private void AuditoriaView_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            try
+            {
+                if (e.OldValue is ViewModels.AuditoriaViewModelV2 oldVm)
+                {
+                    try { oldVm.ListaAuditoria.CollectionChanged -= ListaAuditoria_CollectionChanged; } catch { }
+                }
+
+                if (e.NewValue is ViewModels.AuditoriaViewModelV2 newVm)
+                {
+                    try { newVm.ListaAuditoria.CollectionChanged += ListaAuditoria_CollectionChanged; } catch { }
+                }
+            }
+            catch { }
+        }
+
+        private void ListaAuditoria_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            // Re-apply default sort when the collection is modified so the newest items remain on top
+            try
+            {
+                Application.Current?.Dispatcher?.Invoke(() => ApplyDefaultSort());
+            }
+            catch { }
+        }
+
+        private void ApplyDefaultSort()
+        {
+            try
+            {
                 AuditoriaDataGrid.Items.SortDescriptions.Clear();
                 AuditoriaDataGrid.Items.SortDescriptions.Add(new System.ComponentModel.SortDescription("FechaHora", System.ComponentModel.ListSortDirection.Descending));
-                if (AuditoriaDataGrid.Columns.Count > 0)
-                {
-                    // Clear existing indicators
-                    foreach (var c in AuditoriaDataGrid.Columns) c.SortDirection = null;
-                    AuditoriaDataGrid.Columns[0].SortDirection = System.ComponentModel.ListSortDirection.Descending;
-                }
+
+                // Set visual sort indicator on the Fecha/Hora column if present
+                var col = AuditoriaDataGrid.Columns.FirstOrDefault(c => string.Equals(c.SortMemberPath, "FechaHora", StringComparison.OrdinalIgnoreCase));
+                foreach (var c in AuditoriaDataGrid.Columns) c.SortDirection = null;
+                if (col != null) col.SortDirection = System.ComponentModel.ListSortDirection.Descending;
+
                 AuditoriaDataGrid.Items.Refresh();
             }
             catch { }
