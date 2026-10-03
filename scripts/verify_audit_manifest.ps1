@@ -44,6 +44,7 @@ function Compute-SHA256($path) {
 }
 
 $lines = Get-Content -Path $ManifestPath -ErrorAction Stop
+$manifestDirectory = Split-Path -Parent (Resolve-Path -LiteralPath $ManifestPath).Path
 
 $entries = @()
 $current = $null
@@ -79,6 +80,9 @@ $checked = 0
 foreach ($e in $entries) {
     $checked++
     $filePath = $e.File
+    if (-not [System.IO.Path]::IsPathRooted($filePath)) {
+        $filePath = Join-Path $manifestDirectory $filePath
+    }
     Write-Host "\nChecking: $filePath"
     if (-not (Test-Path $filePath)) {
         $errors += "MISSING: $filePath"
@@ -100,7 +104,7 @@ foreach ($e in $entries) {
             Write-Host "  SHA256 MISMATCH! expected: $($e.ExpectedSHA) actual: $hash" -ForegroundColor Red
         }
     } else {
-        $warnings += "NO-SHA-IN-MANIFEST: $filePath"
+        $errors += "NO-SHA-IN-MANIFEST: $filePath"
         Write-Host "  No SHA value present in manifest for this file. Computed: $hash" -ForegroundColor Yellow
     }
 
@@ -140,7 +144,8 @@ foreach ($e in $entries) {
                 }
             } else {
                 # companion exists but manifest has no HMAC
-                if ($RequireHmac) { Write-Host "  Companion .hmac present (manifest has no HMAC entry)." -ForegroundColor Yellow } else { Write-Host "  Companion .hmac present (manifest has no HMAC entry)." -ForegroundColor Yellow }
+                if ($RequireHmac) { $errors += "HMAC-MISSING-IN-MANIFEST: $filePath" }
+                else { $warnings += "HMAC-MISSING-IN-MANIFEST: $filePath" }
             }
         } else {
             if ($RequireHmac) { $errors += "HMAC-READERROR: $hmacFile"; Write-Host "  Could not read companion .hmac file." -ForegroundColor Red } else { $warnings += "HMAC-READERROR: $hmacFile"; Write-Host "  Could not read companion .hmac file." -ForegroundColor Yellow }
@@ -165,6 +170,40 @@ foreach ($e in $entries) {
             if ($RequireHmac) { $errors += "HMACVER-MISSING-FILE: $hmacVerFile"; Write-Host "  HMAC.version expected but file not found." -ForegroundColor Red } 
             else { $warnings += "HMACVER-MISSING-FILE: $hmacVerFile"; Write-Host "  HMAC.version expected but file not found." -ForegroundColor Yellow }
         }
+    }
+
+    # Presence and textual agreement are not authentication. Recompute using the
+    # exact configured key version, never silently substitute a different key.
+    if ($RequireHmac -or (Test-Path -LiteralPath $hmacFile)) {
+        $authProblems = @()
+        if (-not $e.HMACVersion) { $authProblems += "HMACVER-MISSING-IN-MANIFEST: $filePath" }
+        if (-not (Test-Path -LiteralPath $hmacVerFile)) { $authProblems += "HMACVER-MISSING-FILE: $hmacVerFile" }
+        $configuredVersion = $env:AUDIT_HMAC_KEY_VERSION
+        if (-not $configuredVersion) { $configuredVersion = 'local' }
+        if (-not $env:AUDIT_HMAC_KEY) { $authProblems += "HMAC-UNVERIFIABLE: key unavailable for $filePath" }
+        elseif (-not $e.HMACVersion -or $configuredVersion -cne $e.HMACVersion) {
+            $authProblems += "HMAC-UNVERIFIABLE: exact key version unavailable for $filePath"
+        }
+        else {
+            try {
+                try { $keyBytes = [Convert]::FromBase64String($env:AUDIT_HMAC_KEY) }
+                catch { $keyBytes = [System.Text.Encoding]::UTF8.GetBytes($env:AUDIT_HMAC_KEY) }
+                $mac = [System.Security.Cryptography.HMACSHA256]::new($keyBytes)
+                try {
+                    $stream = [System.IO.File]::OpenRead($filePath)
+                    try { $actualMac = ([BitConverter]::ToString($mac.ComputeHash($stream)) -replace '-', '').ToLowerInvariant() }
+                    finally { $stream.Dispose() }
+                }
+                finally { $mac.Dispose() }
+                if ($e.HMAC -notmatch '^[0-9a-fA-F]{64}$' -or $actualMac -ne $e.HMAC) {
+                    $errors += "HMAC-AUTHENTICATION-FAILED: $filePath"
+                }
+                else { Write-Host "  HMAC cryptographically verified." -ForegroundColor Green }
+            }
+            catch { $authProblems += "HMAC-UNVERIFIABLE: computation failed for $filePath" }
+        }
+        if ($RequireHmac) { $errors += $authProblems }
+        else { $warnings += $authProblems }
     }
 }
 

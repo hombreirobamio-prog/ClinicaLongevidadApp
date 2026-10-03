@@ -16,16 +16,18 @@ namespace ClinicaLongevidadApp.Services
     {
         private readonly AuditoriaService _auditoriaService;
         private readonly TimeSpan _interval;
+        private readonly string _reportDirectory;
         private Timer? _timer;
         private bool _running;
         private readonly SemaphoreSlim _semaphore = new(1, 1);
         private CancellationTokenSource _cts = new();
         private bool _disposed;
 
-        public AuditoriaIntegrityWorker(AuditoriaService auditoriaService, TimeSpan? interval = null)
+        public AuditoriaIntegrityWorker(AuditoriaService auditoriaService, TimeSpan? interval = null, string? reportDirectory = null)
         {
             _auditoriaService = auditoriaService ?? throw new ArgumentNullException(nameof(auditoriaService));
             _interval = interval ?? TimeSpan.FromMinutes(60);
+            _reportDirectory = reportDirectory ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "ClinicaLongevidadApp", "AuditIntegrityReports");
         }
 
         /// <summary>
@@ -134,7 +136,7 @@ namespace ClinicaLongevidadApp.Services
                 // and move it into place to avoid partially written files being considered authoritative.
                 try
                 {
-                    string basePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "ClinicaLongevidadApp", "AuditIntegrityReports");
+                    string basePath = _reportDirectory;
                     Directory.CreateDirectory(basePath);
 
                     string fileName = $"integrity_{DateTime.UtcNow:yyyyMMdd_HHmmss_fff}.log";

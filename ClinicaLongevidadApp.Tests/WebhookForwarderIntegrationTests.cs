@@ -32,7 +32,7 @@ namespace ClinicaLongevidadApp.Tests
         }
 
         [Fact]
-        public async Task RegistrarEvento_Forwards_To_Webhook_When_Forwarder_Present()
+        public async Task RegistrarEvento_Encola_Y_Worker_Envia_A_Webhook()
         {
             var fake = new FakeForwarder();
             var svc = new AuditoriaService(_conn, forwarder: fake);
@@ -49,7 +49,17 @@ namespace ClinicaLongevidadApp.Tests
 
             svc.RegistrarEvento(evento);
 
-            // Wait for forwarder to capture payload
+            using (var connection = new SqliteConnection(_conn))
+            {
+                connection.Open();
+                using var command = connection.CreateCommand();
+                command.CommandText = "SELECT COUNT(1) FROM AuditForwardQueue;";
+                Assert.Equal(1L, command.ExecuteScalar());
+            }
+
+            using var worker = new AuditForwardQueueWorker(_conn, fake, null, 60);
+            await worker.ProcessOnceAsync();
+
             var completed = await Task.WhenAny(fake.Tcs.Task, Task.Delay(2000));
             Assert.True(completed == fake.Tcs.Task, "Forwarder did not receive payload in time");
 

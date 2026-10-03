@@ -39,9 +39,17 @@ foreach ($p in $paths) {
 
         if ($IncludeHmac) {
             if (-not $env:AUDIT_HMAC_KEY) { Write-Host "AUDIT_HMAC_KEY not set; skipping HMAC for $f"; continue }
-            $kb = [System.Text.Encoding]::UTF8.GetBytes($env:AUDIT_HMAC_KEY)
+            # Support either a base64-encoded key or a raw string key. Convert to a byte[] for the HMAC constructor.
+            try {
+                $kb = [Convert]::FromBase64String($env:AUDIT_HMAC_KEY)
+            }
+            catch {
+                $kb = [System.Text.Encoding]::UTF8.GetBytes($env:AUDIT_HMAC_KEY)
+            }
             $data = [System.IO.File]::ReadAllBytes($f)
-            $mac = (New-Object System.Security.Cryptography.HMACSHA256 $kb).ComputeHash($data)
+            # Use the typed constructor (avoids PowerShell expanding the byte[] into many arguments)
+            $h = [System.Security.Cryptography.HMACSHA256]::new($kb)
+            $mac = $h.ComputeHash($data)
             ([BitConverter]::ToString($mac) -replace '-','').ToLower() | Out-File -FilePath ($f + '.hmac') -Encoding ascii
             ($env:AUDIT_HMAC_KEY_VERSION ?? '1') | Out-File -FilePath ($f + '.hmac.ver') -Encoding ascii
             Write-Host "Wrote: $($f + '.hmac') and .hmac.ver"

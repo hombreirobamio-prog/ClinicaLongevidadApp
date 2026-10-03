@@ -3,6 +3,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Linq;
+using System.Collections.Specialized;
 
 namespace ClinicaLongevidadApp.Views
 {
@@ -11,14 +13,63 @@ namespace ClinicaLongevidadApp.Views
         public AuditoriaView()
         {
             InitializeComponent();
-
+            this.Loaded += AuditoriaView_Loaded;
             this.Unloaded += AuditoriaView_Unloaded;
+            this.DataContextChanged += AuditoriaView_DataContextChanged;
 
             AuditoriaDataGrid.AddHandler(
                 Mouse.PreviewMouseWheelEvent,
                 new MouseWheelEventHandler(
                     AuditoriaDataGrid_PreviewMouseWheel),
                 true);
+        }
+
+        private void AuditoriaView_Loaded(object? sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Apply initial sort by FechaHora descending
+                ApplyDefaultSort();
+            }
+            catch { }
+        }
+
+        private void AuditoriaView_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            try
+            {
+                // Delegate sorting responsibility to the ViewModel which enforces
+                // the collection view order. Keep a visual indicator in the grid.
+                ApplyDefaultSort();
+            }
+            catch { }
+        }
+
+        private void ListaAuditoria_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            // Re-apply default sort when the collection is modified so the newest items remain on top
+            try
+            {
+                Application.Current?.Dispatcher?.Invoke(() => ApplyDefaultSort());
+            }
+            catch { }
+        }
+
+        private void ApplyDefaultSort()
+        {
+            try
+            {
+                AuditoriaDataGrid.Items.SortDescriptions.Clear();
+                AuditoriaDataGrid.Items.SortDescriptions.Add(new System.ComponentModel.SortDescription("FechaHora", System.ComponentModel.ListSortDirection.Descending));
+
+                // Set visual sort indicator on the Fecha/Hora column if present
+                var col = AuditoriaDataGrid.Columns.FirstOrDefault(c => string.Equals(c.SortMemberPath, "FechaHora", StringComparison.OrdinalIgnoreCase));
+                foreach (var c in AuditoriaDataGrid.Columns) c.SortDirection = null;
+                if (col != null) col.SortDirection = System.ComponentModel.ListSortDirection.Descending;
+
+                AuditoriaDataGrid.Items.Refresh();
+            }
+            catch { }
         }
 
         private void BtnOpenDiagnostics_Click(object sender, RoutedEventArgs e)
@@ -109,6 +160,20 @@ namespace ClinicaLongevidadApp.Views
             catch (Exception ex)
             {
                 try { Services.DialogHelper.ShowError("Generar diagnóstico", "Error abriendo administración de auditoría: " + ex.Message); } catch { }
+            }
+        }
+
+        private void BtnOpenAuditorMenu_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var w = new AuditorMenuWindow();
+                w.Owner = Window.GetWindow(this);
+                w.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                try { Services.DialogHelper.ShowError("Auditor", "No se pudo abrir el menú de auditor: " + ex.Message); } catch { }
             }
         }
 

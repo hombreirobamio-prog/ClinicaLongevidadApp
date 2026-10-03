@@ -15,9 +15,9 @@ namespace ClinicaLongevidadApp.Services
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "ClinicaLongevidad.db");
 
-        private static SQLiteConnection GetConnection()
+        private static SQLiteConnection GetConnection(string? databasePath = null)
         {
-            var connection = new SQLiteConnection(DbPath);
+            var connection = new SQLiteConnection(databasePath ?? DbPath);
             connection.CreateTable<HorarioProfesional>();
             return connection;
         }
@@ -63,18 +63,55 @@ namespace ClinicaLongevidadApp.Services
         }
 
         public static void Guardar(HorarioProfesional horario)
+            => Guardar(horario, App.AuditoriaService, DbPath);
+
+        internal static void Guardar(HorarioProfesional horario, AuditoriaService? auditoria, string databasePath)
         {
             ArgumentNullException.ThrowIfNull(horario);
-            using var connection = GetConnection();
+            if (auditoria == null) throw new InvalidOperationException("No se puede guardar sin el servicio de auditoría.");
+            using (var schema = GetConnection(databasePath)) { }
 
-            if (horario.Id == 0)
+            var originalId = horario.Id;
+            var savedId = originalId;
+            auditoria.RegistrarEventoConOperacion(databasePath, connection =>
             {
-                connection.Insert(horario);
-            }
-            else
-            {
-                connection.Update(horario);
-            }
+                using var command = connection.CreateCommand();
+                command.CommandText = originalId == 0
+                    ? @"INSERT INTO HorarioProfesional (Profesional, DiaSemana, HoraInicio, HoraFin, IntervaloMinutos, Activo)
+                        VALUES (@profesional, @dia, @inicio, @fin, @intervalo, @activo);"
+                    : @"UPDATE HorarioProfesional SET Profesional=@profesional, DiaSemana=@dia, HoraInicio=@inicio,
+                        HoraFin=@fin, IntervaloMinutos=@intervalo, Activo=@activo WHERE Id=@id;";
+                void Add(string name, object? value) => command.Parameters.AddWithValue(name, value ?? DBNull.Value);
+                Add("@profesional", horario.Profesional);
+                Add("@dia", horario.DiaSemana);
+                Add("@inicio", horario.HoraInicio);
+                Add("@fin", horario.HoraFin);
+                Add("@intervalo", horario.IntervaloMinutos);
+                Add("@activo", horario.Activo ? 1 : 0);
+                if (originalId != 0) Add("@id", originalId);
+                if (command.ExecuteNonQuery() != 1)
+                    throw new InvalidOperationException("El horario que se intenta guardar ya no existe.");
+                if (originalId == 0)
+                {
+                    command.CommandText = "SELECT last_insert_rowid();";
+                    savedId = checked(Convert.ToInt32(command.ExecuteScalar()));
+                }
+                return new AuditoriaEvento
+                {
+                    UsuarioAdmin = Sesion.UsuarioActual ?? "Sistema",
+                    Accion = originalId == 0 ? "HorarioProfesional.Crear" : "HorarioProfesional.Actualizar",
+                    Modulo = "Horarios",
+                    UsuarioAfectado = horario.Profesional ?? string.Empty,
+                    Resultado = true,
+                    FechaHora = DateTime.Now,
+                    Detalles = AuditoriaDetallesHelper.CrearJson(("Id", savedId), ("Profesional", horario.Profesional),
+                        ("DiaSemana", horario.DiaSemana), ("HoraInicio", horario.HoraInicio), ("HoraFin", horario.HoraFin),
+                        ("IntervaloMinutos", horario.IntervaloMinutos), ("Activo", horario.Activo)),
+                    Rol = Sesion.RolActual,
+                    Area = Sesion.AreaActual
+                };
+            });
+            horario.Id = savedId;
         }
 
         private static IEnumerable<string> GenerarHoras(HorarioProfesional horario)

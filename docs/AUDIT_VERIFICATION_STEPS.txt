@@ -1,0 +1,27 @@
+Instrucciones de verificación rápida
+
+1) Obtener artefacto (opcional):
+   - Desde release GitHub o usar copia local:
+     C:\ProgramData\ClinicaLongevidadApp\AuditArtifacts\audit-artifacts_20260928_152437.zip
+
+2) Comprobar checksum (PowerShell):
+   Get-FileHash 'C:\ProgramData\ClinicaLongevidadApp\AuditArtifacts\audit-artifacts_20260928_152437.zip' -Algorithm SHA256
+   -> Comparar con: 988A712955D3FF2C9879458A3CDCD6993C97E134147C98013660894257A227E6
+
+3) Descomprimir y revisar contenido (opcional):
+   Expand-Archive -LiteralPath 'C:\ProgramData\ClinicaLongevidadApp\AuditArtifacts\audit-artifacts_20260928_152437.zip' -DestinationPath 'C:\Temp\audit_check' -Force
+
+4) Verificar manifiesto (PowerShell):
+   powershell -NoProfile -ExecutionPolicy Bypass -Command "& '.\\scripts\\verify_audit_manifest.ps1' -ManifestPath 'C:\ProgramData\ClinicaLongevidadApp\AuditArtifacts\audit_manifest_20260928_152437.txt'"
+   -> Resultado esperado: Errors: 0  Warnings: 0
+
+5) Revisar IntegrityReport JSON (opcional):
+   C:\ProgramData\ClinicaLongevidadApp\AuditIntegrityReports\IntegrityReport_*.json
+
+6) Comprobaciones extra (opcionales):
+   - Confirmar existencia de companion files (.sha256, .hmac, .hmac.ver) junto a cada .db
+   - Comprobar que el release contiene los assets esperados (gh release view)
+
+Notas:
+- Si el auditor solicita entrega en S3 o SharePoint, preparar los mismos artefactos y manifestos allí y proporcionar URL y firma (sha256).
+- Guardar registro de la validación (quién, cuándo, resultados) en `docs/AUDIT_CLOSURE.md` o sistema de evidencias.

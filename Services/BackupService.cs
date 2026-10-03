@@ -101,13 +101,14 @@ namespace ClinicaLongevidadApp.Services
             {
                 // Build robust connection strings using the SqliteConnectionStringBuilder so we can
                 // request a read-only shared cache for the source and a ReadWriteCreate destination.
-                var srcBuilder = new SqliteConnectionStringBuilder(connectionString);
+                var srcBuilder = new SqliteConnectionStringBuilder(connectionString) { Pooling = false };
                 if (string.IsNullOrEmpty(srcBuilder.DataSource))
                     throw new InvalidOperationException("Database file not found or connection string is not file-based.");
 
                 var dstBuilder = new SqliteConnectionStringBuilder
                 {
                     DataSource = backupPath,
+                    Pooling = false,
                     Mode = SqliteOpenMode.ReadWriteCreate,
                     Cache = SqliteCacheMode.Shared
                 };
@@ -294,28 +295,64 @@ namespace ClinicaLongevidadApp.Services
             var dir = Path.GetDirectoryName(dbFile) ?? Environment.CurrentDirectory;
             var name = Path.GetFileNameWithoutExtension(dbFile);
             var ext = Path.GetExtension(dbFile);
-            var ts = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+            var ts = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss_fff") + "_" + Guid.NewGuid().ToString("N");
             var preRestore = Path.Combine(dir, $"{name}_pre_restore_{ts}{ext}");
+            var staged = Path.Combine(dir, $".restore_{Guid.NewGuid():N}.db");
+            if (string.Equals(Path.GetFullPath(backupFilePath), Path.GetFullPath(dbFile), StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Backup and destination must be different files.");
 
-            // Verify checksum/HMAC before restore if present
+            // Prepare a private, authenticated snapshot on the destination volume.
+            // A failure before ReplaceDatabase leaves the destination untouched.
             try
             {
-                VerifyBackupIntegrity(backupFilePath);
+                using (var source = new FileStream(backupFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (var copy = new FileStream(staged, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                {
+                    source.CopyTo(copy);
+                    copy.Flush(true);
+                }
+                foreach (var suffix in new[] { ".sha256", ".hmac", ".hmac.ver" })
+                {
+                    if (!File.Exists(backupFilePath + suffix))
+                        throw new InvalidOperationException("Required backup checksum/signature evidence is missing.");
+                    File.Copy(backupFilePath + suffix, staged + suffix, overwrite: false);
+                }
+                VerifyBackupIntegrity(staged);
+                using (var check = new SqliteConnection(new SqliteConnectionStringBuilder
+                { DataSource = staged, Mode = SqliteOpenMode.ReadOnly, Pooling = false }.ToString()))
+                {
+                    check.Open();
+                    using var command = check.CreateCommand();
+                    command.CommandText = "PRAGMA integrity_check";
+                    using var rows = command.ExecuteReader();
+                    if (!rows.Read() || !string.Equals(rows.GetString(0), "ok", StringComparison.Ordinal) || rows.Read())
+                        throw new InvalidOperationException("Backup SQLite integrity check failed.");
+                }
+
+                // On Windows this sharing mode denies concurrent reads/writes, while
+                // permitting the atomic replacement of this same file below.
+                using var exclusiveTarget = new FileStream(dbFile, FileMode.Open, FileAccess.ReadWrite, FileShare.Delete);
+                foreach (var suffix in new[] { "-wal", "-shm", "-journal" })
+                    if (File.Exists(dbFile + suffix))
+                        throw new InvalidOperationException("Offline restore required: SQLite sidecar files exist. Close connections and complete SQLite recovery/checkpoint first.");
+
+                ReplaceDatabase(staged, dbFile, preRestore);
+                AuditLogHelper.Info("BackupService", $"Database restored from '{backupFilePath}'. Previous DB saved as '{preRestore}'");
             }
-            catch (Exception ex)
+            catch (IOException ex)
             {
-                AuditLogHelper.Warning("BackupService", $"Backup integrity verification failed: {ex.Message}");
-                throw;
+                throw new IOException("Restore could not complete. Close all database connections and use an offline maintenance window. No non-atomic copy fallback was attempted.", ex);
             }
-
-            // Preserve current DB
-            File.Copy(dbFile, preRestore, overwrite: false);
-
-            // Copy backup over current DB (overwrite)
-            File.Copy(backupFilePath, dbFile, overwrite: true);
-
-            AuditLogHelper.Info("BackupService", $"Database restored from '{backupFilePath}'. Previous DB saved as '{preRestore}'");
+            finally
+            {
+                foreach (var suffix in new[] { "", ".sha256", ".hmac", ".hmac.ver", "-wal", "-shm" })
+                    try { if (File.Exists(staged + suffix)) File.Delete(staged + suffix); } catch { }
+            }
         }
+
+        // Kept as a single operation; never fall back to copying over the live file.
+        protected virtual void ReplaceDatabase(string staged, string destination, string previous)
+            => File.Replace(staged, destination, previous);
 
         private void ComputeAndWriteChecksums(string backupPath)
         {
@@ -397,6 +434,8 @@ namespace ClinicaLongevidadApp.Services
         {
             // Verify SHA256 if present
             var shaPath = backupPath + ".sha256";
+            if (!File.Exists(shaPath))
+                throw new InvalidOperationException("Required SHA256 checksum file is missing.");
             if (File.Exists(shaPath))
             {
                 var expected = File.ReadAllText(shaPath).Trim();
@@ -412,6 +451,10 @@ namespace ClinicaLongevidadApp.Services
             // Verify HMAC if present
             var hmacPath = backupPath + ".hmac";
             var hmacVerPath = backupPath + ".hmac.ver";
+            if (!File.Exists(hmacPath) || !File.Exists(hmacVerPath))
+                throw new InvalidOperationException("Required HMAC signature or key version file is missing.");
+            if (string.IsNullOrWhiteSpace(File.ReadAllText(hmacVerPath)))
+                throw new InvalidOperationException("Required HMAC key version is empty.");
             if (File.Exists(hmacPath))
             {
                 var expectedMac = File.ReadAllText(hmacPath).Trim();

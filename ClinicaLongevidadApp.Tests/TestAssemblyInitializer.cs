@@ -12,6 +12,7 @@ namespace ClinicaLongevidadApp.Tests
         [ModuleInitializer]
         internal static void Initialize()
         {
+            Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", "Test");
             try
             {
                 // Only set defaults if not already provided by CI or environment

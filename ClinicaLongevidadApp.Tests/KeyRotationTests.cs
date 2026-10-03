@@ -20,6 +20,25 @@ namespace ClinicaLongevidadApp.Tests
             Assert.Equal(32, decoded.Length);
         }
 
+        [Theory]
+        [InlineData("1")]
+        [InlineData("true")]
+        [InlineData("TRUE")]
+        public void RequireKeyVault_RecognizesSupportedValues(string value)
+        {
+            Assert.True(KeyRotationProviderFactory.IsKeyVaultRequired(value));
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("0")]
+        [InlineData("false")]
+        public void RequireKeyVault_RejectsDisabledValues(string? value)
+        {
+            Assert.False(KeyRotationProviderFactory.IsKeyVaultRequired(value));
+        }
+
         [Fact]
         public async Task PreviewRotateHmacKey_ReturnsPlan()
         {

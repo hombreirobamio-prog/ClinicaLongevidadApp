@@ -28,21 +28,14 @@ namespace ClinicaLongevidadApp.Services
             if (string.IsNullOrWhiteSpace(_hmacSecretName)) throw new InvalidOperationException("AUDIT_HMAC_SECRET_NAME is not configured");
 
             string value = Convert.ToBase64String(key);
+            var resp = _client.SetSecret(_hmacSecretName, value);
+            // Optionally set process environment so running app picks it up.
             try
             {
-                var resp = _client.SetSecret(_hmacSecretName, value);
-                // Optionally set process environment so running app picks it up
-                try
-                {
-                    Environment.SetEnvironmentVariable("AUDIT_HMAC_KEY", value, EnvironmentVariableTarget.Process);
-                    Environment.SetEnvironmentVariable("AUDIT_HMAC_KEY_VERSION", resp.Value.Properties.Version, EnvironmentVariableTarget.Process);
-                }
-                catch { }
+                Environment.SetEnvironmentVariable("AUDIT_HMAC_KEY", value, EnvironmentVariableTarget.Process);
+                Environment.SetEnvironmentVariable("AUDIT_HMAC_KEY_VERSION", resp.Value.Properties.Version, EnvironmentVariableTarget.Process);
             }
-            catch
-            {
-                // best-effort
-            }
+            catch { }
         }
 
         public void PersistEncryptionKey(byte[] key)
@@ -51,20 +44,13 @@ namespace ClinicaLongevidadApp.Services
             if (string.IsNullOrWhiteSpace(_encSecretName)) throw new InvalidOperationException("AUDIT_ENC_SECRET_NAME is not configured");
 
             string value = Convert.ToBase64String(key);
+            var resp = _client.SetSecret(_encSecretName, value);
             try
             {
-                var resp = _client.SetSecret(_encSecretName, value);
-                try
-                {
-                    Environment.SetEnvironmentVariable("AUDIT_ENC_KEY", value, EnvironmentVariableTarget.Process);
-                    Environment.SetEnvironmentVariable("AUDIT_ENC_KEY_VERSION", resp.Value.Properties.Version, EnvironmentVariableTarget.Process);
-                }
-                catch { }
+                Environment.SetEnvironmentVariable("AUDIT_ENC_KEY", value, EnvironmentVariableTarget.Process);
+                Environment.SetEnvironmentVariable("AUDIT_ENC_KEY_VERSION", resp.Value.Properties.Version, EnvironmentVariableTarget.Process);
             }
-            catch
-            {
-                // best-effort
-            }
+            catch { }
         }
     }
 }

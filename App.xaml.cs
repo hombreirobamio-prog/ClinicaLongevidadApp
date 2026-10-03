@@ -150,7 +150,15 @@ namespace ClinicaLongevidadApp
                 }
                 catch
                 {
-                    // fallback to local rotation provider if vault setup fails
+                    if (requireKv || isProdEnv)
+                    {
+                        var msg = "No se pudo inicializar el proveedor de rotación de Key Vault en un entorno que lo exige. Abortando inicio.";
+                        try { MessageBox.Show(msg, "Configuration error", MessageBoxButton.OK, MessageBoxImage.Error); } catch { }
+                        AuditLogHelper.Error("App", msg);
+                        Shutdown();
+                        return;
+                    }
+
                     rotationProvider = new LocalKeyRotationProvider();
                 }
             }
@@ -255,33 +263,17 @@ namespace ClinicaLongevidadApp
             InputManager.Current.PreProcessInput += OnPreProcessInput;
             StartInactivityMonitoring();
 
-            // Developer helper: allow forcing an admin session for local testing/auditor review.
-            // Set environment variable FORCE_ADMIN=1 to enable. This is opt-in and only intended
-            // for development/testing scenarios.
-            try
-            {
-                if (string.Equals(Environment.GetEnvironmentVariable("FORCE_ADMIN"), "1", StringComparison.OrdinalIgnoreCase))
-                {
-                    Services.Sesion.RolActual = "Administración";
-                    Services.Sesion.AreaActual = "Administración";
-                    Services.Sesion.UsuarioActual = "admin.local";
-                    try { AuditLogHelper.Info("App", "FORCE_ADMIN enabled: session forced to Administración for testing."); } catch { }
-                    try { Services.Sesion.NotifyChanged(); } catch { }
-                }
-            }
-            catch { }
-
             var mainWindow = new MainWindow();
 
             MainWindow = mainWindow;
 
             mainWindow.Show();
 
-            // If FORCE_ADMIN helper is enabled, run an automated self-check of the audit subsystem
+            // Diagnostics do not grant a session or administrative permissions.
             // so the auditor can immediately obtain quick diagnostics and an integrity report.
             try
             {
-                if (string.Equals(Environment.GetEnvironmentVariable("FORCE_ADMIN"), "1", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(Environment.GetEnvironmentVariable("AUDIT_RUN_DIAGNOSTICS"), "1", StringComparison.OrdinalIgnoreCase))
                 {
                     // Run diagnostics in background to avoid blocking UI startup
                     System.Threading.Tasks.Task.Run(() =>
@@ -293,7 +285,7 @@ namespace ClinicaLongevidadApp
                             try { quickPath = AuditoriaService?.GenerateQuickDiagnostics(); } catch { }
                             try { reportPath = AuditoriaService?.GenerateIntegrityDiagnosticReport(); } catch { }
 
-                            try { AuditLogHelper.Info("App", "FORCE_ADMIN self-check completed. quick=" + (quickPath ?? "") + " report=" + (reportPath ?? "")); } catch { }
+                            try { AuditLogHelper.Info("App", "Audit self-check completed. quick=" + (quickPath ?? "") + " report=" + (reportPath ?? "")); } catch { }
 
                             // Notify the UI with locations (marshal to UI thread)
                             try

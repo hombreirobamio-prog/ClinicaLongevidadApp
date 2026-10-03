@@ -1,3 +1,5 @@
+> Actualización 29/09/2026: las instrucciones de FORCE_ADMIN, autoconfirmación y verificación/restauración permisiva quedan sustituidas por [Correcciones y operación vigente](AUDIT_REMEDIATION_2026-09-29.md). La auditoría sigue abierta; el texto histórico siguiente no acredita el cierre.
+
 # Audit Runbook — ClinicaLongevidadApp
 
 Purpose
@@ -49,9 +51,12 @@ Key rotation (operator)
 ------------------------
 - Use the UI buttons `Rotar HMAC` and `Rotar ENC` from Administration → Auditoría (requires admin role).
 - Procedure in staging/production:
-  1. Rotate key in Key Vault (or use the rotation provider).
-  2. Generate diagnostics and run `VerifyIntegrity()` to ensure chain remains consistent.
-  3. If any integrity problems arise, follow the incident runbook (backfill hashes or mark rows as suspect).
+  1. Confirm `KEYVAULT_URI`, `AUDIT_HMAC_SECRET_NAME` and `AUDIT_ENC_SECRET_NAME` are configured, and that the service identity can read both the current and historical versions of those same secrets.
+  2. Before rotating, run `dotnet run --project tools/RotateKeys -- verify`. It returns nonzero if either active version cannot be read again explicitly; it never displays or stores key material.
+  3. Execute one rotation and confirm that its audit event contains the previous and new versions, without key material.
+  4. Generate diagnostics and run `VerifyIntegrity()` to ensure chain remains consistent.
+  5. If the key persists but the audit event fails, stop subsequent rotations and record the incident before continuing; Key Vault and SQLite do not share a transaction.
+  6. If any integrity problems arise, follow the incident runbook (backfill hashes or mark rows as suspect).
 
 CI and reproducible artifacts
 -----------------------------

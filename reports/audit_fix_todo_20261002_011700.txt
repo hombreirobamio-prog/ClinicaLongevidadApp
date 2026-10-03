@@ -1,0 +1,26 @@
+TODO corto plazo (prioritarios) — Auditoría
+
+1) Identificar DataGrid de la pantalla principal de Auditoría (captura):
+   - Localizar el control XAML (archivo .xaml correspondiente) y el `x:Name` del DataGrid que muestra los registros.
+
+2) Asegurar orden nativa por timestamp:
+   - Si el modelo de filas tiene una propiedad DateTime, en XAML asignar `SortMemberPath="<PropName>"` en la columna de Fecha/Hora.
+   - Si el timestamp está en formato string, añadir una propiedad calculada del tipo DateTime en el modelo o convertir antes de bindear.
+
+3) Añadir botón "Ordenar" (opcional):
+   - Añadir botón en UI que llame a un método que aplique sort (por ejemplo, usando dg.Items.SortDescriptions).
+
+4) Validación runtime:
+   - Reiniciar la app o usar Hot Reload.
+   - Cargar datos, aplicar filtros y confirmar continuidad temporal sin saltos.
+
+5) Limpieza y commit:
+   - Revisar el código añadido en `AuditorMenuWindow.xaml.cs` (handlers experimentales). Mantener lo útil y eliminar lo que no se necesite.
+   - Crear branch: `git checkout -b fix/audit-grid-sorting`.
+   - Commit y push.
+
+6) Documentar:
+   - Añadir nota en changelog/reporte de la tarea (este archivo ya creado).
+
+Notas adicionales:
+- Si quieres, mañana puedo ejecutar los cambios y dejarlos listos para code review.

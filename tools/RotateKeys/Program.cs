@@ -19,7 +19,6 @@ namespace RotateKeysTool
             var type = args.Length > 1 ? args[1].ToLowerInvariant() : "hmac";
             var version = args.Length > 2 ? args[2] : null;
 
-            var svc = new KeyRotationService();
             var connArgIndex = Array.FindIndex(args, a => a.Equals("--db", StringComparison.OrdinalIgnoreCase));
             string? dbPath = null;
             if (connArgIndex >= 0 && args.Length > connArgIndex + 1)
@@ -29,6 +28,7 @@ namespace RotateKeysTool
 
             try
             {
+                var svc = new KeyRotationService();
                 if (mode == "preview")
                 {
                     if (string.IsNullOrWhiteSpace(version))
@@ -49,6 +49,13 @@ namespace RotateKeysTool
                         PrintPlan(plan);
                         return 0;
                     }
+                }
+                else if (mode == "verify")
+                {
+                    var provider = new KeyVaultKeyProvider();
+                    var validation = await provider.ValidateActiveVersionsAsync();
+                    PrintValidation(validation);
+                    return validation.IsSuccessful ? 0 : 4;
                 }
                 else if (mode == "apply")
                 {
@@ -169,11 +176,23 @@ namespace RotateKeysTool
             Console.WriteLine("  Notes: " + plan.Notes);
         }
 
+        static void PrintValidation(KeyVaultVersionValidation validation)
+        {
+            Console.WriteLine("Key Vault rotation validation:");
+            Console.WriteLine("  Configured: " + validation.IsConfigured);
+            Console.WriteLine("  HMAC current version: " + (validation.HmacVersion ?? "<unavailable>"));
+            Console.WriteLine("  HMAC explicit version read: " + validation.HmacVersionAccessible);
+            Console.WriteLine("  ENC current version: " + (validation.EncryptionVersion ?? "<unavailable>"));
+            Console.WriteLine("  ENC explicit version read: " + validation.EncryptionVersionAccessible);
+            Console.WriteLine("  Key material is not displayed or saved.");
+        }
+
         static void PrintUsage()
         {
             Console.WriteLine("RotateKeys tool scaffold for ClinicaLongevidadApp");
             Console.WriteLine("Usage:");
             Console.WriteLine("  dotnet run --project tools/RotateKeys -- preview <hmac|enc> <new-version>");
+            Console.WriteLine("  dotnet run --project tools/RotateKeys -- verify");
             Console.WriteLine("  dotnet run --project tools/RotateKeys -- apply <hmac|enc> <new-version>");
             Console.WriteLine();
             Console.WriteLine("This is a scaffold. Implement integration with KeyVault/LocalKeyProvider before using.");

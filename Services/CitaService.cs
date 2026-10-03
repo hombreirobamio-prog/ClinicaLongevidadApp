@@ -15,9 +15,9 @@ namespace ClinicaLongevidadApp.Services
                     Environment.SpecialFolder.LocalApplicationData),
                 "ClinicaLongevidad.db");
 
-        private static SQLiteConnection GetConnection()
+        private static SQLiteConnection GetConnection(string? databasePath = null)
         {
-            var connection = new SQLiteConnection(DbPath);
+            var connection = new SQLiteConnection(databasePath ?? DbPath);
             connection.CreateTable<Cita>();
             return connection;
         }
@@ -58,58 +58,59 @@ namespace ClinicaLongevidadApp.Services
         }
 
         public static void Guardar(Cita cita)
+            => Guardar(cita, App.AuditoriaService, DbPath);
+
+        internal static void Guardar(Cita cita, AuditoriaService? auditoria, string databasePath)
         {
             ArgumentNullException.ThrowIfNull(cita);
-            // Authorization: require Recepcion or Administración role when enforcement is enabled
-            try { AuthorizationHelper.EnsureRole("Recepcion", "Administración"); } catch { throw; }
+            AuthorizationHelper.EnsureRole("Recepcion", "Administración");
+            if (auditoria == null) throw new InvalidOperationException("No se puede guardar sin el servicio de auditoría.");
+            using (var schema = GetConnection(databasePath)) { }
 
-            using var connection = GetConnection();
-
-            if (cita.Id == 0)
+            var originalId = cita.Id;
+            var savedId = originalId;
+            var createdAt = originalId == 0 ? DateTime.Now : cita.FechaCreacion;
+            auditoria.RegistrarEventoConOperacion(databasePath, connection =>
             {
-                cita.FechaCreacion = DateTime.Now;
-                connection.Insert(cita);
-                // Auditar creación de cita
-                try
+                using var command = connection.CreateCommand();
+                command.CommandText = originalId == 0
+                    ? @"INSERT INTO Cita (PacienteId, PacienteNombre, Fecha, Hora, Profesional, Estado, FechaCreacion)
+                        VALUES (@pacienteId, @nombre, @fecha, @hora, @profesional, @estado, @creacion);"
+                    : @"UPDATE Cita SET PacienteId=@pacienteId, PacienteNombre=@nombre, Fecha=@fecha, Hora=@hora,
+                        Profesional=@profesional, Estado=@estado, FechaCreacion=@creacion WHERE Id=@id;";
+                void Add(string name, object? value) => command.Parameters.AddWithValue(name, value ?? DBNull.Value);
+                Add("@pacienteId", cita.PacienteId);
+                Add("@nombre", cita.PacienteNombre);
+                // Preserve sqlite-net's DateTime ticks representation.
+                Add("@fecha", cita.Fecha.Ticks);
+                Add("@hora", cita.Hora);
+                Add("@profesional", cita.Profesional);
+                Add("@estado", cita.Estado);
+                Add("@creacion", createdAt.Ticks);
+                if (originalId != 0) Add("@id", originalId);
+                if (command.ExecuteNonQuery() != 1)
+                    throw new InvalidOperationException("La cita que se intenta guardar ya no existe.");
+                if (originalId == 0)
                 {
-                    App.AuditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
-                    {
-                        UsuarioAdmin = Services.Sesion.UsuarioActual ?? "Sistema",
-                        Accion = "Cita.Crear",
-                        Modulo = "Citas",
-                        UsuarioAfectado = cita.PacienteNombre ?? string.Empty,
-                        Resultado = true,
-                        FechaHora = DateTime.Now,
-                        Detalles = AuditoriaDetallesHelper.CrearJson(("Id", cita.Id), ("PacienteId", cita.PacienteId), ("PacienteNombre", cita.PacienteNombre), ("Fecha", cita.Fecha), ("Hora", cita.Hora), ("Profesional", cita.Profesional), ("Estado", cita.Estado)),
-                        Rol = Services.Sesion.RolActual,
-                        Area = Services.Sesion.AreaActual
-                    });
+                    command.CommandText = "SELECT last_insert_rowid();";
+                    savedId = checked(Convert.ToInt32(command.ExecuteScalar()));
                 }
-                catch { }
-            }
-            else
-            {
-                connection.Update(cita);
-                // Auditar actualización de cita
-                try
+                return new AuditoriaEvento
                 {
-                    App.AuditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
-                    {
-                        UsuarioAdmin = Services.Sesion.UsuarioActual ?? "Sistema",
-                        Accion = "Cita.Actualizar",
-                        Modulo = "Citas",
-                        UsuarioAfectado = cita.PacienteNombre ?? string.Empty,
-                        Resultado = true,
-                        FechaHora = DateTime.Now,
-                        Detalles = AuditoriaDetallesHelper.CrearJson(("Id", cita.Id), ("PacienteId", cita.PacienteId), ("PacienteNombre", cita.PacienteNombre), ("Fecha", cita.Fecha), ("Hora", cita.Hora), ("Profesional", cita.Profesional), ("Estado", cita.Estado)),
-                        Rol = Services.Sesion.RolActual,
-                        Area = Services.Sesion.AreaActual
-                    });
-                }
-                catch { }
-            }
+                    UsuarioAdmin = Sesion.UsuarioActual ?? "Sistema",
+                    Accion = originalId == 0 ? "Cita.Crear" : "Cita.Actualizar",
+                    Modulo = "Citas",
+                    UsuarioAfectado = cita.PacienteNombre ?? string.Empty,
+                    Resultado = true,
+                    FechaHora = DateTime.Now,
+                    Detalles = AuditoriaDetallesHelper.CrearJson(("Id", savedId), ("PacienteId", cita.PacienteId), ("PacienteNombre", cita.PacienteNombre), ("Fecha", cita.Fecha), ("Hora", cita.Hora), ("Profesional", cita.Profesional), ("Estado", cita.Estado)),
+                    Rol = Sesion.RolActual,
+                    Area = Sesion.AreaActual
+                };
+            });
+            cita.Id = savedId;
+            cita.FechaCreacion = createdAt;
         }
-
         public static List<Cita> ObtenerPorPaciente(int pacienteId)
         {
             using var connection = GetConnection();

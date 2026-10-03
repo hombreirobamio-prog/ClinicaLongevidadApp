@@ -11,14 +11,15 @@ namespace GenerateIntegrityTool
         {
             try
             {
-                var dbPath = args.Length > 0 ? args[0] : Path.Combine(Directory.GetCurrentDirectory(), "audit_ci.db");
+                if (args.Length < 1) throw new ArgumentException("An existing database path is required.");
+                var dbPath = args[0];
                 var reportPath = args.Length > 1 ? args[1] : Path.Combine(Directory.GetCurrentDirectory(), "IntegrityReport_CI.json");
 
-                var conn = $"Data Source={dbPath}";
-                var svc = new AuditoriaService(conn);
+                var conn = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder { DataSource = dbPath, Mode = Microsoft.Data.Sqlite.SqliteOpenMode.ReadOnly, Pooling = false }.ToString();
+                var svc = new AuditoriaService(conn, initializeSchema: false);
+                if (!svc.IsInitialized) return 2;
 
                 // First produce quick diagnostics (summary + CSV of problematic rows)
-                var quickDir = svc.GenerateQuickDiagnostics();
 
                 var errors = svc.VerifyIntegrity();
 
@@ -26,7 +27,6 @@ namespace GenerateIntegrityTool
                 {
                     GeneratedAt = DateTime.UtcNow.ToString("o"),
                     Database = dbPath,
-                    QuickDiagnosticsPath = quickDir,
                     ErrorCount = errors?.Count ?? 0,
                     Errors = errors
                 };

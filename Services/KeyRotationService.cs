@@ -42,7 +42,7 @@ namespace ClinicaLongevidadApp.Services
                 {
                     UsuarioAdmin = "System",
                     Accion = "KeyRotation.HMAC",
-                    Modulo = "Auditor�a",
+                    Modulo = "Auditoría",
                     UsuarioAfectado = "",
                     Resultado = true,
                     // Use local time to keep timestamps consistent with other audit entries
@@ -51,9 +51,10 @@ namespace ClinicaLongevidadApp.Services
                     Tipo = "KeyRotation"
                 });
             }
-            catch
+            catch (Exception ex)
             {
-                // ignore audit errors
+                LogService.Error("KeyRotationService", "HMAC key was persisted but its audit event could not be registered.", ex);
+                throw new InvalidOperationException("La clave HMAC se ha persistido, pero no se ha podido registrar la auditoría de la rotación.", ex);
             }
         }
 
@@ -73,7 +74,7 @@ namespace ClinicaLongevidadApp.Services
                 {
                     UsuarioAdmin = "System",
                     Accion = "KeyRotation.ENC",
-                    Modulo = "Auditor�a",
+                    Modulo = "Auditoría",
                     UsuarioAfectado = "",
                     Resultado = true,
                     // Use local time to keep timestamps consistent with other audit entries
@@ -82,8 +83,10 @@ namespace ClinicaLongevidadApp.Services
                     Tipo = "KeyRotation"
                 });
             }
-            catch
+            catch (Exception ex)
             {
+                LogService.Error("KeyRotationService", "Encryption key was persisted but its audit event could not be registered.", ex);
+                throw new InvalidOperationException("La clave de cifrado se ha persistido, pero no se ha podido registrar la auditoría de la rotación.", ex);
             }
         }
     }

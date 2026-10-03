@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.Windows;
 using ClinicaLongevidadApp.Commands;
@@ -98,8 +98,6 @@ namespace ClinicaLongevidadApp.ViewModels
             {
                 UsuarioService.Eliminar(usuario.Id);
                 Usuarios.Remove(usuario);
-
-                RegistrarEventoUsuarioEliminado(usuario, true, null);
 
                 UsuarioSeleccionado = null;
             }

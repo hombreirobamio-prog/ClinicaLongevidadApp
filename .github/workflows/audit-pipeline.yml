@@ -1,206 +1,67 @@
 name: Audit pipeline
-name: Audit pipeline
-
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
   workflow_dispatch:
-    inputs:
-      release_tag:
-        description: 'Release tag to upload audit artifacts to'
-        required: false
-        default: 'audit-rewrite-8684b20'
-
+permissions:
+  contents: read
 jobs:
-  build-and-audit:
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
-      cancel-in-progress: true
+  test:
     runs-on: windows-latest
-    timeout-minutes: 30
-    permissions:
-      contents: write
-    env:
-      RELEASE_TAG: audit-rewrite-8684b20
-
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
-
-    - name: Restore and build
-      run: |
-        dotnet restore
-        dotnet build --no-restore --configuration Release
-
-    - name: Run tests
-      run: dotnet test --no-build --configuration Release --logger "trx"
-
-    - name: Generate audit artifacts (CI - skip permanent backup)
-      if: github.event_name != 'workflow_dispatch'
-      shell: pwsh
-      run: |
-        Write-Host "Generating audit artifacts (CI mode: skip permanent backup)..."
-        pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/generate_audit_artifacts.ps1 -SkipPermanentBackup
-
-    - name: Generate audit artifacts (manual - require backup)
-      if: github.event_name == 'workflow_dispatch'
-      shell: pwsh
-      run: |
-        Write-Host "Generating audit artifacts (manual run: require backup)..."
-        # For manual workflow_dispatch runs on hosted runners there are often no
-        # persistent backups available. Call the generator in a non-fatal mode
-        # by skipping permanent backup collection so the job can proceed.
-        pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/generate_audit_artifacts.ps1 -SkipPermanentBackup
-
-    - name: Verify audit manifest (strict, manual runs)
-      if: github.event_name == 'workflow_dispatch'
-      shell: pwsh
-      run: |
-        Write-Host "Checking for available backup files before strict verification..."
-        $local = Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadApp\backups'
-        $artifact = Join-Path $PWD 'artifacts\backups'
-        $hasLocal = $false
-        if (Test-Path $local -PathType Container -ErrorAction SilentlyContinue) {
-          $count = (Get-ChildItem -Path $local -Filter '*.db' -File -ErrorAction SilentlyContinue | Measure-Object).Count
-          if ($count -gt 0) { $hasLocal = $true }
-        }
-        $hasArtifact = $false
-        if (Test-Path $artifact -PathType Container -ErrorAction SilentlyContinue) {
-          $count = (Get-ChildItem -Path $artifact -Filter '*.db' -File -ErrorAction SilentlyContinue | Measure-Object).Count
-          if ($count -gt 0) { $hasArtifact = $true }
-        }
-        if ($hasLocal -or $hasArtifact) {
-          Write-Host "Backups found; running strict manifest verification..."
-          pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/verify_audit_manifest.ps1 -RequireHmac
-        } else {
-          Write-Host "No backup files found on runner; skipping strict verification to avoid false failures."
-        }
-
-    - name: Find generated audit ZIP
-      shell: pwsh
-      run: |
-        $zip = Get-ChildItem -Path $PWD -Filter 'audit-artifacts_*.zip' -File | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-        if (-not $zip) { Write-Error 'No artifact ZIP found'; exit 1 }
-        Write-Host "Found zip: $($zip.FullName)"
-        "ZIP_PATH=$($zip.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-        "ZIP_NAME=$($zip.Name)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-    - name: Check if Release exists
-      id: check_release
-      uses: actions/github-script@v6
-      with:
-        script: |
-          // Safely read workflow_dispatch input 'release_tag' using github.context.payload when available.
-          const tag = (github.context && github.context.payload && github.context.payload.inputs && github.context.payload.inputs.release_tag) ? github.context.payload.inputs.release_tag : process.env.RELEASE_TAG;
-          try {
-            const repoParts = (process.env.GITHUB_REPOSITORY || '').split('/');
-            const owner = repoParts[0];
-            const repo = repoParts[1];
-            if (!owner || !repo) {
-              core.setOutput('exists','false');
-            } else {
-              const res = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
-              core.setOutput('exists','true');
-              core.setOutput('upload_url', res.data.upload_url);
-            }
-          } catch (e) {
-            if (e.status === 404) {
-              core.setOutput('exists','false');
-            } else {
-              throw e;
-            }
-          }
-
-    - name: Enforce release presence for push runs (strict verification)
-      if: github.event_name == 'push' && steps.check_release.outputs.exists == 'false'
-      run: |
-        echo "Strict audit verification is enabled but the release '${{ github.event.inputs.release_tag || env.RELEASE_TAG }}' does not exist."
-        echo "Failing the job to require manual release creation."
-        exit 1
-      shell: bash
-
-    - name: Create Release (manual only)
-      if: steps.check_release.outputs.exists == 'false' && github.event_name == 'workflow_dispatch'
-      id: create_release
-      uses: actions/create-release@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        tag_name: ${{ github.event.inputs.release_tag || env.RELEASE_TAG }}
-        release_name: ${{ github.event.inputs.release_tag || env.RELEASE_TAG }}
-        body: 'Automated audit artifacts from CI'
-        draft: false
-        prerelease: false
-
-    - name: Set upload URL env
-      run: |
-        if [ "${{ steps.check_release.outputs.exists }}" == 'true' ]; then
-          echo "UPLOAD_URL=${{ steps.check_release.outputs.upload_url }}" >> $GITHUB_ENV
-        elif [ "${{ steps.create_release.outputs.upload_url }}" != '' ]; then
-          echo "UPLOAD_URL=${{ steps.create_release.outputs.upload_url }}" >> $GITHUB_ENV
-        else
-          echo "UPLOAD_URL=" >> $GITHUB_ENV
-        fi
-      shell: bash
-
-    - name: Upload audit ZIP to Release (if available)
-      if: env.UPLOAD_URL != ''
-      uses: actions/github-script@v6
-      with:
-        script: |
-          const fs = require('fs');
-          const zipPath = process.env.ZIP_PATH;
-          if (!zipPath) {
-            core.setFailed('ZIP_PATH not set; cannot upload release asset.');
-            return;
-          }
-          const repoParts = (process.env.GITHUB_REPOSITORY || '').split('/');
-          const owner = repoParts[0];
-          const repo = repoParts[1];
-          if (!owner || !repo) {
-            core.setFailed('GITHUB_REPOSITORY not set; cannot determine owner/repo');
-            return;
-          }
-          // Resolve release by tag and upload asset using the REST client
-          const tag = (github.context && github.context.payload && github.context.payload.inputs && github.context.payload.inputs.release_tag) ? github.context.payload.inputs.release_tag : process.env.RELEASE_TAG;
-          const rel = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
-          const releaseId = rel.data.id;
-          const data = fs.readFileSync(zipPath);
-          await github.rest.repos.uploadReleaseAsset({
-            owner,
-            repo,
-            release_id: releaseId,
-            name: process.env.ZIP_NAME,
-            data,
-            headers: {
-              'content-type': 'application/zip',
-              'content-length': data.length
-            }
-          });
-
-    - name: Log release skip
-      if: env.UPLOAD_URL == ''
-      run: |
-        echo "No release upload performed: release does not exist and automatic creation is disabled for this event." 
-      shell: bash
-
-    - name: Upload created audit ZIP artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: audit-artifacts
-        path: |
-          ./audit-artifacts_*.zip
-          ./artifacts/**/*
-
-    - name: Upload test results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results
-        path: '**/*.trx'
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Record start
+        run: |
+          "AUDIT_RUN_START=$([datetime]::UtcNow.ToString('o'))" >> $env:GITHUB_ENV
+      - name: Restore
+        run: dotnet restore ClinicaLongevidadApp.Tests/ClinicaLongevidadApp.Tests.csproj
+      - name: Tests
+        env:
+          AUDIT_RECOVERY_EVIDENCE_DIR: ${{ github.workspace }}/artifacts/ci-recovery
+        run: dotnet test ClinicaLongevidadApp.Tests/ClinicaLongevidadApp.Tests.csproj --no-restore --configuration Release --logger 'trx;LogFileName=tests.trx' --results-directory artifacts/ci-test-results
+      - name: Manifest and package regression
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test_audit_manifest.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test_audit_package.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Preserve test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-test-results
+          path: artifacts/ci-test-results/*.trx
+          if-no-files-found: error
+      # Signing secrets are never available to pull-request code.
+      - name: Preserve synthetic recovery reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: synthetic-recovery-reports
+          path: artifacts/ci-recovery/**/recovery-result.json
+          if-no-files-found: error
+      - name: Build authenticated technical package
+        if: github.event_name != 'pull_request'
+        id: package
+        env:
+          AUDIT_HMAC_KEY: ${{ secrets.AUDIT_PACKAGE_HMAC_KEY }}
+          AUDIT_HMAC_KEY_VERSION: ${{ vars.AUDIT_PACKAGE_HMAC_KEY_VERSION }}
+        run: |
+          $zip = & ./scripts/generate_audit_artifacts.ps1 -TestResultsPath artifacts/ci-test-results/tests.trx -RunStartedUtc $env:AUDIT_RUN_START
+          "zip=$zip" >> $env:GITHUB_OUTPUT
+      - name: Preserve authenticated package
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-technical-package
+          path: ${{ steps.package.outputs.zip }}
+          if-no-files-found: error

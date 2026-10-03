@@ -358,7 +358,7 @@ namespace ClinicaLongevidadApp.ViewModels
                 if (res != true) return;
                 var path = dlg.FileName;
 
-                var confirm = Services.DialogHelper.ConfirmYesNo("Restaurar copia", $"Restaurar desde {path}?\nSe creará una copia previa del estado actual de la base de datos.");
+                var confirm = Services.DialogHelper.ConfirmYesNo("Restaurar copia", $"Restaurar desde {path}?\nSe conservará el estado anterior. La restauración requiere una ventana de mantenimiento, sin conexiones abiertas a la base de datos; si está en uso se rechazará la operación.");
                 if (!confirm) return;
 
                 var conn = Application.Current.Properties["AuditConnectionString"] as string;
@@ -644,7 +644,7 @@ namespace ClinicaLongevidadApp.ViewModels
         {
             try
             {
-                var confirm = MessageBox.Show("¿Confirma rotación de clave HMAC? Esto persistirá la nueva clave en Key Vault.", "Rotar HMAC", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                var confirm = MessageBox.Show("¿Confirma rotación de clave HMAC? Se persistirá en el almacenamiento de claves configurado.", "Rotar HMAC", MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (confirm != MessageBoxResult.Yes) return;
 
                 var executor = ClinicaLongevidadApp.Services.KeyRotation.KeyRotationProviderFactory.Create(_auditoriaService);
@@ -654,10 +654,14 @@ namespace ClinicaLongevidadApp.ViewModels
 
                 var plan = await executor.ApplyRotateHmacAsync(key, newVersion);
 
-                // Register audit event if possible
                 try
                 {
-                    _auditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
+                    if (_auditoriaService == null)
+                    {
+                        throw new InvalidOperationException("El servicio de auditoría no está disponible.");
+                    }
+
+                    _auditoriaService.RegistrarEvento(new Models.AuditoriaEvento
                     {
                         UsuarioAdmin = Sesion.UsuarioActual ?? "Sistema",
                         Accion = "Rotate.HMAC",
@@ -666,10 +670,14 @@ namespace ClinicaLongevidadApp.ViewModels
                         Resultado = true,
                         FechaHora = DateTime.Now,
                         Tipo = "Operación",
-                        Detalles = Services.AuditoriaDetallesHelper.CrearJson(("NewVersion", plan.NewVersion ?? string.Empty), ("Notes", plan.Notes ?? string.Empty))
+                        Detalles = Services.AuditoriaDetallesHelper.CrearJson(("OldVersion", plan.OldVersion ?? string.Empty), ("NewVersion", plan.NewVersion ?? string.Empty), ("Notes", plan.Notes ?? string.Empty))
                     });
                 }
-                catch { }
+                catch (Exception auditException)
+                {
+                    MessageBox.Show($"La clave HMAC se ha persistido con versión {plan.NewVersion}, pero no se pudo registrar la auditoría. Revise la incidencia antes de continuar: {auditException.Message}", "Auditoría pendiente", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
 
                 // update UI: set key version on selected record (conservative UI feedback)
                 try
@@ -715,7 +723,7 @@ namespace ClinicaLongevidadApp.ViewModels
         {
             try
             {
-                var confirm = MessageBox.Show("¿Confirma rotación de clave de encriptación? Esto persistirá la nueva clave en Key Vault.", "Rotar ENC", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                var confirm = MessageBox.Show("¿Confirma rotación de clave de encriptación? Se persistirá en el almacenamiento de claves configurado.", "Rotar ENC", MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (confirm != MessageBoxResult.Yes) return;
 
                 var executor = ClinicaLongevidadApp.Services.KeyRotation.KeyRotationProviderFactory.Create(_auditoriaService);
@@ -727,7 +735,12 @@ namespace ClinicaLongevidadApp.ViewModels
 
                 try
                 {
-                    _auditoriaService?.RegistrarEvento(new Models.AuditoriaEvento
+                    if (_auditoriaService == null)
+                    {
+                        throw new InvalidOperationException("El servicio de auditoría no está disponible.");
+                    }
+
+                    _auditoriaService.RegistrarEvento(new Models.AuditoriaEvento
                     {
                         UsuarioAdmin = Sesion.UsuarioActual ?? "Sistema",
                         Accion = "Rotate.ENC",
@@ -736,10 +749,14 @@ namespace ClinicaLongevidadApp.ViewModels
                         Resultado = true,
                         FechaHora = DateTime.Now,
                         Tipo = "Operación",
-                        Detalles = Services.AuditoriaDetallesHelper.CrearJson(("NewVersion", plan.NewVersion ?? string.Empty), ("Notes", plan.Notes ?? string.Empty))
+                        Detalles = Services.AuditoriaDetallesHelper.CrearJson(("OldVersion", plan.OldVersion ?? string.Empty), ("NewVersion", plan.NewVersion ?? string.Empty), ("Notes", plan.Notes ?? string.Empty))
                     });
                 }
-                catch { }
+                catch (Exception auditException)
+                {
+                    MessageBox.Show($"La clave de cifrado se ha persistido con versión {plan.NewVersion}, pero no se pudo registrar la auditoría. Revise la incidencia antes de continuar: {auditException.Message}", "Auditoría pendiente", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
 
                 try
                 {
@@ -887,6 +904,8 @@ namespace ClinicaLongevidadApp.ViewModels
                     TryPopulateMetadataFromDetalles(m);
                 }
 
+                // Ensure rows are ordered by FechaHora DESC so UI shows newest first
+                rows = rows.OrderByDescending(r => r.FechaHora).ToList();
                 // cache full dataset
                 _rowsAll = rows.ToList();
 
@@ -897,6 +916,19 @@ namespace ClinicaLongevidadApp.ViewModels
                 // update counters/metrics
                 UpdateMetrics(rows);
                 ShowSnackbar($"Auditoría actualizada: {rows.Count} registros cargados.", 4);
+
+                // Ensure UI view is sorted by FechaHora DESC so newest records appear first
+                try
+                {
+                    var cv = System.Windows.Data.CollectionViewSource.GetDefaultView(ListaAuditoria);
+                    if (cv != null)
+                    {
+                        cv.SortDescriptions.Clear();
+                        cv.SortDescriptions.Add(new System.ComponentModel.SortDescription(nameof(Models.AuditoriaModel.FechaHora), System.ComponentModel.ListSortDirection.Descending));
+                        cv.Refresh();
+                    }
+                }
+                catch { }
 
                 // Populate filter lists from superset
                 try { Application.Current?.Dispatcher?.Invoke(() => PopulateFilterCollectionsInPlace(_rowsAll)); } catch { }
@@ -952,6 +984,19 @@ namespace ClinicaLongevidadApp.ViewModels
 
                 // update counters
                 UpdateMetrics(filtered);
+
+                // Ensure UI view preserves FechaHora DESC after applying filters
+                try
+                {
+                    var cv = System.Windows.Data.CollectionViewSource.GetDefaultView(ListaAuditoria);
+                    if (cv != null)
+                    {
+                        cv.SortDescriptions.Clear();
+                        cv.SortDescriptions.Add(new System.ComponentModel.SortDescription(nameof(Models.AuditoriaModel.FechaHora), System.ComponentModel.ListSortDirection.Descending));
+                        cv.Refresh();
+                    }
+                }
+                catch { }
             }
             catch (Exception ex)
             {
@@ -1001,6 +1046,18 @@ namespace ClinicaLongevidadApp.ViewModels
             foreach (var r in _rowsAll) ListaAuditoria.Add(r);
 
             UpdateMetrics(_rowsAll);
+            // Ensure UI view preserves FechaHora DESC after clearing filters
+            try
+            {
+                var cv = System.Windows.Data.CollectionViewSource.GetDefaultView(ListaAuditoria);
+                if (cv != null)
+                {
+                    cv.SortDescriptions.Clear();
+                    cv.SortDescriptions.Add(new System.ComponentModel.SortDescription(nameof(Models.AuditoriaModel.FechaHora), System.ComponentModel.ListSortDirection.Descending));
+                    cv.Refresh();
+                }
+            }
+            catch { }
             ShowSnackbar($"Filtros limpiados. Mostrando {_rowsAll.Count} registros.", 4);
             return Task.CompletedTask;
         }

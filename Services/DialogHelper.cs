@@ -73,7 +73,7 @@ namespace ClinicaLongevidadApp.Services
 
         /// <summary>
         /// Show a Yes/No confirmation. When dialogs are suppressed (tests or SILENT_MODE)
-        /// this returns true to allow automated flows to proceed.
+        /// this returns false: suppressing a dialog does not authorize an operation.
         /// </summary>
         public static bool ConfirmYesNo(string title, string message)
         {
@@ -81,8 +81,8 @@ namespace ClinicaLongevidadApp.Services
             {
                 if (ShouldSuppressDialogs())
                 {
-                    try { AuditLogHelper.Info(title, "Auto-confirm (suppressed dialogs): " + message); } catch { }
-                    return true;
+                    try { AuditLogHelper.Info(title, "Confirmation denied (suppressed dialogs): " + message); } catch { }
+                    return false;
                 }
             }
             catch { }

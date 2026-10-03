@@ -167,53 +167,66 @@ namespace ClinicaLongevidadApp.Services
         }
 
         public bool RequeueDeadLetter(int deadId)
-        {
-            try
-            {
-                using var conn = new SqliteConnection(_connectionString);
-                conn.Open();
-                using var tran = conn.BeginTransaction();
-                using var ins = conn.CreateCommand();
-                ins.Transaction = tran;
-                ins.CommandText = @"INSERT INTO AuditForwardQueue (EventId, Payload, Signature, Attempts, NextAttemptAt, CreatedAt)
-                                    SELECT EventId, Payload, Signature, 0, @next, CreatedAt FROM AuditForwardDeadLetter WHERE Id = @id";
-                ins.Parameters.AddWithValue("@next", DateTime.UtcNow.ToString("o"));
-                ins.Parameters.AddWithValue("@id", deadId);
-                ins.ExecuteNonQuery();
+            => RequeueDeadLetter(deadId, App.AuditoriaService);
 
-                using var del = conn.CreateCommand();
-                del.Transaction = tran;
-                del.CommandText = "DELETE FROM AuditForwardDeadLetter WHERE Id = @id";
-                del.Parameters.AddWithValue("@id", deadId);
-                del.ExecuteNonQuery();
-
-                tran.Commit();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                try { AuditLogHelper.Error("AuditAdminService", "Failed to requeue dead letter", ex); } catch { }
-            }
-            return false;
-        }
+        internal bool RequeueDeadLetter(int deadId, AuditoriaService? auditoria)
+            => ChangeDeadLetter(deadId, true, auditoria);
 
         public bool DeleteDeadLetter(int deadId)
+            => DeleteDeadLetter(deadId, App.AuditoriaService);
+
+        internal bool DeleteDeadLetter(int deadId, AuditoriaService? auditoria)
+            => ChangeDeadLetter(deadId, false, auditoria);
+
+        private bool ChangeDeadLetter(int deadId, bool requeue, AuditoriaService? auditoria)
         {
             try
             {
-                using var conn = new SqliteConnection(_connectionString);
-                conn.Open();
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = "DELETE FROM AuditForwardDeadLetter WHERE Id = @id";
-                cmd.Parameters.AddWithValue("@id", deadId);
-                cmd.ExecuteNonQuery();
+                AuthorizationHelper.EnsureRole("Administración");
+                if (auditoria == null) throw new InvalidOperationException("No se puede modificar la cola sin el servicio de auditoría.");
+                var databasePath = new SqliteConnectionStringBuilder(_connectionString).DataSource;
+                auditoria.RegistrarEventoConOperacion(databasePath, connection =>
+                {
+                    using var command = connection.CreateCommand();
+                    command.CommandText = "SELECT EventId FROM AuditForwardDeadLetter WHERE Id=@id;";
+                    command.Parameters.AddWithValue("@id", deadId);
+                    var eventId = command.ExecuteScalar() as string
+                        ?? throw new InvalidOperationException("El registro de la cola de fallidos ya no existe.");
+
+                    if (requeue)
+                    {
+                        command.CommandText = @"INSERT INTO AuditForwardQueue (EventId, Payload, Signature, Attempts, NextAttemptAt, CreatedAt)
+                            SELECT EventId, Payload, Signature, 0, @next, CreatedAt FROM AuditForwardDeadLetter WHERE Id=@id;";
+                        command.Parameters.AddWithValue("@next", DateTime.UtcNow.ToString("o"));
+                        if (command.ExecuteNonQuery() != 1)
+                            throw new InvalidOperationException("No se pudo reencolar el registro.");
+                    }
+                    command.CommandText = "DELETE FROM AuditForwardDeadLetter WHERE Id=@id;";
+                    if (command.ExecuteNonQuery() != 1)
+                        throw new InvalidOperationException("No se pudo retirar el registro de la cola de fallidos.");
+
+                    return new Models.AuditoriaEvento
+                    {
+                        UsuarioAdmin = Sesion.UsuarioActual ?? "Sistema",
+                        Accion = requeue ? "AuditQueue.Reencolar" : "AuditQueue.Eliminar",
+                        Modulo = "Auditoría",
+                        UsuarioAfectado = eventId,
+                        Resultado = true,
+                        FechaHora = DateTime.Now,
+                        Tipo = "Operación",
+                        // Reference the affected event without copying its payload or signature.
+                        Detalles = AuditoriaDetallesHelper.CrearJson(("DeadLetterId", deadId), ("EventIdAfectado", eventId)),
+                        Rol = Sesion.RolActual,
+                        Area = Sesion.AreaActual
+                    };
+                });
                 return true;
             }
             catch (Exception ex)
             {
-                try { AuditLogHelper.Error("AuditAdminService", "Failed to delete dead letter", ex); } catch { }
+                try { AuditLogHelper.Error("AuditAdminService", "Failed to change dead letter", ex); } catch { }
+                return false;
             }
-            return false;
         }
     }
 

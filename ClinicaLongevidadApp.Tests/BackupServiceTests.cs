@@ -18,7 +18,7 @@ namespace ClinicaLongevidadApp.Tests
         public BackupServiceTests()
         {
             _dbPath = Path.Combine(Path.GetTempPath(), $"backup_test_{Guid.NewGuid():N}.db");
-            _conn = $"Data Source={_dbPath}";
+            _conn = $"Data Source={_dbPath};Pooling=False";
             _backupDir = Path.Combine(Path.GetTempPath(), $"backup_out_{Guid.NewGuid():N}");
             Directory.CreateDirectory(_backupDir);
 
@@ -94,6 +94,32 @@ namespace ClinicaLongevidadApp.Tests
             cmd.CommandText = "SELECT COUNT(*) FROM test;";
             var cnt = Convert.ToInt32(cmd.ExecuteScalar());
             Assert.True(cnt >= 0);
+        }
+
+        [Theory]
+        [InlineData(".sha256")]
+        [InlineData(".hmac")]
+        [InlineData(".hmac.ver")]
+        public void RestoreBackup_RejectsMissingEvidenceWithoutChangingTarget(string suffix)
+        {
+            using var svc = new BackupService();
+            var backup = svc.TriggerImmediateBackup(_conn, _backupDir);
+            Assert.NotNull(backup);
+            File.Delete(backup + suffix);
+            using var conn = new SqliteConnection(_conn);
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "UPDATE test SET val = 'changed after backup'";
+            cmd.ExecuteNonQuery();
+            Assert.Throws<InvalidOperationException>(() => svc.RestoreBackup(backup!, _conn));
+            cmd.CommandText = "SELECT val FROM test";
+            Assert.Equal("changed after backup", cmd.ExecuteScalar());
+        }
+
+        [Fact]
+        public void SuppressedConfirmationDoesNotAuthorizeOperation()
+        {
+            Assert.False(DialogHelper.ConfirmYesNo("Test", "Synthetic confirmation"));
         }
 
         public void Dispose()

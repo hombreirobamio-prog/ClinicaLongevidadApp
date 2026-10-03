@@ -45,7 +45,7 @@ namespace ClinicaLongevidadApp.Tests
 
             // Ensure a session role allowed to create appointments when authorization enforcement is active
             Sesion.RolActual = "Recepcion";
-            CitaService.Guardar(cita);
+            CitaService.Guardar(cita, auditoria, _dbPath);
 
             var recent = auditoria.GetRecentAudits(5);
             Assert.NotEmpty(recent);
@@ -70,19 +70,19 @@ namespace ClinicaLongevidadApp.Tests
 
             // Crear (requires Administración when enforcement enabled)
             Sesion.RolActual = "Administración";
-            FestivoService.Guardar(festivo);
+            FestivoService.Guardar(festivo, auditoria, _dbPath);
             var recent = auditoria.GetRecentAudits(5);
             Assert.NotEmpty(recent);
             Assert.Equal("Festivo.Crear", recent[0].Accion);
 
             // Actualizar
             festivo.Nombre = "Año Nuevo Modificado";
-            FestivoService.Guardar(festivo);
+            FestivoService.Guardar(festivo, auditoria, _dbPath);
             recent = auditoria.GetRecentAudits(5);
             Assert.Equal("Festivo.Actualizar", recent[0].Accion);
 
             // Eliminar
-            FestivoService.Eliminar(festivo.Id);
+            FestivoService.Eliminar(festivo.Id, auditoria, _dbPath);
             recent = auditoria.GetRecentAudits(5);
             Assert.Equal("Festivo.Eliminar", recent[0].Accion);
         }

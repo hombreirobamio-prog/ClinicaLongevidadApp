@@ -20,7 +20,7 @@ namespace ClinicaLongevidadApp.Tests
 
             // predictable keys for HMAC/encryption in tests
             Environment.SetEnvironmentVariable("AUDIT_HMAC_KEY", "concurrency-test-hmac-key-0123456789");
-            Environment.SetEnvironmentVariable("AUDIT_ENC_KEY", Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("encryptionkey1234567890123456")));
+            Environment.SetEnvironmentVariable("AUDIT_ENC_KEY", Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("0123456789abcdef0123456789abcdef")));
         }
 
         [Fact]

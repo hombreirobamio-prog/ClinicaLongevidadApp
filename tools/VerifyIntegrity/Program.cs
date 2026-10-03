@@ -15,7 +15,9 @@ class Program
                 conn = $"Data Source={dbPath}";
             }
 
-            var svc = new AuditoriaService(conn);
+            var builder = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder(conn) { Mode = Microsoft.Data.Sqlite.SqliteOpenMode.ReadOnly, Pooling = false };
+            var svc = new AuditoriaService(builder.ToString(), initializeSchema: false);
+            if (!svc.IsInitialized) return 2;
             Console.WriteLine("Running VerifyIntegrity()...");
             var errors = svc.VerifyIntegrity();
             Console.WriteLine($"Errors count: {errors?.Count ?? 0}");
@@ -25,7 +27,7 @@ class Program
                 Console.WriteLine($"First {take} errors:");
                 for (int i = 0; i < take; i++) Console.WriteLine(errors[i]);
             }
-            return 0;
+            return errors == null || errors.Count > 0 ? 1 : 0;
         }
         catch (Exception ex)
         {

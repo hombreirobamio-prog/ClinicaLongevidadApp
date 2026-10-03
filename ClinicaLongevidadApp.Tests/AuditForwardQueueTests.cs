@@ -23,11 +23,11 @@ namespace ClinicaLongevidadApp.Tests
             _connectionString = $"Data Source={_dbPath}";
             // Ensure environment keys predictable
             Environment.SetEnvironmentVariable("AUDIT_HMAC_KEY", "testkey0123456789");
-            Environment.SetEnvironmentVariable("AUDIT_ENC_KEY", Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("encryptionkey1234567890123456")));
+            Environment.SetEnvironmentVariable("AUDIT_ENC_KEY", Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("0123456789abcdef0123456789abcdef")));
         }
 
         [Fact]
-        public async Task RegistrarEvento_Enqueues_WhenForwarderAlwaysFails()
+        public void RegistrarEvento_Crea_Outbox_En_La_Misma_Transaccion()
         {
             var failingForwarder = new ThrowingForwarder();
             var service = new AuditoriaService(_connectionString, null, null, failingForwarder);
@@ -35,9 +35,29 @@ namespace ClinicaLongevidadApp.Tests
             var ev = new AuditoriaEvento { UsuarioAdmin = "t", Accion = "X", Modulo = "T", Detalles = "{\"x\":1}" };
             service.RegistrarEvento(ev);
 
-            // wait until queue has an entry (the enqueue happens asynchronously after retries)
-            bool found = await WaitForQueueCountAsync(1, TimeSpan.FromSeconds(8));
-            Assert.True(found, "Expected queue to contain 1 item after forwarder failures");
+            Assert.Equal(1, CountRows("Auditoria"));
+            Assert.Equal(1, CountRows("AuditForwardQueue"));
+        }
+
+        [Fact]
+        public void Failure_Al_Insertar_Outbox_Revierte_Evento_Auditado()
+        {
+            var service = new AuditoriaService(_connectionString, null, null, new RecordingForwarder());
+            using (var conn = new SqliteConnection(_connectionString))
+            {
+                conn.Open();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "CREATE TRIGGER reject_outbox BEFORE INSERT ON AuditForwardQueue BEGIN SELECT RAISE(ABORT, 'synthetic outbox failure'); END;";
+                cmd.ExecuteNonQuery();
+            }
+
+            Assert.Throws<SqliteException>(() => service.RegistrarEvento(new AuditoriaEvento
+            {
+                UsuarioAdmin = "t", Accion = "X", Modulo = "T", Detalles = "{\"x\":4}"
+            }));
+
+            Assert.Equal(0, CountRows("Auditoria"));
+            Assert.Equal(0, CountRows("AuditForwardQueue"));
         }
 
         [Fact]
@@ -102,6 +122,15 @@ namespace ClinicaLongevidadApp.Tests
                 await Task.Delay(250);
             }
             return false;
+        }
+
+        private int CountRows(string table)
+        {
+            using var conn = new SqliteConnection(_connectionString);
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"SELECT COUNT(1) FROM {table};";
+            return Convert.ToInt32(cmd.ExecuteScalar() ?? 0);
         }
 
         public void Dispose()

@@ -11,6 +11,8 @@ namespace ClinicaLongevidadApp.ViewModels
     public class LoginViewModel : BaseViewModel
     {
         private readonly AuditoriaService _auditoria;
+        private readonly Func<string, Usuario?> _obtenerUsuario;
+        private readonly Action<string> _abrirDashboard;
         private static readonly object LoginAttemptsLock = new();
         private static readonly Dictionary<string, LoginAttemptState> LoginAttempts = new();
         private const int MaxFailedAttempts = 5;
@@ -42,14 +44,19 @@ namespace ClinicaLongevidadApp.ViewModels
 
         public RelayCommand EntrarCommand { get; }
 
-        public LoginViewModel(
-            string areaSeleccionada,
-            AuditoriaService auditoriaService)
+        public LoginViewModel(string areaSeleccionada, AuditoriaService auditoriaService)
+            : this(areaSeleccionada, auditoriaService, UsuarioService.ObtenerPorNombre, AbrirDashboard)
+        {
+        }
+
+        internal LoginViewModel(string areaSeleccionada, AuditoriaService auditoriaService,
+            Func<string, Usuario?> obtenerUsuario, Action<string> abrirDashboard)
         {
             Area = areaSeleccionada;
             NombreUsuario = string.Empty;
-            _auditoria = auditoriaService;
-
+            _auditoria = auditoriaService ?? throw new ArgumentNullException(nameof(auditoriaService));
+            _obtenerUsuario = obtenerUsuario ?? throw new ArgumentNullException(nameof(obtenerUsuario));
+            _abrirDashboard = abrirDashboard ?? throw new ArgumentNullException(nameof(abrirDashboard));
             EntrarCommand = new RelayCommand(_ => Entrar());
         }
 
@@ -76,13 +83,11 @@ namespace ClinicaLongevidadApp.ViewModels
                     return;
                 }
 
-                var usuario = UsuarioService.ObtenerPorNombre(nombreUsuario);
+                var usuario = _obtenerUsuario(nombreUsuario);
 
-                if (usuario is null ||
-                    !UsuarioService.ValidarLogin(
-                        nombreUsuario,
-                        PasswordHash))
+                if (usuario is null || !usuario.Activo || !PasswordSecurity.VerifyPassword(PasswordHash, usuario.PasswordHash))
                 {
+                    RegistrarIntentoFallido(nombreUsuario);
                     RegistrarEventoLogin(
                         accion: "Login.FallidoCredenciales",
                         usuarioAdmin: usuario?.NombreUsuario ?? "Desconocido",
@@ -91,8 +96,6 @@ namespace ClinicaLongevidadApp.ViewModels
                         detalles: AuditoriaDetallesHelper.CrearJson(
                             ("Area", areaSeleccionada),
                             ("UsuarioIntentado", nombreUsuario)));
-
-                    RegistrarIntentoFallido(nombreUsuario);
 
                     MostrarMensaje(
                         "El nombre de usuario o la contraseña no son correctos.",
@@ -121,14 +124,6 @@ namespace ClinicaLongevidadApp.ViewModels
                     return;
                 }
 
-                // Set session first so the audit event records the role and area.
-                Sesion.UsuarioActual = usuario.NombreUsuario;
-                Sesion.RolActual = usuario.Rol;
-                Sesion.AreaActual = usuario.Area;
-
-                // Notify listeners that session changed (so UI can update role-dependent state)
-                Sesion.NotifyChanged();
-
                 RegistrarEventoLogin(
                     accion: "Login.Correcto",
                     usuarioAdmin: usuario.NombreUsuario,
@@ -136,38 +131,51 @@ namespace ClinicaLongevidadApp.ViewModels
                     ok: true,
                     detalles: AuditoriaDetallesHelper.CrearJson(
                         ("Area", areaSeleccionada),
-                        ("Usuario", usuario.NombreUsuario)));
+                        ("Usuario", usuario.NombreUsuario)),
+                    rol: usuario.Rol,
+                    area: usuario.Area);
+
+                // Publish the session only after the success event has committed.
+                Sesion.UsuarioActual = usuario.NombreUsuario;
+                Sesion.RolActual = usuario.Rol;
+                Sesion.AreaActual = usuario.Area;
+                Sesion.NotifyChanged();
 
                 LimpiarIntentosFallidos(nombreUsuario);
 
-                AbrirDashboard(areaSeleccionada);
+                _abrirDashboard(areaSeleccionada);
             }
 
+            catch (Exception ex)
+            {
+                LogService.Error("Login", "No se pudo completar el inicio de sesión.", ex);
+                MostrarMensaje(
+                    "No se pudo completar el inicio de sesión. Inténtelo de nuevo o contacte con administración.",
+                    "Inicio de sesión",
+                    MessageBoxImage.Error);
+            }
             finally
             {
                 _isLoggingIn = false;
             }
         }
 
-        private void RegistrarEventoLogin(string accion, string usuarioAdmin, string usuarioAfectado, bool ok, string detalles)
+        private void RegistrarEventoLogin(string accion, string usuarioAdmin, string usuarioAfectado, bool ok,
+            string detalles, string? rol = null, string? area = null)
         {
-            try
+            _auditoria.RegistrarEvento(new AuditoriaEvento
             {
-                _auditoria.RegistrarEvento(new AuditoriaEvento
-                {
-                    UsuarioAdmin = usuarioAdmin,
-                    Accion = accion,
-                    Modulo = "Login",
-                    UsuarioAfectado = usuarioAfectado,
-                    Resultado = ok,
-                    FechaHora = DateTime.Now,
-                    Tipo = "Login",
-                    Detalles = detalles
-                });
-            }
-            catch
-            {
-            }
+                UsuarioAdmin = usuarioAdmin,
+                Accion = accion,
+                Modulo = "Login",
+                UsuarioAfectado = usuarioAfectado,
+                Resultado = ok,
+                FechaHora = DateTime.Now,
+                Tipo = "Login",
+                Detalles = detalles,
+                Rol = rol,
+                Area = area
+            });
         }
 
         private static bool EstaBloqueado(
