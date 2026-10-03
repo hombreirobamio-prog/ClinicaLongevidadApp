@@ -1009,7 +1009,11 @@ namespace ClinicaLongevidadApp.ViewModels
 
         private void ActualizarHoraCitaSiNecesario()
         {
-            if (!HorasDisponibles.Contains(HoraCita, StringComparer.Ordinal))
+            // If user has already set a HoraCita, do not overwrite it blindly.
+            // Only populate HoraCita from available hours when the current value
+            // is empty. This prevents background refreshes from clearing a
+            // user-provided value (important for unit tests and UX).
+            if (string.IsNullOrWhiteSpace(HoraCita))
             {
                 HoraCita = HorasDisponibles.FirstOrDefault() ?? string.Empty;
             }
