@@ -1,7 +1,11 @@
- $dt = Get-Date -Format 'yyyyMMdd_HHmmss'
- $dt = Get-Date -Format 'yyyyMMdd_HHmmss'
- $cwd = (Get-Location).Path
- $backupDir = Join-Path $cwd 'backups'
+param(
+    [string]$BaseDir = (Get-Location).Path,
+    [string]$LocalAppData = $env:LOCALAPPDATA
+)
+
+$dt = Get-Date -Format 'yyyyMMdd_HHmmss'
+$cwd = $BaseDir
+$backupDir = Join-Path $cwd 'backups'
  New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
  $dest = Join-Path $backupDir ("ClinicaLongevidadApp_backup_$dt.zip")
 
@@ -46,7 +50,7 @@ Write-Output "BACKUP_CREATED:$dest"
 
 # Also copy the generated ZIP to the user's LocalAppData backups folder so the app can detect it
 try {
-    $localDest = Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadApp\backups'
+    $localDest = if ([string]::IsNullOrWhiteSpace($LocalAppData)) { Join-Path $cwd 'backups' } else { Join-Path $LocalAppData 'ClinicaLongevidadApp\backups' }
     New-Item -ItemType Directory -Force -Path $localDest | Out-Null
     Copy-Item -Path $dest -Destination $localDest -Force
     $localFile = Join-Path $localDest (Split-Path $dest -Leaf)
