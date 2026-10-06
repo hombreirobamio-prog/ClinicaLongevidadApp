@@ -71,7 +71,9 @@ foreach ($p in $paths) {
             $h = [System.Security.Cryptography.HMACSHA256]::new($kb)
             $mac = $h.ComputeHash($data)
             ([BitConverter]::ToString($mac) -replace '-','').ToLower() | Out-File -FilePath ($f + '.hmac') -Encoding ascii
-            ($env:AUDIT_HMAC_KEY_VERSION ?? '1') | Out-File -FilePath ($f + '.hmac.ver') -Encoding ascii
+            $ver = $env:AUDIT_HMAC_KEY_VERSION
+            if ([string]::IsNullOrWhiteSpace($ver)) { $ver = '1' }
+            $ver | Out-File -FilePath ($f + '.hmac.ver') -Encoding ascii
             Write-Host "Wrote: $($f + '.hmac') and .hmac.ver"
         }
     }
