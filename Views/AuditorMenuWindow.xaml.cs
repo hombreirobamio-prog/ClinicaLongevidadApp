@@ -132,8 +132,26 @@ namespace ClinicaLongevidadApp.Views
                     return;
                 }
 
-                ClinicaLongevidadApp.Services.HmacKeyStore.SaveEncryptedKey(keyBytes);
-                TxtLogAppend("Clave HMAC guardada de forma segura en LocalAppData.");
+                // Save encrypted key on Windows using DPAPI; on other platforms fall back to plaintext .txt
+                if (OperatingSystem.IsWindows())
+                {
+                    ClinicaLongevidadApp.Services.HmacKeyStore.SaveEncryptedKey(keyBytes);
+                    TxtLogAppend("Clave HMAC guardada de forma segura en LocalAppData.");
+                }
+                else
+                {
+                    try
+                    {
+                        var path = ClinicaLongevidadApp.Services.HmacKeyStore.GetKeyFilePath();
+                        var txtPath = System.IO.Path.ChangeExtension(path, ".txt");
+                        System.IO.File.WriteAllText(txtPath, Convert.ToBase64String(keyBytes));
+                        TxtLogAppend("Clave HMAC guardada en texto plano en LocalAppData (.txt) — sólo para entornos no-Windows.");
+                    }
+                    catch (Exception ex)
+                    {
+                        TxtLogAppend("Error guardando clave HMAC en texto plano: " + ex.Message);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -577,7 +595,8 @@ namespace ClinicaLongevidadApp.Views
                 // Try to auto-load an encrypted HMAC key from LocalAppData (DPAPI-protected) or a plaintext fallback
                 try
                 {
-                    if (ClinicaLongevidadApp.Services.HmacKeyStore.TryLoadDecryptedKey(out var keyBytes))
+                    // Use platform guard for DPAPI operations (Windows-only)
+                    if (OperatingSystem.IsWindows() && ClinicaLongevidadApp.Services.HmacKeyStore.TryLoadDecryptedKey(out var keyBytes))
                     {
                         var pb = this.FindName("PwdHmacKey") as System.Windows.Controls.PasswordBox;
                         if (pb != null)
