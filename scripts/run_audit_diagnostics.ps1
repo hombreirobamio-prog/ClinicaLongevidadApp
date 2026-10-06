@@ -4,8 +4,14 @@ param(
     [switch] $UseLocalAppDataDb,
     [string] $ArtifactsDir = '',
     [string] $ProjectPath = 'tools/RunAuditDiagnostics',
-    [int] $TimeoutSeconds = 300
+    [int] $TimeoutSeconds = 300,
+    [switch] $Help
 )
+
+if ($Help) {
+    Write-Output "Usage: .\scripts\run_audit_diagnostics.ps1 [-ConnectionString 'Data Source=...'] [-UseLocalAppDataDb] [-ArtifactsDir 'C:\Artifacts'] [-ProjectPath tools/RunAuditDiagnostics] [-TimeoutSeconds 300]"
+    exit 0
+}
 
 # Default DB path when -UseLocalAppDataDb is supplied and no ConnectionString provided.
 # Preference order: explicit -ArtifactsDir, ProgramData\ClinicaLongevidadAppArtifacts, then %LOCALAPPDATA% fallback.

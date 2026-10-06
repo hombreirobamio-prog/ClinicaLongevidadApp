@@ -1,8 +1,15 @@
 param(
     [string]$BaseDir = (Get-Location).Path,
     [string]$LocalAppData = $env:LOCALAPPDATA,
-    [string]$ArtifactsDir = ''
+    [string]$ArtifactsDir = '',
+    [switch]$Help
 )
+
+if ($Help) {
+    Write-Output "Usage: .\scripts\backup.ps1 [-BaseDir <path>] [-ArtifactsDir <path>]"
+    Write-Output "Creates a ZIP backup under ./backups and optionally copies it into the artifacts backups folder."
+    exit 0
+}
 
 $dt = Get-Date -Format 'yyyyMMdd_HHmmss'
 $cwd = $BaseDir

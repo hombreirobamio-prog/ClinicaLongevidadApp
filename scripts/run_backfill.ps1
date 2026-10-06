@@ -1,8 +1,15 @@
 param(
     [string]$ArtifactsDir = '',
     [string]$DbPath = '',
-    [int]$BatchSize = 100
+    [int]$BatchSize = 100,
+    [switch]$Help
 )
+
+if ($Help) {
+    Write-Output "Usage: .\scripts\run_backfill.ps1 [-ArtifactsDir <path>] [-DbPath <path>] [-BatchSize <n>]"
+    Write-Output "Runs a preview dry-run and (optionally) applies backfill batches against the audit DB."
+    exit 0
+}
 
 # Default DB path resolution: prefer -ArtifactsDir, then ProgramData central artifacts, then LOCALAPPDATA
 if ([string]::IsNullOrWhiteSpace($DbPath)) {

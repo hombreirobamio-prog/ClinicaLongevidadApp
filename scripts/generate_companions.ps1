@@ -2,8 +2,15 @@ param(
     [string]$BaseDir = (Get-Location).Path,
     [string]$LocalAppData = $env:LOCALAPPDATA,
     [string]$ArtifactsDir = '',
-    [switch]$IncludeHmac
+    [switch]$IncludeHmac,
+    [switch]$Help
 )
+
+if ($Help) {
+    Write-Output "Usage: .\scripts\generate_companions.ps1 [-ArtifactsDir <path>] [-IncludeHmac]"
+    Write-Output "Generates .sha256 and optional .hmac/.hmac.ver companion files for backups located in artifacts/backups or LOCALAPPDATA."
+    exit 0
+}
 
 # Generate companion files (.sha256 and optionally .hmac/.hmac.ver) for backups
 # Prefer explicit -ArtifactsDir when provided, then ProgramData central artifacts, then LOCALAPPDATA, finally repository backups folder.

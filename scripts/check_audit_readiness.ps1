@@ -2,8 +2,15 @@
 # Ejecuta comprobaciones básicas para auditoría y muestra un resumen.
 
 param(
-    [string]$ArtifactsDir = ''
+    [string]$ArtifactsDir = '',
+    [switch]$Help
 )
+
+if ($Help) {
+    Write-Output "Usage: .\scripts\check_audit_readiness.ps1 [-ArtifactsDir <path>]"
+    Write-Output "Performs basic audit readiness checks and inspects recent backup artifacts."
+    exit 0
+}
 
 Write-Output "== ClinicaLongevidadApp: Audit Readiness Check =="
 
