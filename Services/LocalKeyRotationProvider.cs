@@ -13,8 +13,8 @@ namespace ClinicaLongevidadApp.Services
 
         public LocalKeyRotationProvider()
         {
-            _folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "keys");
-            Directory.CreateDirectory(_folder);
+            _folder = Path.Combine(ClinicaLongevidadApp.Services.AppPaths.KeysDir);
+            try { Directory.CreateDirectory(_folder); } catch { }
         }
 
         public void PersistHmacKey(byte[] key)

@@ -31,10 +31,55 @@ namespace ClinicaLongevidadApp
         {
             base.OnStartup(e);
 
-            string dbPath = Path.Combine(
-                Environment.GetFolderPath(
-                    Environment.SpecialFolder.LocalApplicationData),
-                "ClinicaLongevidad.db");
+            // Use centralized app folder for persistent data
+            string dbPath = Path.Combine(ClinicaLongevidadApp.Services.AppPaths.BaseDir, "ClinicaLongevidad.db");
+            try
+            {
+                var newDbDir = ClinicaLongevidadApp.Services.AppPaths.BaseDir;
+                var newDbPath = dbPath;
+
+                // Legacy location (prior to centralization)
+                var legacyDbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidad.db");
+
+                // If legacy DB exists and new DB is missing or older, migrate it into the centralized folder.
+                if (System.IO.File.Exists(legacyDbPath))
+                {
+                    try { System.IO.Directory.CreateDirectory(newDbDir); } catch { }
+
+                    var migrate = !System.IO.File.Exists(newDbPath);
+                    if (!migrate)
+                    {
+                        try
+                        {
+                            var legacyTime = System.IO.File.GetLastWriteTimeUtc(legacyDbPath);
+                            var newTime = System.IO.File.GetLastWriteTimeUtc(newDbPath);
+                            if (legacyTime > newTime) migrate = true;
+                        }
+                        catch { migrate = true; }
+                    }
+
+                    if (migrate)
+                    {
+                        try
+                        {
+                            if (System.IO.File.Exists(newDbPath))
+                            {
+                                var bak = newDbPath + ".pre_migrate." + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".bak";
+                                try { System.IO.File.Copy(newDbPath, bak, overwrite: true); } catch { }
+                                try { AuditLogHelper.Info("App", $"Migrating audit DB: backed up existing target to {bak}"); } catch { }
+                            }
+
+                            System.IO.File.Copy(legacyDbPath, newDbPath, overwrite: true);
+                            try { AuditLogHelper.Info("App", $"Migrated legacy audit DB from {legacyDbPath} to {newDbPath}"); } catch { }
+                        }
+                        catch (Exception ex)
+                        {
+                            try { AuditLogHelper.Warning("App", "Failed migrating legacy DB: " + ex.Message); } catch { }
+                        }
+                    }
+                }
+            }
+            catch { }
 
             string connectionString = $"Data Source={dbPath}";
 

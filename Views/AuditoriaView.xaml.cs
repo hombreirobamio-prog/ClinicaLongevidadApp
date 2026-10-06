@@ -76,8 +76,8 @@ namespace ClinicaLongevidadApp.Views
         {
             try
             {
-                var localLogs = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "logs");
-                var commonReports = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "ClinicaLongevidadApp", "AuditIntegrityReports");
+                var localLogs = ClinicaLongevidadApp.Services.AppPaths.LogsDir;
+                var commonReports = ClinicaLongevidadApp.Services.AppPaths.CommonAuditReportsDir;
 
                 string? toOpen = null;
                 if (System.IO.Directory.Exists(commonReports)) toOpen = commonReports;

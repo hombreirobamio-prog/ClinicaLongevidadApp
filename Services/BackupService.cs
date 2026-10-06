@@ -24,8 +24,7 @@ namespace ClinicaLongevidadApp.Services
         {
             try
             {
-                var baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "logs");
-                Directory.CreateDirectory(baseDir);
+                var baseDir = AppPaths.LogsDir;
                 var file = Path.Combine(baseDir, "backup.log");
                 var line = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}\r\n";
                 File.AppendAllText(file, line, Encoding.UTF8);

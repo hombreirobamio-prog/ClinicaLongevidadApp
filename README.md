@@ -36,7 +36,7 @@ Estos cambios permiten que las pruebas de backup/restore sean más robustas fren
 ### Pendiente tras los cambios aplicados
 
 - Ejecutar la suite de tests completa (`dotnet test`) para verificar que la corrección evita la excepción `IOException` observada en `BackupServiceTests.TriggerImmediateBackup_CreatesFiles_And_RestoreSucceeds`.
-- Revisar logs generados en `%LocalAppData%\\ClinicaLongevidadApp\\logs\\backup.log` y `backup_vm.log` tras ejecutar la prueba de backup.
+ - Revisar logs generados en `%LocalAppData%\\ClinicaLongevidadAppArtifacts\\logs\\backup.log` y `backup_vm.log` tras ejecutar la prueba de backup.
 - Considerar añadir tests adicionales que simulen locks concurrentes para evitar regresiones.
 
 ### Siguientes pasos recomendados
@@ -49,7 +49,7 @@ Estos cambios permiten que las pruebas de backup/restore sean más robustas fren
 Pendiente / siguientes pasos prioritarios:
 ![CI](https://github.com/{owner}/{repo}/actions/workflows/ci.yml/badge.svg)
 - Verificación manual UI en entorno local: abrir la app, ir a `Auditoría` y validar checklist (`.github/AUDIT_PR_CHECKLIST.md`).  
-- Probar flujos de backup (Copia ahora, Programar/Cancelar, Probar 1 min, Restaurar) y revisar logs en `%LocalAppData%`.  
+ - Probar flujos de backup (Copia ahora, Programar/Cancelar, Probar 1 min, Restaurar) y revisar logs en `%LocalAppData%\\ClinicaLongevidadAppArtifacts\\logs`.  
 - Revisar advertencias detectadas en compilación (nullability warnings en `AuditoriaViewModelV2` y `AuditoriaService`) y corregir donde sea necesario.  
 - Adjuntar el artefacto ZIP al release (manual o con token) si se requiere distribuible para auditoría.  
 - Documentar política de persistencia de claves y decidir provider (Key Vault en producción).

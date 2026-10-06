@@ -765,16 +765,14 @@ namespace ClinicaLongevidadApp.Views
                 // Prefer local AppData backups, then common application data audit artifacts, then Desktop
                 try
                 {
-                    var local = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
-                    var preferLocal = System.IO.Path.Combine(local, "ClinicaLongevidadApp", "backups");
+                    var preferLocal = ClinicaLongevidadApp.Services.AppPaths.BackupsDir;
                     if (System.IO.Directory.Exists(preferLocal))
                     {
                         dlg.InitialDirectory = preferLocal;
                     }
                     else
                     {
-                        var common = System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData);
-                        var prefer = System.IO.Path.Combine(common, "ClinicaLongevidadApp", "AuditArtifacts");
+                        var prefer = ClinicaLongevidadApp.Services.AppPaths.CommonAuditArtifactsDir;
                         if (System.IO.Directory.Exists(prefer)) dlg.InitialDirectory = prefer;
                         else dlg.InitialDirectory = System.Environment.GetFolderPath(System.Environment.SpecialFolder.DesktopDirectory);
                     }

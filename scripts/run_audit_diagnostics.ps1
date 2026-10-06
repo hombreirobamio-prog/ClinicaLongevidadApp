@@ -5,9 +5,9 @@ param(
     [int] $TimeoutSeconds = 300
 )
 
-# Default DB path in LocalAppData
+# Default DB path in LocalAppData (centralized artifacts folder)
 if ($UseLocalAppDataDb -and [string]::IsNullOrWhiteSpace($ConnectionString)) {
-    $localDb = Join-Path -Path (Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadApp') -ChildPath 'ClinicaLongevidad.db'
+    $localDb = Join-Path -Path (Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadAppArtifacts') -ChildPath 'ClinicaLongevidad.db'
     $ConnectionString = "Data Source=$localDb"
 }
 
@@ -45,9 +45,9 @@ if (Test-Path stderr.txt) {
     Get-Content stderr.txt -Tail 200
 }
 
-# Identify generated artifacts
-$localLogs = Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadApp\logs'
-$progData = Join-Path $env:ProgramData 'ClinicaLongevidadApp\AuditIntegrityReports'
+# Identify generated artifacts under the centralized artifacts folder
+$localLogs = Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadAppArtifacts\logs'
+$progData = Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts\AuditIntegrityReports'
 
 Write-Output "Looking for generated artifacts..."
 if (Test-Path $localLogs) {

@@ -1,5 +1,5 @@
 param(
-    [string]$DbPath = "$env:LOCALAPPDATA\ClinicaLongevidad.db",
+    [string]$DbPath = "$env:LOCALAPPDATA\ClinicaLongevidadAppArtifacts\ClinicaLongevidad.db",
     [int]$BatchSize = 100
 )
 

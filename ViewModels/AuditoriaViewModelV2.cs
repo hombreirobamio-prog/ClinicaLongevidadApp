@@ -52,8 +52,7 @@ namespace ClinicaLongevidadApp.ViewModels
         {
             try
             {
-                var baseDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp");
-                System.IO.Directory.CreateDirectory(baseDir);
+                var baseDir = ClinicaLongevidadApp.Services.AppPaths.BaseDir;
                 var file = System.IO.Path.Combine(baseDir, "backup_schedule.json");
                 var obj = new { Time = timeText };
                 var txt = System.Text.Json.JsonSerializer.Serialize(obj);
@@ -66,7 +65,7 @@ namespace ClinicaLongevidadApp.ViewModels
         {
             try
             {
-                var file = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "backup_schedule.json");
+                var file = System.IO.Path.Combine(ClinicaLongevidadApp.Services.AppPaths.BaseDir, "backup_schedule.json");
                 if (!System.IO.File.Exists(file)) return null;
                 var txt = System.IO.File.ReadAllText(file, System.Text.Encoding.UTF8);
                 using var doc = System.Text.Json.JsonDocument.Parse(txt);
@@ -93,11 +92,10 @@ namespace ClinicaLongevidadApp.ViewModels
                 var conn = Application.Current.Properties["AuditConnectionString"] as string;
                 if (string.IsNullOrWhiteSpace(conn))
                 {
-                    var dbPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidad.db");
+                    var dbPath = System.IO.Path.Combine(ClinicaLongevidadApp.Services.AppPaths.BaseDir, "ClinicaLongevidad.db");
                     conn = $"Data Source={dbPath}";
                 }
-                var backupDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "backups");
-                try { System.IO.Directory.CreateDirectory(backupDir); } catch { }
+                var backupDir = ClinicaLongevidadApp.Services.AppPaths.BackupsDir;
 
                 string? created = null;
                 try
@@ -210,12 +208,11 @@ namespace ClinicaLongevidadApp.ViewModels
                 var conn = Application.Current.Properties["AuditConnectionString"] as string;
                 if (string.IsNullOrWhiteSpace(conn))
                 {
-                    var dbPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidad.db");
+                    var dbPath = System.IO.Path.Combine(ClinicaLongevidadApp.Services.AppPaths.BaseDir, "ClinicaLongevidad.db");
                     conn = $"Data Source={dbPath}";
                 }
 
-                var backupDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "backups");
-                try { System.IO.Directory.CreateDirectory(backupDir); } catch { }
+                var backupDir = ClinicaLongevidadApp.Services.AppPaths.BackupsDir;
 
                 // persist schedule and register with service
                 var tsString = ts.ToString(@"hh\:mm");

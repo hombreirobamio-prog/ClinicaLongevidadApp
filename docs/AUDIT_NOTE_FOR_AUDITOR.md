@@ -14,7 +14,7 @@ Artefactos generados
 - ZIP de evidencia: `audit-artifacts_YYYYMMDD_HHMMSS.zip` (en la raíz del repo tras la ejecución).
 - Manifiesto: `audit_manifest_YYYYMMDD_HHMMSS.txt` (lista `SHA256`, `HMAC`, `HMAC.Version` para cada backup `.db`).
 - Backups permanentes: `artifacts/backups/*.db` con `.sha256`, `.hmac`, `.hmac.ver` cuando proceda.
-- Logs e informes: `%LocalAppData%\ClinicaLongevidadApp\logs` y `%ProgramData%\ClinicaLongevidadApp\AuditIntegrityReports`
+ - Logs e informes: `%LocalAppData%\\ClinicaLongevidadAppArtifacts\\logs` y `%ProgramData%\\ClinicaLongevidadAppArtifacts\\AuditIntegrityReports`
 
 Comprobaciones recomendadas (rápidas)
 ------------------------------------
