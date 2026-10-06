@@ -150,14 +150,14 @@ Para auditores y administradores la aplicación dispone de un flujo profesional 
   - Pulsar `Generar diagnóstico`. La aplicación ejecuta comprobaciones rápidas y un informe de integridad completo.
 
 - Salida y ubicación de ficheros:
-  - Informes rápidos y logs: `%LocalAppData%\ClinicaLongevidadApp\logs` (ej. `AuditDebug.txt`, `IntegrityQuickSummary_*.txt`).
-  - Informe de integridad completo (JSON): `%ProgramData%\ClinicaLongevidadApp\AuditIntegrityReports\IntegrityReport_<timestamp>_id<N>.json`.
+  - Informes rápidos y logs: `%LocalAppData%\ClinicaLongevidadAppArtifacts\logs` (ej. `AuditDebug.txt`, `IntegrityQuickSummary_*.txt`).
+  - Informe de integridad completo (JSON): `%ProgramData%\ClinicaLongevidadAppArtifacts\AuditIntegrityReports\IntegrityReport_<timestamp>_id<N>.json`.
   - CSVs con filas problemáticas (si se detectan): junto al informe JSON o en la carpeta de logs.
 
 - CLI / herramienta auxiliar (solo lectura):
   - Hay una herramienta de comprobación incluida en `tools/CheckAdmin`. Para ejecutarla desde el repositorio:
     ```
-    dotnet run --project tools/CheckAdmin "C:\Users\<usuario>\AppData\Local\ClinicaLongevidad.db"
+    dotnet run --project tools/CheckAdmin "%LOCALAPPDATA%\\ClinicaLongevidadAppArtifacts\\ClinicaLongevidad.db"
     ```
   - La herramienta devuelve si el usuario `admin` existe y un resumen básico; es útil para automatizar comprobaciones de estado.
 

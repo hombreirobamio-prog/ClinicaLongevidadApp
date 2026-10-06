@@ -1185,7 +1185,9 @@ namespace ClinicaLongevidadApp.Views
                     var parts = line.Trim().Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
                     if (parts.Length >= 2)
                     {
-                        var candidate = parts[0]! + " " + parts[1]!;
+                        var p0 = parts.Length > 0 ? parts[0] ?? string.Empty : string.Empty;
+                        var p1 = parts.Length > 1 ? parts[1] ?? string.Empty : string.Empty;
+                        var candidate = (p0 + " " + p1).Trim();
                         var fmts = new[] { "dd/MM/yyyy H:mm:ss", "d/M/yyyy H:mm:ss", "dd/MM/yyyy HH:mm:ss", "d/M/yyyy HH:mm:ss" };
                         if (DateTime.TryParseExact(candidate, fmts, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
                             return dt;
