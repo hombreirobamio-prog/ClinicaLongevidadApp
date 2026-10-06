@@ -330,6 +330,33 @@ namespace ClinicaLongevidadApp.Views
             return existing + ", " + add;
         }
 
+        private void OpenFileInExplorer(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return;
+
+            try
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    var psi = new System.Diagnostics.ProcessStartInfo("explorer", "/select,\"" + path + "\"") { UseShellExecute = true };
+                    System.Diagnostics.Process.Start(psi);
+                }
+                else if (OperatingSystem.IsLinux())
+                {
+                    var dir = System.IO.Path.GetDirectoryName(path) ?? path;
+                    var psi = new System.Diagnostics.ProcessStartInfo("xdg-open", dir) { UseShellExecute = true };
+                    System.Diagnostics.Process.Start(psi);
+                }
+                else if (OperatingSystem.IsMacOS())
+                {
+                    var dir = System.IO.Path.GetDirectoryName(path) ?? path;
+                    var psi = new System.Diagnostics.ProcessStartInfo("open", dir) { UseShellExecute = true };
+                    System.Diagnostics.Process.Start(psi);
+                }
+            }
+            catch { }
+        }
+
         private static bool TryDecodeKey(string text, out byte[] bytes)
         {
             bytes = Array.Empty<byte>();
@@ -715,12 +742,11 @@ namespace ClinicaLongevidadApp.Views
                     var hash = await Task.Run(() => ComputeSha256(_selectedZipPath));
                     _lastHash = hash;
                     TxtLogAppend($"SHA256: {hash}");
-                    try
-                    {
-                        var psiOpen = new System.Diagnostics.ProcessStartInfo("explorer", "/select,\"" + _selectedZipPath + "\"") { UseShellExecute = true };
-                        System.Diagnostics.Process.Start(psiOpen);
-                    }
-                    catch { }
+                        try
+                        {
+                            OpenFileInExplorer(_selectedZipPath);
+                        }
+                        catch { }
                 }
             }
             catch (System.Exception ex)
@@ -752,8 +778,11 @@ namespace ClinicaLongevidadApp.Views
                     return;
                 }
 
-                var psiOpen = new System.Diagnostics.ProcessStartInfo("explorer", "/select,\"" + path + "\"") { UseShellExecute = true };
-                System.Diagnostics.Process.Start(psiOpen);
+                try
+                {
+                    OpenFileInExplorer(path);
+                }
+                catch { }
                 try
                 {
                     var ev = new ClinicaLongevidadApp.Models.AuditoriaEvento
@@ -949,7 +978,7 @@ namespace ClinicaLongevidadApp.Views
                 System.IO.Compression.ZipFile.ExtractToDirectory(_selectedZipPath, dest);
                 TxtLogAppend("ZIP descomprimido en: " + dest);
                 // Abrir carpeta
-                try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer", '"' + dest + '"') { UseShellExecute = true }); } catch { }
+                try { OpenFileInExplorer(dest); } catch { }
             }
             catch (Exception ex)
             {
