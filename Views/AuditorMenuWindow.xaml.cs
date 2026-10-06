@@ -1177,6 +1177,7 @@ namespace ClinicaLongevidadApp.Views
 
                 var rx = new Regex("(\\d{1,2}\\/\\d{1,2}\\/\\d{4})\\s+(\\d{1,2}:\\d{2}:\\d{2})");
 
+                #pragma warning disable CS8600
                 DateTime? ExtractTimestamp(string line)
                 {
                     if (string.IsNullOrWhiteSpace(line)) return null;
@@ -1205,6 +1206,7 @@ namespace ClinicaLongevidadApp.Views
 
                     return null;
                 }
+                #pragma warning restore CS8600
 
                 var sorted = lines.OrderByDescending(l => ExtractTimestamp(l) ?? DateTime.MinValue).ToArray();
 
