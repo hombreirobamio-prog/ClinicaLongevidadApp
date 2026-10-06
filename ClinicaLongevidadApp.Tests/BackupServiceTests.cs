@@ -51,7 +51,7 @@ namespace ClinicaLongevidadApp.Tests
             if (!exists)
             {
                 // try to show debug log to help diagnose
-                var logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "logs");
+                var logDir = Path.Combine(ClinicaLongevidadApp.Services.AppPaths.LogsDir);
                 var logFile = Path.Combine(logDir, "backup.log");
                 string logContents = "";
                 try { if (File.Exists(logFile)) logContents = File.ReadAllText(logFile); } catch { }
