@@ -1,13 +1,24 @@
 param(
+param(
     [string] $ConnectionString = '',
     [switch] $UseLocalAppDataDb,
+    [string] $ArtifactsDir = '',
     [string] $ProjectPath = 'tools/RunAuditDiagnostics',
     [int] $TimeoutSeconds = 300
 )
 
-# Default DB path in LocalAppData (centralized artifacts folder)
+# Default DB path when -UseLocalAppDataDb is supplied and no ConnectionString provided.
+# Preference order: explicit -ArtifactsDir, ProgramData\ClinicaLongevidadAppArtifacts, then %LOCALAPPDATA% fallback.
 if ($UseLocalAppDataDb -and [string]::IsNullOrWhiteSpace($ConnectionString)) {
-    $localDb = Join-Path -Path (Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadAppArtifacts') -ChildPath 'ClinicaLongevidad.db'
+    if (-not [string]::IsNullOrWhiteSpace($ArtifactsDir) -and (Test-Path $ArtifactsDir)) {
+        $localDb = Join-Path -Path $ArtifactsDir -ChildPath 'ClinicaLongevidad.db'
+    }
+    elseif (Test-Path (Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts')) {
+        $localDb = Join-Path -Path (Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts') -ChildPath 'ClinicaLongevidad.db'
+    }
+    else {
+        $localDb = Join-Path -Path (Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadAppArtifacts') -ChildPath 'ClinicaLongevidad.db'
+    }
     $ConnectionString = "Data Source=$localDb"
 }
 
@@ -45,9 +56,15 @@ if (Test-Path stderr.txt) {
     Get-Content stderr.txt -Tail 200
 }
 
-# Identify generated artifacts under the centralized artifacts folder
-$localLogs = Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadAppArtifacts\logs'
-$progData = Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts\AuditIntegrityReports'
+# Identify generated artifacts under the centralized artifacts folder (respect -ArtifactsDir when provided)
+if (-not [string]::IsNullOrWhiteSpace($ArtifactsDir) -and (Test-Path $ArtifactsDir)) {
+    $localLogs = Join-Path $ArtifactsDir 'logs'
+    $progData = Join-Path $ArtifactsDir 'AuditIntegrityReports'
+}
+else {
+    $localLogs = Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadAppArtifacts\logs'
+    $progData = Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts\AuditIntegrityReports'
+}
 
 Write-Output "Looking for generated artifacts..."
 if (Test-Path $localLogs) {

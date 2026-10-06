@@ -1,11 +1,22 @@
 param(
     [string]$BaseDir = (Get-Location).Path,
     [string]$LocalAppData = $env:LOCALAPPDATA,
+    [string]$ArtifactsDir = '',
     [switch]$IncludeHmac
 )
 
 # Generate companion files (.sha256 and optionally .hmac/.hmac.ver) for backups
-$localBackups = if ([string]::IsNullOrWhiteSpace($LocalAppData)) { Join-Path $BaseDir 'backups' } else { Join-Path $LocalAppData 'ClinicaLongevidadApp\backups' }
+# Prefer explicit -ArtifactsDir when provided, then ProgramData central artifacts, then LOCALAPPDATA, finally repository backups folder.
+if (-not [string]::IsNullOrWhiteSpace($ArtifactsDir) -and (Test-Path $ArtifactsDir)) {
+    $localBackups = Join-Path $ArtifactsDir 'backups'
+}
+elseif (Test-Path (Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts\backups')) {
+    $localBackups = Join-Path (Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts') 'backups'
+}
+else {
+    $localBackups = if ([string]::IsNullOrWhiteSpace($LocalAppData)) { Join-Path $BaseDir 'backups' } else { Join-Path $LocalAppData 'ClinicaLongevidadApp\backups' }
+}
+
 $artifactBackups = Join-Path $BaseDir 'artifacts\backups'
 
 $paths = @()
