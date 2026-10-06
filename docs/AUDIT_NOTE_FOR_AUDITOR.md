@@ -14,7 +14,7 @@ Artefactos generados
 - ZIP de evidencia: `audit-artifacts_YYYYMMDD_HHMMSS.zip` (en la raíz del repo tras la ejecución).
 - Manifiesto: `audit_manifest_YYYYMMDD_HHMMSS.txt` (lista `SHA256`, `HMAC`, `HMAC.Version` para cada backup `.db`).
 - Backups permanentes: `artifacts/backups/*.db` con `.sha256`, `.hmac`, `.hmac.ver` cuando proceda.
- - Logs e informes: `%LocalAppData%\\ClinicaLongevidadAppArtifacts\\logs` y `%ProgramData%\\ClinicaLongevidadAppArtifacts\\AuditIntegrityReports`
+ - Logs e informes: carpeta de artefactos de la aplicación. Por defecto los logs se escriben en `%LOCALAPPDATA%\\ClinicaLongevidadAppArtifacts\\logs` (usuario) o en `C:\ProgramData\\ClinicaLongevidadAppArtifacts\\logs` (instalación central). Las herramientas y scripts aceptan `-ArtifactsDir` para apuntar a una carpeta diferente.
 
 Comprobaciones recomendadas (rápidas)
 ------------------------------------
@@ -42,8 +42,10 @@ Recomendación: usar `-RequireHmac` en auditorías formales o pipelines donde la
    - `Get-FileHash -Algorithm SHA256 "artifacts\backups\<backup>.db"` y comparar con `audit_manifest_*.txt` o el archivo `.sha256` correspondiente.
 
 4) Revisar logs de backup:
-   - `Get-Content "$env:LOCALAPPDATA\ClinicaLongevidadApp\logs\backup.log" -Tail 200`
-   - `Get-Content "$env:LOCALAPPDATA\ClinicaLongevidadApp\logs\backup_vm.log" -Tail 200`
+    - Revisa la carpeta de artefactos indicada por tus scripts. Ejemplos:
+      - `%LOCALAPPDATA%\\ClinicaLongevidadAppArtifacts\\logs\\backup.log` (usuario)
+      - `C:\ProgramData\\ClinicaLongevidadAppArtifacts\\logs\\backup.log` (instalación central)
+    - Si usas los scripts actualizados, puedes pasar `-ArtifactsDir` para apuntar explícitamente a la carpeta de artefactos y luego leer el fichero `backup.log` desde allí.
 
 Contexto operativo
 ------------------
