@@ -13,6 +13,8 @@ using System.Windows.Media;
 using System.ComponentModel;
 using Microsoft.Win32;
 
+#pragma warning disable CS8600
+
 namespace ClinicaLongevidadApp.Views
 {
     public partial class AuditorMenuWindow : Window
@@ -113,6 +115,8 @@ namespace ClinicaLongevidadApp.Views
                     yield return childOfChild;
             }
         }
+
+#pragma warning restore CS8600
 
         private void BtnSaveHmacKey_Click(object sender, RoutedEventArgs e)
         {
@@ -853,7 +857,7 @@ namespace ClinicaLongevidadApp.Views
 
                 // Ejecuta el script de verificación existente (scripts\verify_audit_manifest.ps1)
                 var scriptName = "verify_audit_manifest.ps1";
-                string scriptPath = null;
+                string? scriptPath = null;
                 var tried = new List<string>();
 
                 // Candidate: app base + scripts
@@ -1181,7 +1185,7 @@ namespace ClinicaLongevidadApp.Views
                     var parts = line.Trim().Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
                     if (parts.Length >= 2)
                     {
-                        var candidate = parts[0] + " " + parts[1];
+                        var candidate = parts[0]! + " " + parts[1]!;
                         var fmts = new[] { "dd/MM/yyyy H:mm:ss", "d/M/yyyy H:mm:ss", "dd/MM/yyyy HH:mm:ss", "d/M/yyyy HH:mm:ss" };
                         if (DateTime.TryParseExact(candidate, fmts, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
                             return dt;
