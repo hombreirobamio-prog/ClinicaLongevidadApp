@@ -80,3 +80,51 @@ else {
 catch {
     Write-Warning "Failed to copy backup to LocalAppData: $($_.Exception.Message)"
 }
+
+# Also attempt to copy recent audit logs into the artifacts logs folder so tools can find diagnostics
+try {
+    if (-not [string]::IsNullOrWhiteSpace($ArtifactsDir)) {
+        $targetLogs = Join-Path $ArtifactsDir 'logs'
+    }
+    elseif (Test-Path (Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts')) {
+        $targetLogs = Join-Path (Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts') 'logs'
+    }
+    else {
+        $targetLogs = Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadAppArtifacts\logs'
+    }
+
+    New-Item -ItemType Directory -Force -Path $targetLogs | Out-Null
+
+    $candidates = @(
+        Join-Path $targetLogs 'backup.log',
+        Join-Path $targetLogs 'backup_vm.log'
+    )
+
+    # Also check common alternate locations (ProgramData and LocalAppData)
+    $alt1 = Join-Path (Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts') 'logs'
+    $alt2 = Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadAppArtifacts\logs'
+    foreach ($alt in @($alt1, $alt2)) {
+        if (Test-Path $alt) {
+            $candidates += Join-Path $alt 'backup.log'
+            $candidates += Join-Path $alt 'backup_vm.log'
+        }
+    }
+
+    $copiedAny = $false
+    foreach ($path in $candidates | Get-Unique) {
+        if (Test-Path $path) {
+            try {
+                Copy-Item -Path $path -Destination (Join-Path $targetLogs (Split-Path $path -Leaf)) -Force
+                Write-Output "COPIED_LOG:$path -> $targetLogs"
+                $copiedAny = $true
+            }
+            catch { }
+        }
+    }
+    if (-not $copiedAny) {
+        Write-Output "No backup logs found to copy into artifacts logs ($targetLogs)" | Out-Null
+    }
+}
+catch {
+    Write-Warning "Failed to copy backup logs into artifacts folder: $($_.Exception.Message)"
+}
