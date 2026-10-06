@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
+using System.Runtime.Versioning;
 
 namespace ClinicaLongevidadApp.Services
 {
@@ -12,6 +13,7 @@ namespace ClinicaLongevidadApp.Services
             return Path.Combine(AppPaths.KeysDir, "hmac.key");
         }
 
+        [SupportedOSPlatform("windows")]
         public static void SaveEncryptedKey(byte[] keyBytes)
         {
             var path = GetKeyFilePath();
@@ -22,6 +24,7 @@ namespace ClinicaLongevidadApp.Services
             File.WriteAllBytes(path, protectedBytes);
         }
 
+        [SupportedOSPlatform("windows")]
         public static bool TryLoadDecryptedKey(out byte[] keyBytes)
         {
             keyBytes = Array.Empty<byte>();

@@ -1,5 +1,4 @@
 using System;
-using System;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -22,7 +21,9 @@ namespace ClinicaLongevidadApp.Views
         private string? _lastManifestPath;
         private string _lastHash = string.Empty;
         // Indicates the HMAC key was auto-loaded from secure storage during window load
+#pragma warning disable CS0414
         private bool _hmacKeyAutoLoaded = false;
+#pragma warning restore CS0414
 
         public AuditorMenuWindow()
         {
@@ -532,14 +533,16 @@ namespace ClinicaLongevidadApp.Views
 
                 try
                 {
-                    var p2 = ClinicaLongevidadApp.Services.AppPaths.BackupsDir;
+                    var local = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
+                    var p2 = System.IO.Path.Combine(local, "ClinicaLongevidadApp", "backups");
                     if (System.IO.Directory.Exists(p2)) found.AddRange(System.IO.Directory.GetFiles(p2, "*.zip"));
                 }
                 catch { }
 
                 try
                 {
-                    var p1 = ClinicaLongevidadApp.Services.AppPaths.CommonAuditArtifactsDir;
+                    var common = System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData);
+                    var p1 = System.IO.Path.Combine(common, "ClinicaLongevidadApp", "AuditArtifacts");
                     if (System.IO.Directory.Exists(p1)) found.AddRange(System.IO.Directory.GetFiles(p1, "*.zip"));
                 }
                 catch { }
@@ -611,14 +614,16 @@ namespace ClinicaLongevidadApp.Views
 
                 try
                 {
-                    var p1 = ClinicaLongevidadApp.Services.AppPaths.CommonAuditArtifactsDir;
+                    var common = System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData);
+                    var p1 = System.IO.Path.Combine(common, "ClinicaLongevidadApp", "AuditArtifacts");
                     if (System.IO.Directory.Exists(p1)) found.AddRange(System.IO.Directory.GetFiles(p1, "*.zip"));
                 }
                 catch { }
 
                 try
                 {
-                    var p2 = ClinicaLongevidadApp.Services.AppPaths.BackupsDir;
+                    var local = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
+                    var p2 = System.IO.Path.Combine(local, "ClinicaLongevidadApp", "backups");
                     if (System.IO.Directory.Exists(p2)) found.AddRange(System.IO.Directory.GetFiles(p2, "*.zip"));
                 }
                 catch { }
@@ -1094,8 +1099,18 @@ namespace ClinicaLongevidadApp.Views
                 _lastHash = string.Empty;
 
                 // Clear UI fields
-                try { (this.FindName("PwdHmacKey") as System.Windows.Controls.PasswordBox).Password = string.Empty; } catch { }
-                try { (this.FindName("TxtAuditorName") as System.Windows.Controls.TextBox).Text = string.Empty; } catch { }
+                try
+                {
+                    var pbBox = this.FindName("PwdHmacKey") as System.Windows.Controls.PasswordBox;
+                    if (pbBox != null) pbBox.Password = string.Empty;
+                }
+                catch { }
+                try
+                {
+                    var txt = this.FindName("TxtAuditorName") as System.Windows.Controls.TextBox;
+                    if (txt != null) txt.Text = string.Empty;
+                }
+                catch { }
                 _hmacKeyAutoLoaded = false;
 
                 // Attempt to remove known temporary folders created by the app
