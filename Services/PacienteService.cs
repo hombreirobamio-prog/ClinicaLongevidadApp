@@ -9,7 +9,7 @@ namespace ClinicaLongevidadApp.Services
     public static class PacienteService
     {
         private static readonly string dbPath =
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            Path.Combine(ClinicaLongevidadApp.Services.AppPaths.BaseDir,
             "ClinicaLongevidad.db");
 
         private static SQLiteConnection GetConnection(string? databasePath = null)

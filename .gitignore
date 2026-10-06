@@ -377,5 +377,6 @@ _audit_inspect/
 
 # Local database and audit exports (do not commit DB files)
 ClinicaLongevidad.db
+IntegrityReport_local.json
 *.db
 out_*.json

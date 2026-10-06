@@ -335,8 +335,7 @@ namespace ClinicaLongevidadApp.ViewModels
         {
             try
             {
-                var baseDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "logs");
-                System.IO.Directory.CreateDirectory(baseDir);
+                var baseDir = ClinicaLongevidadApp.Services.AppPaths.LogsDir;
                 var file = System.IO.Path.Combine(baseDir, "backup_vm.log");
                 var line = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}\r\n";
                 System.IO.File.AppendAllText(file, line, System.Text.Encoding.UTF8);
@@ -349,7 +348,7 @@ namespace ClinicaLongevidadApp.ViewModels
             try
             {
                 await Task.CompletedTask;
-                var backupDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "backups");
+                var backupDir = ClinicaLongevidadApp.Services.AppPaths.BackupsDir;
                 var dlg = new Microsoft.Win32.OpenFileDialog() { Filter = "SQLite backups (*.db;*.sqlite;*.sqlite3;*.bak)|*.db;*.sqlite;*.sqlite3;*.bak|All files|*.*", Title = "Seleccionar copia de seguridad para restaurar", InitialDirectory = backupDir };
                 var res = dlg.ShowDialog();
                 if (res != true) return;
@@ -361,7 +360,7 @@ namespace ClinicaLongevidadApp.ViewModels
                 var conn = Application.Current.Properties["AuditConnectionString"] as string;
                 if (string.IsNullOrWhiteSpace(conn))
                 {
-                    var dbPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidad.db");
+                    var dbPath = System.IO.Path.Combine(ClinicaLongevidadApp.Services.AppPaths.BaseDir, "ClinicaLongevidad.db");
                     conn = $"Data Source={dbPath}";
                 }
 

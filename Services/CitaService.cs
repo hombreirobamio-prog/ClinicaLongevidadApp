@@ -10,10 +10,7 @@ namespace ClinicaLongevidadApp.Services
     public static class CitaService
     {
         private static readonly string DbPath =
-            System.IO.Path.Combine(
-                Environment.GetFolderPath(
-                    Environment.SpecialFolder.LocalApplicationData),
-                "ClinicaLongevidad.db");
+            System.IO.Path.Combine(ClinicaLongevidadApp.Services.AppPaths.BaseDir, "ClinicaLongevidad.db");
 
         private static SQLiteConnection GetConnection(string? databasePath = null)
         {

@@ -532,16 +532,14 @@ namespace ClinicaLongevidadApp.Views
 
                 try
                 {
-                    var local = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
-                    var p2 = System.IO.Path.Combine(local, "ClinicaLongevidadApp", "backups");
+                    var p2 = ClinicaLongevidadApp.Services.AppPaths.BackupsDir;
                     if (System.IO.Directory.Exists(p2)) found.AddRange(System.IO.Directory.GetFiles(p2, "*.zip"));
                 }
                 catch { }
 
                 try
                 {
-                    var common = System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData);
-                    var p1 = System.IO.Path.Combine(common, "ClinicaLongevidadApp", "AuditArtifacts");
+                    var p1 = ClinicaLongevidadApp.Services.AppPaths.CommonAuditArtifactsDir;
                     if (System.IO.Directory.Exists(p1)) found.AddRange(System.IO.Directory.GetFiles(p1, "*.zip"));
                 }
                 catch { }
@@ -613,16 +611,14 @@ namespace ClinicaLongevidadApp.Views
 
                 try
                 {
-                    var common = System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData);
-                    var p1 = System.IO.Path.Combine(common, "ClinicaLongevidadApp", "AuditArtifacts");
+                    var p1 = ClinicaLongevidadApp.Services.AppPaths.CommonAuditArtifactsDir;
                     if (System.IO.Directory.Exists(p1)) found.AddRange(System.IO.Directory.GetFiles(p1, "*.zip"));
                 }
                 catch { }
 
                 try
                 {
-                    var local = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
-                    var p2 = System.IO.Path.Combine(local, "ClinicaLongevidadApp", "backups");
+                    var p2 = ClinicaLongevidadApp.Services.AppPaths.BackupsDir;
                     if (System.IO.Directory.Exists(p2)) found.AddRange(System.IO.Directory.GetFiles(p2, "*.zip"));
                 }
                 catch { }
