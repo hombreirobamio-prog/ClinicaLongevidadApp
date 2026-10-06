@@ -1,6 +1,10 @@
 # PowerShell script: check_audit_readiness.ps1
 # Ejecuta comprobaciones básicas para auditoría y muestra un resumen.
 
+param(
+    [string]$ArtifactsDir = ''
+)
+
 Write-Output "== ClinicaLongevidadApp: Audit Readiness Check =="
 
 # 1) dotnet test
@@ -8,8 +12,16 @@ Write-Output "\n-- Running unit tests (dotnet test) --"
 $tests = dotnet test -v minimal
 Write-Output $tests
 
-# 2) Check backup.log
-$log = Join-Path $env:LOCALAPPDATA "ClinicaLongevidadApp\logs\backup.log"
+# 2) Check backup.log (prefer -ArtifactsDir, then ProgramData, then LOCALAPPDATA)
+if (-not [string]::IsNullOrWhiteSpace($ArtifactsDir) -and (Test-Path $ArtifactsDir)) {
+    $log = Join-Path $ArtifactsDir 'logs\backup.log'
+}
+elseif (Test-Path (Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts\logs')) {
+    $log = Join-Path (Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts') 'logs\backup.log'
+}
+else {
+    $log = Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadApp\logs\backup.log'
+}
 if (Test-Path $log) {
     Write-Output "\n-- Found backup.log: $log --"
     $created = Select-String -Path $log -Pattern "TriggerImmediateBackup created:" | Select-Object -Last 5

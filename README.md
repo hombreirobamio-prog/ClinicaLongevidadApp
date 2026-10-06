@@ -53,6 +53,17 @@ Pendiente / siguientes pasos prioritarios:
 - Revisar advertencias detectadas en compilación (nullability warnings en `AuditoriaViewModelV2` y `AuditoriaService`) y corregir donde sea necesario.  
 - Adjuntar el artefacto ZIP al release (manual o con token) si se requiere distribuible para auditoría.  
 - Documentar política de persistencia de claves y decidir provider (Key Vault en producción).
+
+Ejemplos de uso de scripts (opcionalmente especifique una carpeta de artefactos explícita):
+
+- Ejecutar diagnósticos usando la base de datos central almacenada en la carpeta de artefactos:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_audit_diagnostics.ps1 -UseLocalAppDataDb -ArtifactsDir "C:\\ClinicaArtifacts"`
+- Crear backup y copiarlo a la carpeta de artefactos centralizada:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\backup.ps1 -ArtifactsDir "C:\\ClinicaArtifacts"`
+- Generar companions (sha/hmac) para backups en la carpeta de artefactos:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\generate_companions.ps1 -ArtifactsDir "C:\\ClinicaArtifacts" -IncludeHmac`
+
+Si `-ArtifactsDir` no se proporciona, los scripts intentan localizar por orden: `C:\\ProgramData\\ClinicaLongevidadAppArtifacts`, `%LOCALAPPDATA%\\ClinicaLongevidadAppArtifacts`, y finalmente carpetas locales como `./backups`.
 ![Coverage](https://codecov.io/gh/{owner}/{repo}/branch/main/graph/badge.svg)
 Las tareas anteriores están registradas también en la PR y en `CHANGELOG.md`.
 

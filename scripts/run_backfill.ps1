@@ -1,7 +1,21 @@
 param(
-    [string]$DbPath = "$env:LOCALAPPDATA\ClinicaLongevidadAppArtifacts\ClinicaLongevidad.db",
+    [string]$ArtifactsDir = '',
+    [string]$DbPath = '',
     [int]$BatchSize = 100
 )
+
+# Default DB path resolution: prefer -ArtifactsDir, then ProgramData central artifacts, then LOCALAPPDATA
+if ([string]::IsNullOrWhiteSpace($DbPath)) {
+    if (-not [string]::IsNullOrWhiteSpace($ArtifactsDir) -and (Test-Path $ArtifactsDir)) {
+        $DbPath = Join-Path $ArtifactsDir 'ClinicaLongevidad.db'
+    }
+    elseif (Test-Path (Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts')) {
+        $DbPath = Join-Path (Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts') 'ClinicaLongevidad.db'
+    }
+    else {
+        $DbPath = Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadAppArtifacts\ClinicaLongevidad.db'
+    }
+}
 
 # Script to preview, dry-run and apply backfill using tools/RotateKeys
 # Usage: powershell -ExecutionPolicy Bypass -File .\scripts\run_backfill.ps1 -DbPath "C:\path\to\ClinicaLongevidad.db" -BatchSize 100
