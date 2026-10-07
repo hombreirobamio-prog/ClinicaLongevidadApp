@@ -161,8 +161,9 @@ El control de solo lectura `scripts/verify_daily_backup_task.ps1` comprueba la t
 Ejecutar después de la hora programada y conservar la salida JSON como evidencia:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify_daily_backup_task.ps1 -MaxAgeHours 24
+$evidencePath = Join-Path $env:LOCALAPPDATA ('ClinicaLongevidadAppArtifacts\audit_artifacts\daily-backup-health-' + (Get-Date -Format 'yyyyMMdd_HHmmss') + '.json')
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify_daily_backup_task.ps1 -MaxAgeHours 24 -OutputPath $evidencePath
 if ($LASTEXITCODE -ne 0) { throw 'La supervisión de la copia diaria indicó un problema.' }
 ```
 
-El resultado correcto contiene `Healthy: true`, `LastTaskResult: 0`, `Sha256Matches: true`, `HmacExists: true` y `HmacVersionExists: true`. La primera validación automática pendiente debe realizarse tras la ejecución prevista del 08/10/2026 a las 19:17; la comprobación actual acredita la instalación y la ejecución manual, pero no sustituye esa evidencia.
+El resultado se muestra en consola y se conserva en `$evidencePath`. El resultado correcto contiene `Healthy: true`, `LastTaskResult: 0`, `Sha256Matches: true`, `HmacExists: true` y `HmacVersionExists: true`. La primera validación automática pendiente debe realizarse tras la ejecución prevista del 08/10/2026 a las 19:17; la comprobación actual acredita la instalación y la ejecución manual, pero no sustituye esa evidencia.

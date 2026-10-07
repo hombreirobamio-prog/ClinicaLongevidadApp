@@ -1,7 +1,9 @@
 [CmdletBinding()]
 param(
     [ValidateRange(1, 168)]
-    [int]$MaxAgeHours = 24
+    [int]$MaxAgeHours = 24,
+
+    [string]$OutputPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -101,5 +103,15 @@ $result = [pscustomobject]@{
     Failures = $failures
 }
 
-$result | ConvertTo-Json -Depth 4
+$json = $result | ConvertTo-Json -Depth 4
+if (-not [string]::IsNullOrWhiteSpace($OutputPath)) {
+    $outputDirectory = Split-Path -Parent $OutputPath
+    if (-not [string]::IsNullOrWhiteSpace($outputDirectory)) {
+        New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
+    }
+
+    [System.IO.File]::WriteAllText($OutputPath, $json + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
+}
+
+$json
 if ($failures.Count -gt 0) { exit 1 }
