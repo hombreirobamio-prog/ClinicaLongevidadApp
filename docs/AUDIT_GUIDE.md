@@ -117,3 +117,11 @@ Usar el [ensayo sintético de recuperación](AUDIT_RECOVERY_DRILL_2026-09-29.md)
 El workflow ejecuta pruebas y regresiones. Las PR no reciben la clave de firma; push/manual requieren el secret `AUDIT_PACKAGE_HMAC_KEY` y la variable `AUDIT_PACKAGE_HMAC_KEY_VERSION`. No crea ni publica Releases. La primera ejecución manual remota firmada (`37676469997`, 07/10/2026) terminó correctamente y su evidencia se conserva en el almacén central de artefactos.
 
 Conservar TRX, informes y resultados de verificación con fechas y revisión del código. Los JSON del ensayo sintético se conservan por separado del paquete técnico firmado. Los paquetes operativos, la custodia independiente y la aprobación final siguen pendientes según [AUDIT_CLOSURE.md](AUDIT_CLOSURE.md).
+
+## Ensayo operativo aislado de recuperación 2026-10-07
+
+- Se restauró la copia autenticada `ClinicaLongevidad_backup_20261007_193716798.db` exclusivamente sobre un destino de prueba aislado; la base activa permaneció cerrada y no se abrió ni modificó.
+- `BackupService.RestoreBackup` comprobó SHA-256, HMAC y versión de clave antes de sustituir el destino. La restauración creó una copia previa del destino y reemplazó un marcador SQLite de prueba.
+- Resultado: correcto. El SHA-256 de la restauración coincidió con el de la copia fuente (`35B12BB2BB0DEF96737A45118F91EC4A91F7D4F5EC45F8A77F019EF929936B3F`), `PRAGMA integrity_check` devolvió `ok`, la copia previa coincidió con el destino de prueba y el marcador no permaneció tras restaurar.
+- Evidencia local protegida: `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\recovery-drill-20261007_195518\recovery-result.json`.
+- Este ensayo acredita el flujo técnico sobre una copia reciente y aislada. No resuelve las 2.100 verificaciones históricas sin su clave original, ni define RTO/RPO, ni autoriza restaurar sobre producción.
