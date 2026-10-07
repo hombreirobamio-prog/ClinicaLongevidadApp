@@ -37,9 +37,9 @@ Conservar evidencias suficientes para comprobar las pruebas, las copias y las re
 
 | Campo | Estado actual |
 | --- | --- |
-| Responsable de custodia | Pendiente de designación. |
+| Responsable de custodia | Inés Hombreiro Pazos, Doctora y responsable de Administración de la clínica. |
 | Sustituto o contacto alternativo | Pendiente de designación. |
-| Responsable de aprobación | Pendiente de designación. |
+| Responsable de aprobación | Propuesta: Inés Hombreiro Pazos. Pendiente de aprobación formal. |
 | Fecha de aprobación de la política | Pendiente. |
 | Retención de evidencias técnicas | Pendiente de aprobación. |
 | Retención de backups clínicos | Pendiente de aprobación conforme a requisitos aplicables. |

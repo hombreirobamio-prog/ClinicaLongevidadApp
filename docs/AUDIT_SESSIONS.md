@@ -519,3 +519,7 @@ No se han realizado en este cierre cambios de código, migraciones, restauracion
 - Primera comprobación: correcta. Resultado de tarea `0`, siguiente ejecución `08/10/2026 19:17`, copia más reciente de 1,61 horas y todos los comprobantes presentes, con SHA-256 coincidente.
 - El control puede recibir `-OutputPath` para conservar automáticamente el JSON de cada comprobación en `audit_artifacts`. Se validó esta salida sobre un archivo temporal y se eliminó al finalizar la prueba.
 - Pendiente: conservar la evidencia de la primera ejecución automática y realizar pruebas de interrupción. La tarea se ejecuta con el usuario Francisco conectado para no custodiar credenciales de servicio.
+
+## Custodia de evidencias 2026-10-08
+
+- Se designó a **Inés Hombreiro Pazos**, Doctora y responsable de Administración de la clínica, como responsable de custodia de evidencias. También se propone como responsable de aprobación de la política; la aprobación formal, la fecha, el sustituto y las retenciones siguen pendientes.
