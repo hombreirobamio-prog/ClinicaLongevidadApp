@@ -368,7 +368,7 @@ END;";
                     ["SurroundingRows"] = surrounding
                 };
 
-                string baseDir = ClinicaLongevidadApp.Services.AppPaths.CommonAuditReportsDir;
+                string baseDir = ClinicaLongevidadApp.Services.AppPaths.IntegrityReportsDir;
 
                 string fileName = $"IntegrityReport_{DateTime.Now:yyyyMMdd_HHmmss}_id{(id > 0 ? id.ToString() : "unknown")}.json";
                 string path = Path.Combine(baseDir, fileName);
@@ -397,7 +397,7 @@ END;";
                 // By default do not include raw Detalles payload in quick diagnostics CSV to avoid leaking sensitive data.
                 var includeDetailsInDiagnostics = string.Equals(Environment.GetEnvironmentVariable("AUDIT_INCLUDE_DETAILS_IN_DIAGNOSTICS"), "1", StringComparison.OrdinalIgnoreCase);
 
-                var baseDir = ClinicaLongevidadApp.Services.AppPaths.LogsDir;
+                var baseDir = ClinicaLongevidadApp.Services.AppPaths.DiagnosticsDir;
                 var ts = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 var summaryPath = Path.Combine(baseDir, $"IntegrityQuickSummary_{ts}.txt");
                 var csvPath = Path.Combine(baseDir, $"IntegrityProblemRows_{ts}.csv");

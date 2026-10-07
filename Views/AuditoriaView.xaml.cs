@@ -76,11 +76,11 @@ namespace ClinicaLongevidadApp.Views
         {
             try
             {
+                var reports = ClinicaLongevidadApp.Services.AppPaths.ReportsDir;
                 var localLogs = ClinicaLongevidadApp.Services.AppPaths.LogsDir;
-                var commonReports = ClinicaLongevidadApp.Services.AppPaths.CommonAuditReportsDir;
 
                 string? toOpen = null;
-                if (System.IO.Directory.Exists(commonReports)) toOpen = commonReports;
+                if (System.IO.Directory.Exists(reports)) toOpen = reports;
                 else if (System.IO.Directory.Exists(localLogs)) toOpen = localLogs;
 
                 if (string.IsNullOrWhiteSpace(toOpen))

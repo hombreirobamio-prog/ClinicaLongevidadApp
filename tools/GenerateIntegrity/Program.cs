@@ -24,7 +24,7 @@ namespace GenerateIntegrityTool
 
                 var reportPath = args.Length > 1 && !string.IsNullOrWhiteSpace(args[1])
                     ? args[1]
-                    : Path.Combine(ClinicaLongevidadApp.Services.AppPaths.ReportsDir, "IntegrityReport_CI.json");
+                    : Path.Combine(ClinicaLongevidadApp.Services.AppPaths.IntegrityReportsDir, "IntegrityReport_CI.json");
                 // Ensure report dir exists
                 try { Directory.CreateDirectory(Path.GetDirectoryName(reportPath) ?? Directory.GetCurrentDirectory()); } catch { }
 

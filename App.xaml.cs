@@ -41,41 +41,20 @@ namespace ClinicaLongevidadApp
                 // Legacy location (prior to centralization)
                 var legacyDbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidad.db");
 
-                // If legacy DB exists and new DB is missing or older, migrate it into the centralized folder.
-                if (System.IO.File.Exists(legacyDbPath))
+                // Migrate only into an absent central database. Never replace an
+                // existing active database based on file timestamps.
+                if (System.IO.File.Exists(legacyDbPath) && !System.IO.File.Exists(newDbPath))
                 {
                     try { System.IO.Directory.CreateDirectory(newDbDir); } catch { }
 
-                    var migrate = !System.IO.File.Exists(newDbPath);
-                    if (!migrate)
+                    try
                     {
-                        try
-                        {
-                            var legacyTime = System.IO.File.GetLastWriteTimeUtc(legacyDbPath);
-                            var newTime = System.IO.File.GetLastWriteTimeUtc(newDbPath);
-                            if (legacyTime > newTime) migrate = true;
-                        }
-                        catch { migrate = true; }
+                        System.IO.File.Copy(legacyDbPath, newDbPath, overwrite: false);
+                        try { AuditLogHelper.Info("App", $"Migrated legacy audit DB from {legacyDbPath} to {newDbPath}"); } catch { }
                     }
-
-                    if (migrate)
+                    catch (Exception ex)
                     {
-                        try
-                        {
-                            if (System.IO.File.Exists(newDbPath))
-                            {
-                                var bak = newDbPath + ".pre_migrate." + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".bak";
-                                try { System.IO.File.Copy(newDbPath, bak, overwrite: true); } catch { }
-                                try { AuditLogHelper.Info("App", $"Migrating audit DB: backed up existing target to {bak}"); } catch { }
-                            }
-
-                            System.IO.File.Copy(legacyDbPath, newDbPath, overwrite: true);
-                            try { AuditLogHelper.Info("App", $"Migrated legacy audit DB from {legacyDbPath} to {newDbPath}"); } catch { }
-                        }
-                        catch (Exception ex)
-                        {
-                            try { AuditLogHelper.Warning("App", "Failed migrating legacy DB: " + ex.Message); } catch { }
-                        }
+                        try { AuditLogHelper.Warning("App", "Failed migrating legacy DB: " + ex.Message); } catch { }
                     }
                 }
             }
@@ -85,12 +64,14 @@ namespace ClinicaLongevidadApp
 
             // Configure key provider: prefer Azure Key Vault if configured
             IKeyProvider keyProvider;
+            var usingAzureKeyVault = false;
             string? vaultUri = Environment.GetEnvironmentVariable("KEYVAULT_URI");
             if (!string.IsNullOrWhiteSpace(vaultUri))
             {
                 try
                 {
                     keyProvider = new AzureKeyVaultKeyProvider();
+                    usingAzureKeyVault = true;
                 }
                 catch
                 {
@@ -101,6 +82,32 @@ namespace ClinicaLongevidadApp
             else
             {
                 keyProvider = new LocalKeyProvider();
+            }
+
+            // Enforce Key Vault before constructing any audit service that could
+            // otherwise fall back to the local provider.
+            var requireKv = string.Equals(Environment.GetEnvironmentVariable("REQUIRE_KEYVAULT"), "1", StringComparison.OrdinalIgnoreCase);
+            var envName = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? string.Empty;
+            var isProdEnv = string.Equals(envName, "Production", StringComparison.OrdinalIgnoreCase);
+            if (requireKv || isProdEnv)
+            {
+                var hmacSecretName = Environment.GetEnvironmentVariable("AUDIT_HMAC_SECRET_NAME");
+                var encSecretName = Environment.GetEnvironmentVariable("AUDIT_ENC_SECRET_NAME");
+                var keyVaultReady = usingAzureKeyVault
+                    && !string.IsNullOrWhiteSpace(hmacSecretName)
+                    && !string.IsNullOrWhiteSpace(encSecretName)
+                    && keyProvider.GetHmacKey() is { Length: >= 32 }
+                    && !string.IsNullOrWhiteSpace(keyProvider.GetHmacKeyVersion())
+                    && keyProvider.GetEncryptionKey() is { Length: 16 or 24 or 32 }
+                    && !string.IsNullOrWhiteSpace(keyProvider.GetEncryptionKeyVersion());
+                if (!keyVaultReady)
+                {
+                    var msg = "Key Vault is required in this environment but its audit secrets cannot be read with valid key material and versions. Aborting startup.";
+                    try { MessageBox.Show(msg, "Configuration error", MessageBoxButton.OK, MessageBoxImage.Error); } catch { }
+                    AuditLogHelper.Error("App", msg);
+                    Shutdown();
+                    return;
+                }
             }
 
             // Optional exporters/forwarders
@@ -135,22 +142,6 @@ namespace ClinicaLongevidadApp
                 AuditoriaService = null;
             }
 
-            // Enforce Key Vault in production/staging when explicitly required.
-            // If REQUIRE_KEYVAULT=1 is set, fail fast when KEYVAULT_URI is not configured.
-            var requireKv = string.Equals(Environment.GetEnvironmentVariable("REQUIRE_KEYVAULT"), "1", StringComparison.OrdinalIgnoreCase);
-            var envName = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? string.Empty;
-            var isProdEnv = string.Equals(envName, "Production", StringComparison.OrdinalIgnoreCase);
-            if (requireKv || isProdEnv)
-            {
-                if (string.IsNullOrWhiteSpace(vaultUri))
-                {
-                    var msg = "Key Vault is required in this environment but KEYVAULT_URI is not configured. Aborting startup.";
-                    try { MessageBox.Show(msg, "Configuration error", MessageBoxButton.OK, MessageBoxImage.Error); } catch { }
-                    AuditLogHelper.Error("App", msg);
-                    Shutdown();
-                    return;
-                }
-            }
             // Start persistent forward queue worker to guarantee forwarding durability
             // This is opt-in: enable by setting AUDIT_FORWARD_ENABLED=1 in the environment.
             try

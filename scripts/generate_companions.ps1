@@ -8,31 +8,45 @@ param(
 
 if ($Help) {
     Write-Output "Usage: .\scripts\generate_companions.ps1 [-ArtifactsDir <path>] [-IncludeHmac]"
-    Write-Output "Generates .sha256 and optional .hmac/.hmac.ver companion files for backups located in artifacts/backups or LOCALAPPDATA."
+    Write-Output "Generates .sha256 and optional .hmac/.hmac.ver companion files for backups in the active artifacts folder."
     exit 0
 }
 
-# Generate companion files (.sha256 and optionally .hmac/.hmac.ver) for backups
-# Prefer explicit -ArtifactsDir when provided, then ProgramData central artifacts, then LOCALAPPDATA, finally repository backups folder.
-if (-not [string]::IsNullOrWhiteSpace($ArtifactsDir) -and (Test-Path $ArtifactsDir)) {
-    $localBackups = Join-Path $ArtifactsDir 'backups'
+# Generate companion files (.sha256 and optionally .hmac/.hmac.ver) for backups.
+$artifactRoot = if (-not [string]::IsNullOrWhiteSpace($ArtifactsDir)) {
+    $ArtifactsDir
+} elseif (-not [string]::IsNullOrWhiteSpace($LocalAppData)) {
+    Join-Path $LocalAppData 'ClinicaLongevidadAppArtifacts'
+} else {
+    Join-Path $BaseDir 'artifacts'
 }
-elseif (Test-Path (Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts\backups')) {
-    $localBackups = Join-Path (Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts') 'backups'
-}
-else {
-    $localBackups = if ([string]::IsNullOrWhiteSpace($LocalAppData)) { Join-Path $BaseDir 'backups' } else { Join-Path $LocalAppData 'ClinicaLongevidadApp\backups' }
-}
-
-$artifactBackups = Join-Path $BaseDir 'artifacts\backups'
+$localBackups = Join-Path $artifactRoot 'backups'
 
 $paths = @()
 if (Test-Path $localBackups) { $paths += $localBackups }
-if (Test-Path $artifactBackups) { $paths += $artifactBackups }
 
 if ($paths.Count -eq 0) {
-    Write-Error "No backup paths found. Checked: $localBackups and $artifactBackups"
+    Write-Error "No backup path found. Checked: $localBackups"
     exit 2
+}
+
+if ($IncludeHmac -and [string]::IsNullOrWhiteSpace($env:AUDIT_HMAC_KEY)) {
+    throw 'AUDIT_HMAC_KEY is required when -IncludeHmac is specified.'
+}
+if ($IncludeHmac -and [string]::IsNullOrWhiteSpace($env:AUDIT_HMAC_KEY_VERSION)) {
+    throw 'AUDIT_HMAC_KEY_VERSION is required when -IncludeHmac is specified.'
+}
+$hmacKeyBytes = $null
+if ($IncludeHmac) {
+    try {
+        $hmacKeyBytes = [Convert]::FromBase64String($env:AUDIT_HMAC_KEY)
+    }
+    catch {
+        throw 'AUDIT_HMAC_KEY must be Base64-encoded when -IncludeHmac is specified.'
+    }
+    if ($hmacKeyBytes.Length -lt 32) {
+        throw 'AUDIT_HMAC_KEY must decode to at least 32 bytes when -IncludeHmac is specified.'
+    }
 }
 
 foreach ($p in $paths) {
@@ -58,21 +72,12 @@ foreach ($p in $paths) {
         Write-Host "Wrote: $($f + '.sha256')"
 
         if ($IncludeHmac) {
-            if (-not $env:AUDIT_HMAC_KEY) { Write-Host "AUDIT_HMAC_KEY not set; skipping HMAC for $f"; continue }
-            # Support either a base64-encoded key or a raw string key. Convert to a byte[] for the HMAC constructor.
-            try {
-                $kb = [Convert]::FromBase64String($env:AUDIT_HMAC_KEY)
-            }
-            catch {
-                $kb = [System.Text.Encoding]::UTF8.GetBytes($env:AUDIT_HMAC_KEY)
-            }
             $data = [System.IO.File]::ReadAllBytes($f)
             # Use the typed constructor (avoids PowerShell expanding the byte[] into many arguments)
-            $h = [System.Security.Cryptography.HMACSHA256]::new($kb)
+            $h = [System.Security.Cryptography.HMACSHA256]::new($hmacKeyBytes)
             $mac = $h.ComputeHash($data)
             ([BitConverter]::ToString($mac) -replace '-','').ToLower() | Out-File -FilePath ($f + '.hmac') -Encoding ascii
             $ver = $env:AUDIT_HMAC_KEY_VERSION
-            if ([string]::IsNullOrWhiteSpace($ver)) { $ver = '1' }
             $ver | Out-File -FilePath ($f + '.hmac.ver') -Encoding ascii
             Write-Host "Wrote: $($f + '.hmac') and .hmac.ver"
         }

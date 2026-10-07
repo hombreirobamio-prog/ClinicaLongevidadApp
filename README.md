@@ -1,16 +1,18 @@
 # ClinicaLongevidadApp
 
-## Auditoría: estado vigente al 30/09/2026
+## Auditoría: estado vigente al 06/10/2026
 
 **Auditoría operativa abierta.** Consultar el [estado de cierre](docs/AUDIT_CLOSURE.md), la [guía operativa](docs/AUDIT_GUIDE.md), el [checklist](docs/AUDIT_CHECKLIST.md), el [roadmap](AUDIT_ROADMAP.md) y el [recordatorio de seguridad](AUDIT_HARDENING_REMINDER.md).
 
-El inicio de sesión exige confirmar su auditoría antes de publicar la sesión. Las entregas documentadas incorporan transacciones conjuntas de negocio y auditoría para festivos, pacientes, citas, usuarios, horarios y administración de cola; el reenvío usa una bandeja de salida transaccional, con entrega al menos una vez. La última suite Release aprobó **196/196 pruebas**, sin fallidas ni omitidas. El [ensayo sintético de recuperación](docs/AUDIT_RECOVERY_DRILL_2026-09-29.md) se amplió a trece escenarios. Son resultados locales conservados, no una aprobación de producción.
+El inicio de sesión exige confirmar su auditoría antes de publicar la sesión. Las entregas documentadas incorporan transacciones conjuntas de negocio y auditoría para festivos, pacientes, citas, usuarios, horarios y administración de cola; el reenvío usa una bandeja de salida transaccional, con entrega al menos una vez. La última suite Release aprobó **200/200 pruebas**, sin fallidas ni omitidas. El [ensayo sintético de recuperación](docs/AUDIT_RECOVERY_DRILL_2026-09-29.md) se amplió a trece escenarios. Son resultados locales conservados, no una aprobación de producción.
 
-Se endureció la rotación: la aplicación exige Key Vault cuando corresponde, usa los mismos nombres de secreto para auditoría y rotación, y no informa éxito si la clave se persiste pero falla su evento de auditoría. Se creó y validó un Key Vault de prueba con `audit-hmac-key` y `audit-enc-key`; la comprobación de solo lectura confirmó acceso por versión a ambos secretos sin mostrar material sensible. Antes de activar Key Vault en la base de auditoría actual queda definir la transición y disponibilidad de las claves históricas locales. El detalle y punto de reanudación constan en [las sesiones de auditoría](docs/AUDIT_SESSIONS.md#validacion-manual-h04-key-vault-2026-09-30).
+Se endureció la rotación: la aplicación exige Key Vault cuando corresponde, usa los mismos nombres de secreto para auditoría y rotación, y no informa éxito si la clave se persiste pero falla su evento de auditoría. Se creó y validó un Key Vault de prueba con `audit-hmac-key` y `audit-enc-key`; la comprobación de solo lectura confirmó acceso por versión a ambos secretos sin mostrar material sensible. La base actual referencia claves históricas que ya no están disponibles localmente: no activar Key Vault sobre ella ni refirmar registros. El detalle y plan de recuperación constan en la [evaluación de transición](docs/KEY_TRANSITION_ASSESSMENT_2026-10-02.md).
+
+Los archivos nuevos se centralizan en `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts`: `backups`, `keys`, `logs`, `reports\integrity`, `reports\diagnostics`, `exports` y `audit_artifacts`. Las carpetas de versiones anteriores se conservan sin mezclar en `legacy_20261006` dentro de esa misma raíz.
 
 El [pipeline vigente](docs/AUDIT_PIPELINE_CURRENT.md) genera exclusivamente un paquete técnico autenticado a partir de un TRX concreto y su hora de inicio. `scripts/run_audit_for_auditor.bat` pasa los argumentos `-TestResultsPath` y `-RunStartedUtc` al generador: no inicia la aplicación, recopila backups ni publica Releases. Seguir la guía para aprovisionar la clave de firma y verificar el ZIP; el doble clic sin los datos requeridos no completa el flujo.
 
-La configuración y ejecución remotas de CI, el ensayo operativo representativo, el anclaje externo, la relación durable negocio/auditoría y la revisión independiente siguen pendientes según el estado de cierre. Las copias antiguas del roadmap y del recordatorio dentro de `docs/` no se han actualizado en esta tarea; utilizar los enlaces anteriores.
+La configuración y ejecución remotas de CI, el ensayo operativo representativo, el anclaje externo y la revisión independiente siguen pendientes según el estado de cierre. Las copias antiguas del roadmap y del recordatorio dentro de `docs/` no se han actualizado en esta tarea; utilizar los enlaces anteriores.
 
 ## Historial de sesiones anteriores
 
@@ -36,7 +38,7 @@ Estos cambios permiten que las pruebas de backup/restore sean más robustas fren
 ### Pendiente tras los cambios aplicados
 
  - Ejecutar la suite de tests completa (`dotnet test`) para verificar que la corrección evita la excepción `IOException` observada en `BackupServiceTests.TriggerImmediateBackup_CreatesFiles_And_RestoreSucceeds`.
- - Revisar los logs generados en la carpeta de artefactos de la aplicación. Por defecto los artefactos se escriben en `%LOCALAPPDATA%\\ClinicaLongevidadAppArtifacts\\logs` (en instalaciones de usuario) o en `C:\ProgramData\\ClinicaLongevidadAppArtifacts\\logs` (en instalaciones centrales). Los scripts aceptan el parámetro `-ArtifactsDir` para apuntar a una ubicación alternativa.
+ - Revisar los logs generados en la carpeta de artefactos de la aplicación. Por defecto los scripts usan `%LOCALAPPDATA%\\ClinicaLongevidadAppArtifacts`; `-ArtifactsDir` permite indicar otra raíz de artefactos.
 - Considerar añadir tests adicionales que simulen locks concurrentes para evitar regresiones.
 
 ### Siguientes pasos recomendados
@@ -58,12 +60,12 @@ Ejemplos de uso de scripts (opcionalmente especifique una carpeta de artefactos 
 
 - Ejecutar diagnósticos usando la base de datos central almacenada en la carpeta de artefactos:
   - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_audit_diagnostics.ps1 -UseLocalAppDataDb -ArtifactsDir "C:\\ClinicaArtifacts"`
-- Crear backup y copiarlo a la carpeta de artefactos centralizada:
+- Crear backup en la carpeta de artefactos centralizada:
   - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\backup.ps1 -ArtifactsDir "C:\\ClinicaArtifacts"`
 - Generar companions (sha/hmac) para backups en la carpeta de artefactos:
   - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\generate_companions.ps1 -ArtifactsDir "C:\\ClinicaArtifacts" -IncludeHmac`
 
-Si `-ArtifactsDir` no se proporciona, los scripts intentan localizar por orden: `C:\\ProgramData\\ClinicaLongevidadAppArtifacts`, `%LOCALAPPDATA%\\ClinicaLongevidadAppArtifacts`, y finalmente carpetas locales como `./backups`.
+Si `-ArtifactsDir` no se proporciona, los scripts usan `%LOCALAPPDATA%\\ClinicaLongevidadAppArtifacts`; las copias se crean en su subcarpeta `backups`.
 ![Coverage](https://codecov.io/gh/{owner}/{repo}/branch/main/graph/badge.svg)
 Las tareas anteriores están registradas también en la PR y en `CHANGELOG.md`.
 
@@ -374,7 +376,7 @@ Notas adicionales
 - Para aplicar cambios en ejecución, usar Hot Reload o reiniciar la app si está en modo depuración.
 - Si quieres que incluya cambios adicionales (doble clic, confirmaciones, tests), indícalo y lo implemento.
 
--- GitHub Copilot (resumen automático)
+ ## Registro de mantenimiento: backfill y diagnóstico (06/10/2026)
 
 ## Resumen de la sesión (actual)
 

@@ -1,6 +1,6 @@
 # Guía operativa de auditoría
 
-Actualización: 01/10/2026. **Auditoría operativa abierta.** Esta guía sustituye las instrucciones antiguas de acceso forzado, autoconfirmación, empaquetado de carpetas y publicación automática.
+Actualización: 06/10/2026. **Auditoría operativa abierta.** Esta guía sustituye las instrucciones antiguas de acceso forzado, autoconfirmación, empaquetado de carpetas y publicación automática.
 
 Consultar el [estado de cierre](AUDIT_CLOSURE.md), las [correcciones](AUDIT_REMEDIATION_2026-09-29.md) y el [checklist](AUDIT_CHECKLIST.md). Los resultados históricos no constituyen aprobación del despliegue.
 
@@ -9,6 +9,12 @@ Consultar el [estado de cierre](AUDIT_CLOSURE.md), las [correcciones](AUDIT_REME
 Trabajar desde la raíz del repositorio en Windows con .NET 8 y registrar la revisión y los cambios locales examinados. Para la UI, iniciar sesión mediante el acceso normal con una cuenta autorizada de Administración.
 
 `FORCE_ADMIN` fue retirado. `SILENT_MODE` deniega las confirmaciones cuando oculta diálogos. Los diagnósticos automáticos con `AUDIT_RUN_DIAGNOSTICS=1` no crean una sesión administrativa.
+
+## Ubicación de archivos
+
+Los archivos nuevos se guardan bajo `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts`: copias en `backups`, claves locales en `keys`, registros en `logs`, informes en `reports\integrity` y `reports\diagnostics`, exportaciones CSV en `exports` y otros artefactos en `audit_artifacts`. Las exportaciones CSV proponen `exports` como destino inicial, aunque el usuario puede elegir otro lugar. Los archivos de ubicaciones antiguas se conservan separados en `legacy_20261006`; no moverlos ni mezclarlos con las salidas activas.
+
+Si existe una base heredada en la ubicación anterior, la aplicación sólo la copia a la raíz central cuando todavía no hay una base central. Una base central existente nunca se reemplaza automáticamente por fechas de archivo.
 
 Aprovisionar claves por un mecanismo seguro sin escribirlas en comandos guardados, documentos o informes. Las nuevas escrituras exigen HMAC y versión. Fuera de Development/Test, los detalles requieren cifrado; `AUDIT_ALLOW_PLAINTEXT_DETAILS` no habilita texto sin cifrar en producción.
 
@@ -26,9 +32,9 @@ $env:AUDIT_ENC_SECRET_NAME = 'nombre-secreto-enc'
 dotnet run --project tools/RotateKeys -- verify
 ```
 
-El resultado correcto indica `Configured: True` y lectura explícita correcta para HMAC y ENC. La herramienta no muestra ni guarda valores de claves. Esta comprobación acredita acceso a las versiones activas; para acreditar recuperación histórica debe existir una segunda versión creada de forma controlada y verificarse la lectura de ambas versiones.
+El resultado correcto indica `Configured: True` y lectura explícita correcta para HMAC y ENC. Los secretos deben ser Base64: HMAC debe descodificar al menos 32 bytes y ENC debe tener una longitud AES válida (16, 24 o 32 bytes). La herramienta no muestra ni guarda valores de claves. Esta comprobación acredita acceso a las versiones activas; para acreditar recuperación histórica debe existir una segunda versión creada de forma controlada y verificarse la lectura de ambas versiones.
 
-No establecer `REQUIRE_KEYVAULT=1`, rotar claves ni usar el almacén de prueba con la base de auditoría existente hasta definir la transición y custodia de las versiones locales históricas. Key Vault y SQLite no comparten una transacción. La [evaluación de transición de claves históricas](KEY_TRANSITION_ASSESSMENT_2026-10-02.md) confirma que la base actual referencia más versiones que las conservadas localmente; recuperar las claves autorizadas es un requisito previo.
+No establecer `REQUIRE_KEYVAULT=1`, rotar claves ni usar el almacén de prueba con la base de auditoría existente hasta definir la transición y custodia de las versiones locales históricas. Cuando `REQUIRE_KEYVAULT=1` o el entorno es Production, la aplicación aborta el arranque si no puede inicializar Key Vault y leer ambas claves con longitudes válidas y sus versiones activas; no cambia silenciosamente al proveedor local. Key Vault y SQLite no comparten una transacción. La [evaluación de transición de claves históricas](KEY_TRANSITION_ASSESSMENT_2026-10-02.md) confirma que la base actual referencia más versiones que las conservadas localmente; recuperar las claves autorizadas es un requisito previo.
 
 ## Pruebas y paquete técnico
 
@@ -63,9 +69,31 @@ dotnet run --project tools/GenerateIntegrity -- 'C:\ruta\copia.db' 'C:\ruta\info
 # Revisar $LASTEXITCODE: 0 aceptada, 3 problemas, 2 error de ejecución.
 ```
 
-Estas herramientas no crean ni migran la base examinada. La falta de una clave histórica impide completar la verificación. Una cadena aceptada no demuestra por sí sola ausencia de truncado final o sustitución completa: el anclaje externo sigue pendiente.
+Estas herramientas no crean ni migran la base examinada. La falta de una clave histórica impide completar la verificación. Una cadena aceptada no demuestra por sí sola ausencia de truncado final o sustitución completa: complementar con el anclaje externo descrito a continuación.
 
-Desde la UI autorizada puede utilizarse `Generar diagnóstico`. Revisar la ruta comunicada por la aplicación y conservar los resultados; los informes pueden contener identificadores técnicos y requieren acceso controlado.
+Si el resultado indica `signature unverifiable (exact key version unavailable)`, el registro no se considera válido ni alterado: significa que la firma no se puede comprobar porque falta su clave histórica exacta. Conservar el registro intacto, registrar ese estado y no activar Key Vault sobre esa base hasta disponer de la clave o aprobar formalmente su conservación como histórico no verificable. No generar una clave sustituta ni volver a firmar el evento.
+
+`scripts/run_backfill.ps1` requiere `-DbPath` de forma explícita y sólo debe recibir una copia aislada autorizada. No selecciona automáticamente la base activa ni debe utilizarse como mecanismo para volver a firmar registros históricos.
+
+Desde la UI autorizada puede utilizarse `Generar diagnóstico`. El botón `Abrir diagnósticos` abre la carpeta común `reports`, que contiene `integrity` y `diagnostics`. Revisar la ruta comunicada por la aplicación y conservar los resultados; los informes pueden contener identificadores técnicos y requieren acceso controlado.
+
+Para resumir un informe de integridad desde consola, `tools/summarize_integrity_report.ps1` busca primero el JSON más reciente de `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\reports\integrity`. También puede recibir una ruta explícita mediante `-Path`.
+
+## Anclaje externo H01
+
+El punto de control externo se conserva en Azure Blob Storage, separado de SQLite. Crear una cuenta de almacenamiento y un contenedor privado, por ejemplo `audit-anchors`, en el mismo entorno de Azure. Activar una directiva de inmutabilidad con la retención acordada antes de almacenar evidencias. La identidad que ejecuta la herramienta necesita únicamente el rol **Storage Blob Data Contributor** sobre ese contenedor; no asignar permisos de propietario ni usar claves de cuenta.
+
+Después de iniciar sesión con `az login`, configurar la sesión de PowerShell sin incluir secretos:
+
+```powershell
+$env:AUDIT_ANCHOR_STORAGE_URI = 'https://nombre-real.blob.core.windows.net'
+$env:AUDIT_ANCHOR_CONTAINER = 'audit-anchors'
+$env:AUDIT_ANCHOR_SCOPE = 'audit'
+dotnet run --project tools/AnchorAudit -- write --db 'C:\ruta\copia-o-base-autorizada.db'
+dotnet run --project tools/AnchorAudit -- verify --db 'C:\ruta\copia-o-base-autorizada.db'
+```
+
+`write` abre SQLite en solo lectura y crea un JSON nuevo con el Id, EventId y hash final; no crea contenedores ni modifica la base. `verify` exige que la fila anclada siga presente y conserve EventId y hash, por lo que detecta el truncado posterior al punto de control o la sustitución por una copia anterior. Ejecutar también `VerifyIntegrity` para comprobar todos los enlaces y firmas. No considerar H01 cerrado hasta que haya un contenedor inmutable, un punto de control creado y una verificación conservada como evidencia.
 
 ## Backups y recuperación
 
@@ -79,6 +107,8 @@ if ($LASTEXITCODE -ne 0) { throw 'Verificación del manifiesto fallida.' }
 ```
 
 Este script dispone de una versión local por ejecución; los históricos con varias versiones necesitan resolución segura de claves. No confundir este manifiesto con el JSON del paquete técnico.
+
+Cuando se use `scripts/generate_companions.ps1 -IncludeHmac` sobre una copia nueva, el proceso exige `AUDIT_HMAC_KEY` en Base64 de al menos 32 bytes y `AUDIT_HMAC_KEY_VERSION`; no asigna una versión por defecto. No usarlo para sobrescribir los acompañantes de evidencia histórica.
 
 Usar el [ensayo sintético de recuperación](AUDIT_RECOVERY_DRILL_2026-09-29.md) para reproducir los escenarios aislados documentados. Una restauración operativa requiere autorización específica, copia representativa protegida, destino aislado, aplicación detenida y conexiones cerradas. Registrar estado previo, integridad recuperada, datos recuperados, tiempos y rechazos. No ejecutar restauraciones sobre una base activa como prueba rutinaria de esta guía.
 

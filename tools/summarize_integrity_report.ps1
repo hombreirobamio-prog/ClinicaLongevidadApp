@@ -5,14 +5,19 @@ param(
 )
 
 if ([string]::IsNullOrWhiteSpace($Path)) {
-    # try common local filenames
+    # Prefer the active centralized integrity reports folder, then allow a
+    # report placed in the current directory for CI or manual use.
     $candidates = @("IntegrityReport_CI.json", "IntegrityReport_*.json")
     $found = $null
-    foreach ($pat in $candidates) {
-        $files = Get-ChildItem -Path (Get-Location) -Filter $pat -File -ErrorAction SilentlyContinue
-        if ($files -and $files.Count -gt 0) { $found = $files[0].FullName; break }
+    $centralReports = Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadAppArtifacts\reports\integrity'
+    foreach ($folder in @($centralReports, (Get-Location).Path)) {
+        foreach ($pat in $candidates) {
+            $files = Get-ChildItem -Path $folder -Filter $pat -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTimeUtc -Descending
+            if ($files -and $files.Count -gt 0) { $found = $files[0].FullName; break }
+        }
+        if ($found) { break }
     }
-    if (-not $found) { Write-Error "Report not found in current folder. Provide -Path to a report file."; exit 2 }
+    if (-not $found) { Write-Error "Report not found. Checked: $centralReports and the current folder. Provide -Path to a report file."; exit 2 }
     $Path = $found
 }
 if (-not (Test-Path $Path)) { Write-Error "Report not found: $Path"; exit 2 }

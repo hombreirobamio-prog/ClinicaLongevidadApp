@@ -7,14 +7,21 @@ param(
 
 if ($Help) {
     Write-Output "Usage: .\scripts\backup.ps1 [-BaseDir <path>] [-ArtifactsDir <path>]"
-    Write-Output "Creates a ZIP backup under ./backups and optionally copies it into the artifacts backups folder."
+    Write-Output "Creates a ZIP backup under the active artifacts backups folder."
     exit 0
 }
 
 $dt = Get-Date -Format 'yyyyMMdd_HHmmss'
 $cwd = $BaseDir
-$backupDir = Join-Path $cwd 'backups'
- New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
+$artifactRoot = if (-not [string]::IsNullOrWhiteSpace($ArtifactsDir)) {
+    $ArtifactsDir
+} elseif (-not [string]::IsNullOrWhiteSpace($LocalAppData)) {
+    Join-Path $LocalAppData 'ClinicaLongevidadAppArtifacts'
+} else {
+    Join-Path $cwd 'artifacts'
+}
+$backupDir = Join-Path $artifactRoot 'backups'
+New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
  $dest = Join-Path $backupDir ("ClinicaLongevidadApp_backup_$dt.zip")
 
 # Collect files to include in backup, excluding common developer/temp folders and files that are locked
@@ -56,58 +63,17 @@ catch {
 
 Write-Output "BACKUP_CREATED:$dest"
 
-# Also copy the generated ZIP to the user's LocalAppData backups folder so the app can detect it
-try {
-if (-not [string]::IsNullOrWhiteSpace($ArtifactsDir) -and (Test-Path $ArtifactsDir)) {
-    $localDest = Join-Path $ArtifactsDir 'backups'
-}
-elseif (Test-Path (Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts\backups')) {
-    $localDest = Join-Path (Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts') 'backups'
-}
-else {
-    $localDest = if ([string]::IsNullOrWhiteSpace($LocalAppData)) { Join-Path $cwd 'backups' } else { Join-Path $LocalAppData 'ClinicaLongevidadApp\backups' }
-}
-    New-Item -ItemType Directory -Force -Path $localDest | Out-Null
-    Copy-Item -Path $dest -Destination $localDest -Force
-    $localFile = Join-Path $localDest (Split-Path $dest -Leaf)
-    if (Test-Path $localFile) {
-        Write-Output "COPIED_TO_LOCALAPPDATA:$localFile"
-    }
-    else {
-        Write-Warning "Copy reported success but file not found at destination: $localFile"
-    }
-}
-catch {
-    Write-Warning "Failed to copy backup to LocalAppData: $($_.Exception.Message)"
-}
-
 # Also attempt to copy recent audit logs into the artifacts logs folder so tools can find diagnostics
 try {
-    if (-not [string]::IsNullOrWhiteSpace($ArtifactsDir)) {
-        $targetLogs = Join-Path $ArtifactsDir 'logs'
-    }
-    elseif (Test-Path (Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts')) {
-        $targetLogs = Join-Path (Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts') 'logs'
-    }
-    else {
-        $targetLogs = Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadAppArtifacts\logs'
-    }
+    $targetLogs = Join-Path $artifactRoot 'logs'
 
     New-Item -ItemType Directory -Force -Path $targetLogs | Out-Null
 
-    $candidates = @(
-        Join-Path $targetLogs 'backup.log',
-        Join-Path $targetLogs 'backup_vm.log'
-    )
-
-    # Also check common alternate locations (ProgramData and LocalAppData)
-    $alt1 = Join-Path (Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts') 'logs'
-    $alt2 = Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadAppArtifacts\logs'
-    foreach ($alt in @($alt1, $alt2)) {
-        if (Test-Path $alt) {
-            $candidates += Join-Path $alt 'backup.log'
-            $candidates += Join-Path $alt 'backup_vm.log'
-        }
+    # Build candidate paths (avoid Join-Path producing arrays when inputs are unexpected)
+    $candidates = @()
+    if ($targetLogs) {
+        $candidates += "$targetLogs\backup.log"
+        $candidates += "$targetLogs\backup_vm.log"
     }
 
     $copiedAny = $false

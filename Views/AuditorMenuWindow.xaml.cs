@@ -52,10 +52,22 @@ namespace ClinicaLongevidadApp.Views
                     dg.LayoutUpdated += AuditGrid_LayoutUpdated;
                 }
 
-                // Register sorter for the audit DataGrid(s) so they display continuous timestamps
-                try { RegisterAuditGridSorter(); } catch { }
             }
             catch { }
+        }
+
+        private static IEnumerable<string> FindAuditZips()
+        {
+            var folders = new[]
+            {
+                ClinicaLongevidadApp.Services.AppPaths.AuditArtifactsDir,
+                ClinicaLongevidadApp.Services.AppPaths.BackupsDir
+            };
+
+            return folders
+                .Where(Directory.Exists)
+                .SelectMany(folder => Directory.GetFiles(folder, "*.zip"))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
         }
 
         private void AuditGrid_LayoutUpdated(object? sender, EventArgs e)
@@ -578,30 +590,7 @@ namespace ClinicaLongevidadApp.Views
             try
             {
                 // Auto-detect and preselect the most recent ZIP if available
-                var found = new System.Collections.Generic.List<string>();
-
-                try
-                {
-                    var local = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
-                    var p2 = System.IO.Path.Combine(local, "ClinicaLongevidadApp", "backups");
-                    if (System.IO.Directory.Exists(p2)) found.AddRange(System.IO.Directory.GetFiles(p2, "*.zip"));
-                }
-                catch { }
-
-                try
-                {
-                    var common = System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData);
-                    var p1 = System.IO.Path.Combine(common, "ClinicaLongevidadApp", "AuditArtifacts");
-                    if (System.IO.Directory.Exists(p1)) found.AddRange(System.IO.Directory.GetFiles(p1, "*.zip"));
-                }
-                catch { }
-
-                try
-                {
-                    var desktop = System.Environment.GetFolderPath(System.Environment.SpecialFolder.DesktopDirectory);
-                    if (System.IO.Directory.Exists(desktop)) found.AddRange(System.IO.Directory.GetFiles(desktop, "audit-artifacts*.zip"));
-                }
-                catch { }
+                var found = FindAuditZips().ToList();
 
                 if (found.Count > 0)
                 {
@@ -660,30 +649,7 @@ namespace ClinicaLongevidadApp.Views
             try
             {
                 LstDetectedZips.Items.Clear();
-                var found = new System.Collections.Generic.List<string>();
-
-                try
-                {
-                    var common = System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData);
-                    var p1 = System.IO.Path.Combine(common, "ClinicaLongevidadApp", "AuditArtifacts");
-                    if (System.IO.Directory.Exists(p1)) found.AddRange(System.IO.Directory.GetFiles(p1, "*.zip"));
-                }
-                catch { }
-
-                try
-                {
-                    var local = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
-                    var p2 = System.IO.Path.Combine(local, "ClinicaLongevidadApp", "backups");
-                    if (System.IO.Directory.Exists(p2)) found.AddRange(System.IO.Directory.GetFiles(p2, "*.zip"));
-                }
-                catch { }
-
-                try
-                {
-                    var desktop = System.Environment.GetFolderPath(System.Environment.SpecialFolder.DesktopDirectory);
-                    if (System.IO.Directory.Exists(desktop)) found.AddRange(System.IO.Directory.GetFiles(desktop, "audit-artifacts*.zip"));
-                }
-                catch { }
+                var found = FindAuditZips();
 
                 // Remove duplicates and add to listbox
                 foreach (var f in System.Linq.Enumerable.Distinct(found))
@@ -815,19 +781,19 @@ namespace ClinicaLongevidadApp.Views
                     RestoreDirectory = true
                 };
 
-                // Prefer local AppData backups, then common application data audit artifacts, then Desktop
+                // Prefer the active artifact folders used by the application.
                 try
                 {
-                    var preferLocal = ClinicaLongevidadApp.Services.AppPaths.BackupsDir;
+                    var preferLocal = ClinicaLongevidadApp.Services.AppPaths.AuditArtifactsDir;
                     if (System.IO.Directory.Exists(preferLocal))
                     {
                         dlg.InitialDirectory = preferLocal;
                     }
                     else
                     {
-                        var prefer = ClinicaLongevidadApp.Services.AppPaths.CommonAuditArtifactsDir;
+                        var prefer = ClinicaLongevidadApp.Services.AppPaths.BackupsDir;
                         if (System.IO.Directory.Exists(prefer)) dlg.InitialDirectory = prefer;
-                        else dlg.InitialDirectory = System.Environment.GetFolderPath(System.Environment.SpecialFolder.DesktopDirectory);
+                        else dlg.InitialDirectory = ClinicaLongevidadApp.Services.AppPaths.BaseDir;
                     }
                 }
                 catch
@@ -1112,8 +1078,7 @@ namespace ClinicaLongevidadApp.Views
         {
             try
             {
-                var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-                var outPath = System.IO.Path.Combine(desktop, "audit_delivery_summary_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".txt");
+                var outPath = System.IO.Path.Combine(ClinicaLongevidadApp.Services.AppPaths.AuditArtifactsDir, "audit_delivery_summary_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".txt");
                 File.WriteAllText(outPath, TxtLog.Text ?? string.Empty, Encoding.UTF8);
                 TxtLogAppend("Impreso guardado en: " + outPath);
                 try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer", "/select,\"" + outPath + "\"") { UseShellExecute = true }); } catch { }

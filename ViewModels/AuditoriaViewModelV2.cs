@@ -116,7 +116,7 @@ namespace ClinicaLongevidadApp.ViewModels
                     {
                         if (!string.IsNullOrWhiteSpace(created))
                         {
-                            ShowSnackbar($"Copia creada: {System.IO.Path.GetFileName(created)}", 6);
+                            ShowSnackbar($"Copia creada en: {created}", 6);
                             if (showDialog)
                             {
                                 try { Services.DialogHelper.ShowInfo("Backup", $"Copia creada:\n{created}"); } catch { }
@@ -267,7 +267,7 @@ namespace ClinicaLongevidadApp.ViewModels
                 catch { NextScheduledRun = null; IsBackupScheduled = true; }
 
                 ShowSnackbar($@"Copia programada a las {ts:hh\:mm}", 5);
-                BackupScheduleStatus = $"Programada para {NextScheduledRun:dd/MM/yyyy HH:mm}.";
+                BackupScheduleStatus = "Programación diaria activa.";
             }
                 catch (Exception ex)
             {
@@ -302,33 +302,59 @@ namespace ClinicaLongevidadApp.ViewModels
             catch { }
         }
 
-        private void ScheduleTestInOneMinute()
+        private async Task ScheduleTestInOneMinuteAsync()
         {
+            if (_testBackupCancellation is not null)
+            {
+                ShowSnackbar("Ya hay una copia de prueba pendiente.", 4);
+                return;
+            }
+
+            var cancellation = new System.Threading.CancellationTokenSource();
+            _testBackupCancellation = cancellation;
+            IsTestBackupScheduled = true;
             try
             {
                 // Schedule a one-off test backup in one minute without registering a recurring schedule
                 var when = DateTime.Now.AddMinutes(1);
                 NextScheduledRun = new DateTime(when.Year, when.Month, when.Day, when.Hour, when.Minute, 0);
                 ShowSnackbar($"Copia de prueba (única) en {NextScheduledRun:dd/MM/yyyy HH:mm}", 5);
+                BackupScheduleStatus = "Copia de prueba única pendiente.";
 
-                // Fire-and-forget background task to wait one minute then perform backup
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await Task.Delay(TimeSpan.FromMinutes(1));
-                        await PerformBackupAsync(showDialog: true);
-
-                        // clear NextScheduledRun after execution
-                        Application.Current?.Dispatcher?.Invoke(() => NextScheduledRun = null);
-                    }
-                    catch { }
-                });
+                // Keep the continuation on the WPF synchronization context. PerformBackupAsync
+                // reads Application.Current properties, which must not be accessed from a worker thread.
+                await Task.Delay(TimeSpan.FromMinutes(1), cancellation.Token);
+                await PerformBackupAsync(showDialog: true);
             }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
             catch (Exception ex)
             {
                 try { Services.DialogHelper.ShowError("Backup", "Error al programar copia de prueba: " + ex.Message); } catch { }
             }
+            finally
+            {
+                if (ReferenceEquals(_testBackupCancellation, cancellation))
+                {
+                    _testBackupCancellation = null;
+                    IsTestBackupScheduled = false;
+                    NextScheduledRun = null;
+                }
+                cancellation.Dispose();
+            }
+        }
+
+        private void CancelTestBackup()
+        {
+            var cancellation = _testBackupCancellation;
+            if (cancellation is null) return;
+
+            try
+            {
+                cancellation.Cancel();
+                BackupScheduleStatus = "Copia de prueba cancelada.";
+                ShowSnackbar("Copia de prueba cancelada", 4);
+            }
+            catch { }
         }
 
         private void WriteVmDebugLog(string message)
@@ -530,7 +556,8 @@ namespace ClinicaLongevidadApp.ViewModels
             CancelBackupCommand = new RelayCommand(_ => CancelScheduledBackup());
             ScheduleOrCancelCommand = new RelayCommand(_ => ToggleSchedule());
             RestoreBackupCommand = new RelayCommand(async _ => await RestoreBackupAsync());
-            TestScheduleInOneMinuteCommand = new RelayCommand(_ => ScheduleTestInOneMinute());
+            TestScheduleInOneMinuteCommand = new RelayCommand(async _ => await ScheduleTestInOneMinuteAsync());
+            CancelTestBackupCommand = new RelayCommand(_ => CancelTestBackup());
             ForceScheduledNowCommand = new RelayCommand(_ => ForceScheduledNow());
 
             _backupService = new ClinicaLongevidadApp.Services.BackupService();
@@ -581,7 +608,20 @@ namespace ClinicaLongevidadApp.ViewModels
         } // e.g. "23:30"
 
         public ICommand? TestScheduleInOneMinuteCommand { get; private set; }
+        public ICommand? CancelTestBackupCommand { get; private set; }
         public ICommand? ForceScheduledNowCommand { get; private set; }
+
+        private System.Threading.CancellationTokenSource? _testBackupCancellation;
+        private bool _isTestBackupScheduled;
+        public bool IsTestBackupScheduled
+        {
+            get => _isTestBackupScheduled;
+            private set
+            {
+                _isTestBackupScheduled = value;
+                OnPropertyChanged(nameof(IsTestBackupScheduled));
+            }
+        }
 
         private DateTime? _nextScheduledRun;
         public DateTime? NextScheduledRun { get => _nextScheduledRun; private set { _nextScheduledRun = value; OnPropertyChanged(nameof(NextScheduledRun)); OnPropertyChanged(nameof(NextScheduledRunText)); } }
@@ -624,6 +664,7 @@ namespace ClinicaLongevidadApp.ViewModels
             {
                 try { if (_backupService != null) _backupService.BackupCompleted -= OnBackupCompleted; } catch { }
                 try { _backupService?.CancelScheduledBackup(); } catch { }
+                try { _testBackupCancellation?.Cancel(); } catch { }
             }
             catch { }
         }
@@ -828,7 +869,7 @@ namespace ClinicaLongevidadApp.ViewModels
                 Application.Current?.Dispatcher?.Invoke(() =>
                 {
                     try { Services.AuditLogHelper.Info("Auditoría.UI", $"Scheduled backup completed: {backupPath}"); } catch { }
-                    try { ShowSnackbar($"Copia programada creada: {System.IO.Path.GetFileName(backupPath)}", 6); } catch { }
+                    try { ShowSnackbar($"Copia programada creada en: {backupPath}", 6); } catch { }
                     // update next scheduled run (recurring daily)
                     try
                     {
@@ -842,7 +883,7 @@ namespace ClinicaLongevidadApp.ViewModels
                         {
                             NextScheduledRun = null;
                         }
-                        BackupScheduleStatus = $"Última copia creada: {System.IO.Path.GetFileName(backupPath)}. Próxima: {NextScheduledRunText}";
+                        BackupScheduleStatus = $"Última copia creada en: {backupPath}.";
                     }
                     catch { }
                 });
@@ -1203,7 +1244,7 @@ namespace ClinicaLongevidadApp.ViewModels
                 }
 
                 var defaultName = $"AuditExport_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
-                var dlg = new Microsoft.Win32.SaveFileDialog() { FileName = defaultName, DefaultExt = ".csv", Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*", InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) };
+                var dlg = new Microsoft.Win32.SaveFileDialog() { FileName = defaultName, DefaultExt = ".csv", Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*", InitialDirectory = ClinicaLongevidadApp.Services.AppPaths.ExportsDir };
                 var res = dlg.ShowDialog();
                 if (res != true) return;
                 var path = dlg.FileName;

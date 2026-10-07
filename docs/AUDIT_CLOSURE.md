@@ -1,10 +1,16 @@
 # Estado de cierre de auditoría
 
-Actualización documental: 30/09/2026.
+Actualización documental: 06/10/2026.
 
 **Estado: auditoría operativa abierta.** Las correcciones y pruebas locales documentadas no constituyen aprobación de producción ni revisión independiente. Este documento sustituye la interpretación de cierre de su versión anterior.
 
 ## Evidencias actuales y alcance
+
+Validación más reciente: suite completa Release **200/200 aprobadas**, 0 fallidas y 0 omitidas. [TRX de validación](../artifacts/validation-20261007/tests_20261007_ci_prep.trx). La compilación previa terminó sin errores ni advertencias. Sustituye las cifras de suite más recientes de esta sección; las cifras inferiores se conservan como evidencia histórica de cada entrega.
+
+La base actual conserva referencias a 12 versiones HMAC y 8 de cifrado, pero sólo queda una versión local activa de cada tipo. No activar Key Vault sobre esa base ni volver a firmar eventos históricos. Los registros sin clave exacta deben conservarse como no verificables. [Evaluación y plan de recuperación](KEY_TRANSITION_ASSESSMENT_2026-10-02.md).
+
+Los artefactos nuevos de la aplicación se guardan bajo `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts`, en las subcarpetas `backups`, `keys`, `logs`, `reports\integrity`, `reports\diagnostics`, `exports` y `audit_artifacts`. Los datos de ubicaciones anteriores se archivan separadamente y no se mezclan con los archivos activos.
 
 Validación posterior de administración de cola: nueva ejecución Release sobre el estado actual, sin errores ni warnings emitidos, **188/188 aprobadas**, 0 fallidas y 0 omitidas. [TRX de validación](../artifacts/audit-fixes-20260930/h04-cola-admin-validation/tests.trx). No sustituye la validación manual WPF ni de permisos en despliegue.
 
@@ -26,9 +32,9 @@ Esta validación resuelve el pendiente del resultado `phase5` del 29/09/2026 (90
 
 ## Pendientes para el cierre
 
-- H01: anclaje externo que permita detectar truncado final o sustitución completa de la cadena.
+- H01: `tools/AnchorAudit` está verificado con Azure Blob Storage privado para crear y comprobar un punto de control externo. La cuenta no admite claves compartidas y la identidad operadora usa Storage Blob Data Contributor. El contenedor tiene una retención de 30 días que permanece desbloqueada por decisión operativa, por lo que todavía falta aprobar y bloquear la retención definitiva antes de declarar H01 cerrado.
 - H03: verificar permisos con usuarios reales sobre el binario desplegado.
-- H04: continuar con rotación según el inventario y verificar los destinos de reenvío. Login exige auditar antes de publicar sesión, sin transacción común entre memoria y SQLite. Festivos, pacientes, citas, usuarios, horarios y administración de cola ya confirman sus cambios y eventos en una transacción; no se afirma atomicidad global de la aplicación.
+- H04: no activar la rotación con Key Vault sobre la base existente hasta recuperar las claves históricas o aprobar formalmente el tratamiento de los registros no verificables. Verificar también los destinos de reenvío. Login exige auditar antes de publicar sesión, sin transacción común entre memoria y SQLite. Festivos, pacientes, citas, usuarios, horarios y administración de cola ya confirman sus cambios y eventos en una transacción; no se afirma atomicidad global de la aplicación.
 - H07/H08: comprobar la configuración efectiva de cifrado y claves en producción y la compatibilidad de consumidores con payload v2. Las correcciones de nuevas escrituras no protegen retrospectivamente los metadatos v1.
 - H09: configurar y ejecutar CI remoto; completar el paquete operativo firmado con backup autenticado, informe de integridad nuevo, resultado de recuperación y custodia independiente.
 - Recuperación: realizar un ensayo autorizado sobre una copia representativa y protegida, con claves históricas reales, objetivos RTO/RPO acordados y aplicación detenida. Revisar interrupciones y atomicidad de la sustitución; el ensayo sintético no valida restaurar sobre una base activa.

@@ -27,7 +27,7 @@ namespace ClinicaLongevidadApp.Services
         {
             _auditoriaService = auditoriaService ?? throw new ArgumentNullException(nameof(auditoriaService));
             _interval = interval ?? TimeSpan.FromMinutes(60);
-            _reportDirectory = reportDirectory ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "ClinicaLongevidadApp", "AuditIntegrityReports");
+            _reportDirectory = reportDirectory ?? AppPaths.IntegrityReportsDir;
         }
 
         /// <summary>

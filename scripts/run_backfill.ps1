@@ -7,21 +7,14 @@ param(
 
 if ($Help) {
     Write-Output "Usage: .\scripts\run_backfill.ps1 [-ArtifactsDir <path>] [-DbPath <path>] [-BatchSize <n>]"
-    Write-Output "Runs a preview dry-run and (optionally) applies backfill batches against the audit DB."
+    Write-Output "Runs a preview dry-run and (optionally) applies backfill batches against an explicitly selected isolated audit DB copy."
     exit 0
 }
 
-# Default DB path resolution: prefer -ArtifactsDir, then ProgramData central artifacts, then LOCALAPPDATA
+# Backfill can alter audit records. Never select the active database implicitly.
 if ([string]::IsNullOrWhiteSpace($DbPath)) {
-    if (-not [string]::IsNullOrWhiteSpace($ArtifactsDir) -and (Test-Path $ArtifactsDir)) {
-        $DbPath = Join-Path $ArtifactsDir 'ClinicaLongevidad.db'
-    }
-    elseif (Test-Path (Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts')) {
-        $DbPath = Join-Path (Join-Path $env:ProgramData 'ClinicaLongevidadAppArtifacts') 'ClinicaLongevidad.db'
-    }
-    else {
-        $DbPath = Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadAppArtifacts\ClinicaLongevidad.db'
-    }
+    Write-Error 'DbPath is required. Provide the path to an isolated copy of the audit database; the active database is not selected automatically.'
+    exit 2
 }
 
 # Script to preview, dry-run and apply backfill using tools/RotateKeys

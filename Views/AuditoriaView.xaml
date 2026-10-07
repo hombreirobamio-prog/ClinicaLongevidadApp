@@ -498,6 +498,15 @@
                                         ToolTip="Ejecuta una copia de prueba única en 1 minuto">
                                     <TextBlock Text="Probar 1 min" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 </Button>
+                                <Button Command="{Binding CancelTestBackupCommand}"
+                                        Style="{StaticResource EstiloBotonSecundario}"
+                                        Width="150"
+                                        Height="36"
+                                        Margin="5"
+                                        ToolTip="Cancelar la copia de prueba pendiente"
+                                        Visibility="{Binding IsTestBackupScheduled, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="Cancelar prueba" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Button>
                             </WrapPanel>
                             <TextBlock Text="{Binding BackupScheduleStatus}"
                                        Foreground="{StaticResource Brush_TextoClaro}"
@@ -505,6 +514,13 @@
                                        TextAlignment="Center"
                                        HorizontalAlignment="Center"
                                        Margin="5,4,5,0"/>
+                            <TextBlock Foreground="{StaticResource Brush_TextoClaro}"
+                                       TextAlignment="Center"
+                                       HorizontalAlignment="Center"
+                                       Margin="5,0,5,4">
+                                <Run Text="Siguiente copia: "/>
+                                <Run Text="{Binding NextScheduledRunText, Mode=OneWay}"/>
+                            </TextBlock>
                         </StackPanel>
                     </Border>
                 </StackPanel>
