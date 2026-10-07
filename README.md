@@ -1,6 +1,6 @@
 # ClinicaLongevidadApp
 
-## Auditoría: estado vigente al 06/10/2026
+## Auditoría: estado vigente al 08/10/2026
 
 **Auditoría operativa abierta.** Consultar el [estado de cierre](docs/AUDIT_CLOSURE.md), la [guía operativa](docs/AUDIT_GUIDE.md), el [checklist](docs/AUDIT_CHECKLIST.md), el [roadmap](AUDIT_ROADMAP.md) y el [recordatorio de seguridad](AUDIT_HARDENING_REMINDER.md).
 
@@ -10,9 +10,9 @@ Se endureció la rotación: la aplicación exige Key Vault cuando corresponde, u
 
 Los archivos nuevos se centralizan en `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts`: `backups`, `keys`, `logs`, `reports\integrity`, `reports\diagnostics`, `exports` y `audit_artifacts`. Las carpetas de versiones anteriores se conservan sin mezclar en `legacy_20261006` dentro de esa misma raíz.
 
-El [pipeline vigente](docs/AUDIT_PIPELINE_CURRENT.md) genera exclusivamente un paquete técnico autenticado a partir de un TRX concreto y su hora de inicio. `scripts/run_audit_for_auditor.bat` pasa los argumentos `-TestResultsPath` y `-RunStartedUtc` al generador: no inicia la aplicación, recopila backups ni publica Releases. Seguir la guía para aprovisionar la clave de firma y verificar el ZIP; el doble clic sin los datos requeridos no completa el flujo.
+El [pipeline vigente](docs/AUDIT_PIPELINE_CURRENT.md) genera exclusivamente un paquete técnico autenticado a partir de un TRX concreto y su hora de inicio. Dos ejecuciones manuales remotas firmadas completaron correctamente; la segunda verificó también el ejecutor de copia independiente. `scripts/run_audit_for_auditor.bat` pasa los argumentos `-TestResultsPath` y `-RunStartedUtc` al generador: no inicia la aplicación, recopila backups ni publica Releases. Seguir la guía para aprovisionar la clave de firma y verificar el ZIP; el doble clic sin los datos requeridos no completa el flujo.
 
-La configuración y ejecución remotas de CI, el ensayo operativo representativo, el anclaje externo y la revisión independiente siguen pendientes según el estado de cierre. Las copias antiguas del roadmap y del recordatorio dentro de `docs/` no se han actualizado en esta tarea; utilizar los enlaces anteriores.
+El ensayo de recuperación aislado, la copia externa de su evidencia y el primer anclaje externo privado ya se verificaron. La tarea diaria independiente crea copias autenticadas aunque la interfaz esté cerrada, mientras el usuario haya iniciado sesión; su control de salud comprueba tarea, copia, SHA-256 y acompañantes. Para conservar una comprobación tras la hora programada, ejecutar `scripts/verify_daily_backup_task.ps1 -MaxAgeHours 24 -OutputPath <ruta-json>`. Falta conservar la primera ejecución automática, bloquear una retención aprobada para el anclaje, resolver las claves históricas y completar la revisión independiente según el estado de cierre. Las copias antiguas del roadmap y del recordatorio dentro de `docs/` no se han actualizado en esta tarea; utilizar los enlaces anteriores.
 
 ## Historial de sesiones anteriores
 
