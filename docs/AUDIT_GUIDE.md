@@ -4,6 +4,8 @@ Actualización: 06/10/2026. **Auditoría operativa abierta.** Esta guía sustitu
 
 Consultar el [estado de cierre](AUDIT_CLOSURE.md), las [correcciones](AUDIT_REMEDIATION_2026-09-29.md) y el [checklist](AUDIT_CHECKLIST.md). Los resultados históricos no constituyen aprobación del despliegue.
 
+La [política de custodia de evidencias](EVIDENCE_CUSTODY_POLICY_DRAFT.md) es un borrador pendiente de responsable, retenciones y aprobación. Seguir sus restricciones de clasificación mientras se completa esa aprobación.
+
 ## Acceso y preparación
 
 Trabajar desde la raíz del repositorio en Windows con .NET 8 y registrar la revisión y los cambios locales examinados. Para la UI, iniciar sesión mediante el acceso normal con una cuenta autorizada de Administración.
