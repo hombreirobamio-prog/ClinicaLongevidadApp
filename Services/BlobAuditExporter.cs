@@ -1,8 +1,11 @@
 using System;
+using System.Globalization;
 using System.IO;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Azure;
 using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs.Specialized;
 
 namespace ClinicaLongevidadApp.Services
@@ -41,11 +44,11 @@ namespace ClinicaLongevidadApp.Services
         {
             try
             {
-                string blobName = $"{DateTime.UtcNow:yyyyMMdd}/{eventId}.json";
+                string blobName = BuildBlobName(eventId, jsonPayload);
                 var blob = _container.GetBlockBlobClient(blobName);
                 using var ms = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonPayload));
 
-                var headers = new Azure.Storage.Blobs.Models.BlobHttpHeaders { ContentType = "application/json" };
+                var headers = new BlobHttpHeaders { ContentType = "application/json" };
                 var metadata = new System.Collections.Generic.Dictionary<string, string>
                 {
                     ["signature"] = signature ?? string.Empty,
@@ -61,7 +64,25 @@ namespace ClinicaLongevidadApp.Services
                 }
                 catch { }
 
-                await blob.UploadAsync(ms, headers, metadata);
+                var options = new BlobUploadOptions
+                {
+                    HttpHeaders = headers,
+                    Metadata = metadata,
+                    Conditions = new BlobRequestConditions { IfNoneMatch = ETag.All }
+                };
+
+                try
+                {
+                    await blob.UploadAsync(ms, options);
+                }
+                catch (RequestFailedException ex) when (ex.Status is 409 or 412)
+                {
+                    var existing = await blob.GetPropertiesAsync();
+                    if (MetadataMatchesExistingEvent(existing.Value.Metadata, eventId, signature))
+                        return;
+
+                    throw new InvalidOperationException("Ya existe un blob de auditoría con el mismo EventId y metadatos distintos.", ex);
+                }
             }
             catch (RequestFailedException ex)
             {
@@ -73,6 +94,40 @@ namespace ClinicaLongevidadApp.Services
                 LogService.Error("BlobAuditExporter", "Unexpected error exporting audit", ex);
                 throw;
             }
+        }
+
+        internal static bool MetadataMatchesExistingEvent(
+            System.Collections.Generic.IDictionary<string, string> metadata,
+            string eventId,
+            string? signature)
+        {
+            return metadata.TryGetValue("eventId", out var existingEventId)
+                && metadata.TryGetValue("signature", out var existingSignature)
+                && string.Equals(existingEventId, eventId, StringComparison.Ordinal)
+                && string.Equals(existingSignature, signature ?? string.Empty, StringComparison.Ordinal);
+        }
+
+        internal static string BuildBlobName(string eventId, string jsonPayload)
+        {
+            try
+            {
+                using var document = JsonDocument.Parse(jsonPayload);
+                if (document.RootElement.TryGetProperty("FechaHora", out var fechaHora)
+                    && DateTimeOffset.TryParse(
+                        fechaHora.GetString(),
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.RoundtripKind,
+                        out var timestamp))
+                {
+                    return $"{timestamp.UtcDateTime:yyyyMMdd}/{eventId}.json";
+                }
+            }
+            catch (JsonException)
+            {
+                // Legacy or malformed payloads retain the previous time-based layout.
+            }
+
+            return $"{DateTime.UtcNow:yyyyMMdd}/{eventId}.json";
         }
     }
 }

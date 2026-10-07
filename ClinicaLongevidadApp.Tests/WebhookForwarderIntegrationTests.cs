@@ -2,6 +2,7 @@ using ClinicaLongevidadApp.Models;
 using ClinicaLongevidadApp.Services;
 using Microsoft.Data.Sqlite;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -88,6 +89,28 @@ namespace ClinicaLongevidadApp.Tests
             {
                 Environment.SetEnvironmentVariable("AUDIT_WEBHOOK_URL", previousUrl);
             }
+        }
+
+        [Fact]
+        public void BlobExistente_SoloSeAcepta_SiEventIdYFirmaCoinciden()
+        {
+            var metadata = new Dictionary<string, string>
+            {
+                ["eventId"] = "event-123",
+                ["signature"] = "signature-123"
+            };
+
+            Assert.True(BlobAuditExporter.MetadataMatchesExistingEvent(metadata, "event-123", "signature-123"));
+            Assert.False(BlobAuditExporter.MetadataMatchesExistingEvent(metadata, "event-123", "other-signature"));
+            Assert.False(BlobAuditExporter.MetadataMatchesExistingEvent(metadata, "other-event", "signature-123"));
+        }
+
+        [Fact]
+        public void BlobDeEvento_UsaLaFechaFirmada_ParaMantenerElMismoDestinoEnReintentos()
+        {
+            var payload = "{\"FechaHora\":\"2026-10-07T23:59:59.0000000Z\"}";
+
+            Assert.Equal("20261007/event-123.json", BlobAuditExporter.BuildBlobName("event-123", payload));
         }
 
         public void Dispose()
