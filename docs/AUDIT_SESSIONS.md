@@ -484,3 +484,9 @@ No se han realizado en este cierre cambios de código, migraciones, restauracion
 - El paquete de evidencia de recuperación, sin base SQLite ni datos clínicos, se copió al medio extraíble `ESD-USB (E:)` en `ClinicaLongevidadApp\AuditEvidence\2026-10-07\`.
 - Se trasladaron `recovery-evidence-package.zip` y su comprobante `.sha256`. La comprobación posterior confirmó el SHA-256 `06AFC9038F85CE10B16B4395E45C44A16957E0CD6AD0744D9146D419C72DF337`, idéntico al original local.
 - La custodia física del medio queda a cargo del responsable que lo retirará. Este soporte contiene solo el paquete de evidencia, no copias de bases de datos clínicas.
+
+## Ensayo de rechazo de evidencia manipulada 2026-10-07
+
+- Se alteró únicamente el comprobante HMAC de una copia aislada de prueba y se intentó restaurar sobre un destino ficticio.
+- Resultado: `BackupService` rechazó la evidencia antes de iniciar una sustitución; el destino conservó exactamente su hash previo y no se creó ninguna copia `pre_restore`.
+- Evidencia: `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\recovery-rejection-drill-20261007_203353\recovery-rejection-result.json`.
