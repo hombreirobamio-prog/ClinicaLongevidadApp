@@ -92,6 +92,41 @@ namespace ClinicaLongevidadApp.Tests
         }
 
         [Fact]
+        public async Task Worker_ConservaElEvento_CuandoElWebhookNoEstaDisponible()
+        {
+            var previousUrl = Environment.GetEnvironmentVariable("AUDIT_WEBHOOK_URL");
+            try
+            {
+                Environment.SetEnvironmentVariable("AUDIT_WEBHOOK_URL", "http://127.0.0.1:1/audit");
+                var forwarder = new WebhookForwarder();
+                var service = new AuditoriaService(_conn, forwarder: forwarder);
+                service.RegistrarEvento(new AuditoriaEvento
+                {
+                    UsuarioAdmin = "integ-test",
+                    Accion = "webhook-failure",
+                    Modulo = "Tests",
+                    Detalles = "{}"
+                });
+
+                using var worker = new AuditForwardQueueWorker(_conn, forwarder, null, 60);
+                await worker.ProcessOnceAsync();
+
+                using var connection = new SqliteConnection(_conn);
+                connection.Open();
+                using var command = connection.CreateCommand();
+                command.CommandText = "SELECT COUNT(1), MAX(Attempts) FROM AuditForwardQueue;";
+                using var reader = command.ExecuteReader();
+                Assert.True(reader.Read());
+                Assert.Equal(1L, reader.GetInt64(0));
+                Assert.Equal(1L, reader.GetInt64(1));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AUDIT_WEBHOOK_URL", previousUrl);
+            }
+        }
+
+        [Fact]
         public void BlobExistente_SoloSeAcepta_SiEventIdYFirmaCoinciden()
         {
             var metadata = new Dictionary<string, string>

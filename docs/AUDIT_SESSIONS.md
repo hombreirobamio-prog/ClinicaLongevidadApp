@@ -529,7 +529,7 @@ No se han realizado en este cierre cambios de código, migraciones, restauracion
 - Se corrigió la propagación de errores de `WebhookForwarder` y `BlobAuditExporter`. Antes registraban el fallo internamente y devolvían éxito a la cola, que podía borrar una entrega no realizada. Ahora el worker conserva la fila para reintento o la mueve a `dead-letter` tras el máximo de intentos.
 - El webhook crea una solicitud HTTP nueva en cada intento; así sus tres reintentos no reutilizan una solicitud ya enviada.
 - Blob Storage usa un nombre basado en la fecha firmada dentro del payload y el `EventId`. Si un intento anterior creó el blob pero su respuesta se perdió, una repetición acepta solo el objeto existente con el mismo identificador y firma; si difieren, conserva el fallo para revisión.
-- Validación: 8 pruebas dirigidas de cola/webhook aprobadas y compilación Release de la solución correcta, sin advertencias ni errores. Se añadieron pruebas que verifican la propagación de un webhook inaccesible, la coincidencia de metadatos Blob y la estabilidad del destino por fecha firmada.
+- Validación: 9 pruebas dirigidas de cola/webhook aprobadas y compilación Release de la solución correcta, sin advertencias ni errores. Se añadieron pruebas que verifican la propagación de un webhook inaccesible, la conservación de la fila por el worker, la coincidencia de metadatos Blob y la estabilidad del destino por fecha firmada.
 - Pendiente: comprobar la deduplicación efectiva por `EventId` en cada destino real; la entrega continúa siendo al menos una vez.
 
 ## Tercera validación remota firmada 2026-10-08
