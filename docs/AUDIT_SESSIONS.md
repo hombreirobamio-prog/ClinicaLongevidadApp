@@ -478,3 +478,9 @@ No se han realizado en este cierre cambios de código, migraciones, restauracion
 - Se preparó un paquete sin base de datos ni datos clínicos: `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\recovery-drill-20261007_195518\recovery-evidence-package.zip`.
 - Incluye `recovery-result.json` y `evidence-manifest.json`. Su SHA-256 es `06AFC9038F85CE10B16B4395E45C44A16957E0CD6AD0744D9146D419C72DF337`; el comprobante se guarda junto al ZIP como `.sha256`.
 - Está preparado para copiarlo a una ubicación de custodia independiente. Esa copia externa y su responsable siguen pendientes; no se ha subido información clínica ni una base SQLite.
+
+## Custodia externa de evidencia en USB 2026-10-07
+
+- El paquete de evidencia de recuperación, sin base SQLite ni datos clínicos, se copió al medio extraíble `ESD-USB (E:)` en `ClinicaLongevidadApp\AuditEvidence\2026-10-07\`.
+- Se trasladaron `recovery-evidence-package.zip` y su comprobante `.sha256`. La comprobación posterior confirmó el SHA-256 `06AFC9038F85CE10B16B4395E45C44A16957E0CD6AD0744D9146D419C72DF337`, idéntico al original local.
+- La custodia física del medio queda a cargo del responsable que lo retirará. Este soporte contiene solo el paquete de evidencia, no copias de bases de datos clínicas.
