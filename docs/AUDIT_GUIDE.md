@@ -114,6 +114,6 @@ Usar el [ensayo sintético de recuperación](AUDIT_RECOVERY_DRILL_2026-09-29.md)
 
 ## CI y evidencia
 
-El workflow local ejecuta pruebas y regresiones. Las PR no reciben la clave de firma; push/manual requieren el secret `AUDIT_PACKAGE_HMAC_KEY` y la variable `AUDIT_PACKAGE_HMAC_KEY_VERSION`. No crea ni publica Releases. La configuración y ejecución remotas siguen pendientes de acreditar.
+El workflow ejecuta pruebas y regresiones. Las PR no reciben la clave de firma; push/manual requieren el secret `AUDIT_PACKAGE_HMAC_KEY` y la variable `AUDIT_PACKAGE_HMAC_KEY_VERSION`. No crea ni publica Releases. La primera ejecución manual remota firmada (`37676469997`, 07/10/2026) terminó correctamente y su evidencia se conserva en el almacén central de artefactos.
 
 Conservar TRX, informes y resultados de verificación con fechas y revisión del código. Los JSON del ensayo sintético se conservan por separado del paquete técnico firmado. Los paquetes operativos, la custodia independiente y la aprobación final siguen pendientes según [AUDIT_CLOSURE.md](AUDIT_CLOSURE.md).

@@ -29,11 +29,11 @@ El verificador abre el ZIP sin extraerlo, exige inventario exacto sin entradas d
 El workflow `audit-pipeline.yml` ejecuta la suite, las pruebas de manifiestos y las pruebas del paquete. Conserva el TRX, incluyendo fallos, como artefacto de resultados; solo genera el paquete autenticado tras éxito.
 
 - Pull requests: no reciben claves de firma ni generan paquetes operativos; ejecutan regresiones con claves sintéticas.
-- Push/manual: requieren el secret `AUDIT_PACKAGE_HMAC_KEY` y la variable `AUDIT_PACKAGE_HMAC_KEY_VERSION`. Si faltan, falla la generación autenticada. Configurarlos es un requisito pendiente del repositorio remoto.
+- Push/manual: requieren el secret `AUDIT_PACKAGE_HMAC_KEY` y la variable `AUDIT_PACKAGE_HMAC_KEY_VERSION`. Si faltan, falla la generación autenticada. Ambos quedaron configurados y se verificaron en la ejecución manual `37676469997` del 07/10/2026.
 - Permisos del workflow: lectura del repositorio. Sin creación ni subida a Releases.
 - Solo se sube el ZIP de la ejecución actual, no todos los archivos de `artifacts`.
 
-El workflow se ha editado localmente; no se ha disparado ni verificado una ejecución remota. Sus pasos principales se han probado localmente; no se dispone de `actionlint` en este equipo.
+La ejecución manual remota `37676469997` sobre el commit `345303c` terminó correctamente: restauración, pruebas, regresiones de manifiesto/paquete y creación/conservación del paquete técnico autenticado. La evidencia descargada se conserva en `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\ci-20261007-run-37676469997`. No se dispone de `actionlint` en este equipo.
 
 ## Herramientas de integridad
 

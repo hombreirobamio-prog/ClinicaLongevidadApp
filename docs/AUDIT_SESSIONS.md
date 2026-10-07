@@ -441,6 +441,12 @@ No se han realizado en este cierre cambios de código, migraciones, restauracion
 - Se ejecutó la suite completa en Release antes de preparar la primera ejecución remota firmada: **200/200 pruebas aprobadas**, 0 fallidas y 0 omitidas.
 - Evidencia local: `artifacts\validation-20261007\tests_20261007_ci_prep.trx`.
 
+## Primera ejecución remota firmada de CI 2026-10-07
+
+- Se publicó el commit `345303c` en `chore/centralize-paths` y se ejecutó manualmente `Audit pipeline` en GitHub Actions: [ejecución 37676469997](https://github.com/hombreirobamio-prog/ClinicaLongevidadApp/actions/runs/37676469997).
+- Resultado: correcto. Se completaron restauración, pruebas, regresiones de manifiesto/paquete y la creación/conservación del paquete técnico autenticado.
+- Evidencia descargada: `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\ci-20261007-run-37676469997`; el ZIP del paquete tiene SHA-256 `40FB7D5E43234C4AC9B98674D2C9B7383629295EC5188D933B47E1FE3A0B5D32` e inventario `tests.trx`, `package-manifest.json` y `package-manifest.hmac`.
+
 ## Copia de cierre de sesión 2026-10-07
 
 - Se creó la instantánea de código y documentación `backups\ClinicaLongevidadApp_backup_20261007_203703.zip` bajo `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts`.
