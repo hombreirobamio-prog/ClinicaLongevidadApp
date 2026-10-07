@@ -22,11 +22,11 @@ Estos valores son objetivos operativos provisionales. Deben revisarse si la clí
 
 La programación diaria actual se guarda y se vuelve a crear cuando se abre la vista de Auditoría, pero el temporizador se ejecuta dentro del proceso de la aplicación. Si la aplicación está cerrada o el equipo apagado cuando llegue la hora, no genera la copia programada.
 
-Para poder afirmar que el RPO de 24 horas se cumple de forma continua, hace falta un ejecutor independiente de la interfaz, por ejemplo una tarea programada de Windows que cree y verifique la copia diaria, o un servicio equivalente. Su instalación y la frecuencia concreta deben validarse antes de declararlo operativo.
+Se instaló una tarea diaria independiente de la interfaz a las 19:17, con ejecución diferida y permitida con batería. La primera ejecución bajo demanda creó una copia autenticada verificada. El RPO sigue condicionado a que Windows esté iniciado y el usuario configurado haya iniciado sesión, porque las claves actuales son locales al perfil. Ejecutar sin inicio de sesión requeriría una identidad de servicio o credenciales custodiadas.
 
 ## Criterios de aceptación futuros
 
-1. Ejecutar una copia automática diaria aun con la interfaz cerrada.
+1. Confirmar durante varios días que la tarea crea una copia automática a las 19:17 aun con la interfaz cerrada.
 2. Conservar la evidencia de cada copia y alertar ante un fallo.
 3. Medir el tiempo total de recuperación en un ensayo controlado y comprobar que no supera cuatro horas.
 4. Revisar los objetivos con el responsable de la clínica al cambiar horarios, volumen de datos o criticidad.

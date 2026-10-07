@@ -137,3 +137,19 @@ Conservar TRX, informes y resultados de verificación con fechas y revisión del
 - El paquete de evidencia de recuperación, sin base SQLite ni datos clínicos, se copió al medio extraíble `ESD-USB (E:)` en `ClinicaLongevidadApp\AuditEvidence\2026-10-07\`.
 - Se trasladaron `recovery-evidence-package.zip` y su comprobante `.sha256`. La comprobación posterior confirmó el SHA-256 `06AFC9038F85CE10B16B4395E45C44A16957E0CD6AD0744D9146D419C72DF337`, idéntico al original local.
 - La custodia física del medio queda a cargo del responsable que lo retirará. Este soporte contiene solo el paquete de evidencia, no copias de bases de datos clínicas.
+
+## Programación independiente de copia diaria 2026-10-07
+
+- Se añadió `tools/ScheduledBackup`, que crea una copia autenticada de la base central usando el mismo `BackupService`, SHA-256, HMAC y versión de clave que la aplicación.
+- Se publicó el ejecutor en `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\scheduled-backup-runner` y se instaló la tarea de Windows `ClinicaLongevidadApp\DailyAuthenticatedBackup` a las 19:17 diariamente.
+- La tarea acepta ejecución con batería y se configura para ejecutarse cuando Windows vuelva a estar disponible si se perdió la hora prevista. Se ejecuta en modo interactivo con el usuario Francisco, necesario para acceder al material de claves local.
+- Validación manual: ejecución bajo demanda correcta con resultado `0`; generó `ClinicaLongevidad_backup_20261007_204734959.db` junto con `.sha256`, `.hmac` y `.hmac.ver`. El SHA-256 calculado coincide con su comprobante: `68acc881255b0eafcef287b959ae4d392a1de7a3110bd11f45e84627f023a0cb`.
+- Cuando el ejecutor está instalado, los botones `Programar` y `Cancelar` de Auditoría actualizan o eliminan esta tarea de Windows, evitando depender del temporizador de la ventana.
+- El RPO de 24 horas queda condicionado a que el equipo se inicie y el usuario de la tarea haya iniciado sesión. Ejecutar sin inicio de sesión requeriría custodiar credenciales o migrar el material de claves a una identidad de servicio; no se ha configurado por seguridad.
+
+## Validación de tarea diaria independiente 2026-10-07
+
+- Compilación Release correcta de la aplicación y de `tools/ScheduledBackup`, sin errores ni advertencias.
+- Suite completa Release: **200/200 pruebas aprobadas**, 0 fallidas y 0 omitidas. Evidencia: `artifacts\validation-20261007\scheduled_backup_runner_validation.trx`.
+- El pipeline de auditoría compilará y ejecutará la ayuda de `tools/ScheduledBackup` en futuras ejecuciones para detectar regresiones de la herramienta.
+- Comprobación directa del servicio usado por la interfaz: reprogramó correctamente la tarea existente a las 19:17 y conservó `DisallowStartIfOnBatteries=False`, `StopIfGoingOnBatteries=False` y `StartWhenAvailable=True`.

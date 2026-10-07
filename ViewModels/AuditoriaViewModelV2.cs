@@ -214,7 +214,8 @@ namespace ClinicaLongevidadApp.ViewModels
 
                 var backupDir = ClinicaLongevidadApp.Services.AppPaths.BackupsDir;
 
-                // persist schedule and register with service
+                // Persist the selected time. If the independent runner is installed,
+                // delegate execution to Windows so closing the WPF app does not stop it.
                 var tsString = ts.ToString(@"hh\:mm");
 
                 // if already scheduled to the same time, ignore duplicate requests
@@ -242,8 +243,16 @@ namespace ClinicaLongevidadApp.ViewModels
 
                 BackupTimeText = tsString;
                 SaveScheduledTime(BackupTimeText);
-                try { WriteVmDebugLog($"ScheduleBackup: registering schedule at {BackupTimeText}"); } catch { }
-                var svcNext = _backupService?.ScheduleDailyBackup(ts, conn, backupDir);
+                DateTime? svcNext = null;
+                if (WindowsScheduledBackupTaskService.IsRunnerInstalled)
+                {
+                    WindowsScheduledBackupTaskService.ScheduleDaily(ts);
+                }
+                else
+                {
+                    try { WriteVmDebugLog($"ScheduleBackup: registering in-process schedule at {BackupTimeText}"); } catch { }
+                    svcNext = _backupService?.ScheduleDailyBackup(ts, conn, backupDir);
+                }
 
                 // compute next run local datetime similarly to BackupService and start VM-level timer
                 try
@@ -281,6 +290,8 @@ namespace ClinicaLongevidadApp.ViewModels
             try
             {
                 _backupService?.CancelScheduledBackup();
+                if (WindowsScheduledBackupTaskService.IsTaskInstalled())
+                    WindowsScheduledBackupTaskService.CancelDaily();
                 IsBackupScheduled = false;
                 NextScheduledRun = null;
                 SaveScheduledTime(string.Empty);
