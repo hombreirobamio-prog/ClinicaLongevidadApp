@@ -153,3 +153,16 @@ Conservar TRX, informes y resultados de verificación con fechas y revisión del
 - Suite completa Release: **200/200 pruebas aprobadas**, 0 fallidas y 0 omitidas. Evidencia: `artifacts\validation-20261007\scheduled_backup_runner_validation.trx`.
 - El pipeline de auditoría compilará y ejecutará la ayuda de `tools/ScheduledBackup` en futuras ejecuciones para detectar regresiones de la herramienta.
 - Comprobación directa del servicio usado por la interfaz: reprogramó correctamente la tarea existente a las 19:17 y conservó `DisallowStartIfOnBatteries=False`, `StopIfGoingOnBatteries=False` y `StartWhenAvailable=True`.
+
+## Supervisión de la copia diaria
+
+El control de solo lectura `scripts/verify_daily_backup_task.ps1` comprueba la tarea de Windows, su último código de salida, la ejecución con batería, la recuperación de una hora perdida, la copia más reciente y sus acompañantes. También recalcula SHA-256; no muestra claves ni verifica el valor del HMAC porque no debe leer material secreto.
+
+Ejecutar después de la hora programada y conservar la salida JSON como evidencia:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify_daily_backup_task.ps1 -MaxAgeHours 24
+if ($LASTEXITCODE -ne 0) { throw 'La supervisión de la copia diaria indicó un problema.' }
+```
+
+El resultado correcto contiene `Healthy: true`, `LastTaskResult: 0`, `Sha256Matches: true`, `HmacExists: true` y `HmacVersionExists: true`. La primera validación automática pendiente debe realizarse tras la ejecución prevista del 08/10/2026 a las 19:17; la comprobación actual acredita la instalación y la ejecución manual, pero no sustituye esa evidencia.
