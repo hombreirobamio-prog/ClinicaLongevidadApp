@@ -527,5 +527,6 @@ No se han realizado en este cierre cambios de código, migraciones, restauracion
 ## Reenvío durable de auditoría 2026-10-08
 
 - Se corrigió la propagación de errores de `WebhookForwarder` y `BlobAuditExporter`. Antes registraban el fallo internamente y devolvían éxito a la cola, que podía borrar una entrega no realizada. Ahora el worker conserva la fila para reintento o la mueve a `dead-letter` tras el máximo de intentos.
+- El webhook crea una solicitud HTTP nueva en cada intento; así sus tres reintentos no reutilizan una solicitud ya enviada.
 - Validación: 6 pruebas dirigidas de cola/webhook aprobadas y compilación Release de la solución correcta, sin advertencias ni errores. Se añadió una prueba que verifica la propagación de un webhook inaccesible.
 - Pendiente: comprobar la deduplicación efectiva por `EventId` en cada destino real; la entrega continúa siendo al menos una vez.

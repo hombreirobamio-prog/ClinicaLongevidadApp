@@ -25,13 +25,6 @@ namespace ClinicaLongevidadApp.Services
         {
             try
             {
-                using var req = new HttpRequestMessage(HttpMethod.Post, _url);
-                req.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-                if (!string.IsNullOrEmpty(signature))
-                {
-                    req.Headers.Add("X-Audit-Signature", signature);
-                }
-
                 // Add simple retry
                 int attempts = 0;
                 Exception? lastError = null;
@@ -40,6 +33,13 @@ namespace ClinicaLongevidadApp.Services
                     attempts++;
                     try
                     {
+                        using var req = new HttpRequestMessage(HttpMethod.Post, _url);
+                        req.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+                        if (!string.IsNullOrEmpty(signature))
+                        {
+                            req.Headers.Add("X-Audit-Signature", signature);
+                        }
+
                         var res = await _http.SendAsync(req);
                         if (res.IsSuccessStatusCode) return;
                         lastError = new HttpRequestException($"Webhook returned {(int)res.StatusCode} ({res.ReasonPhrase}).");
