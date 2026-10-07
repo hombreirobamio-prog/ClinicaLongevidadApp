@@ -51,3 +51,9 @@ La ejecución manual remota `37676469997` sobre el commit `345303c` terminó cor
 - Scripts PowerShell analizados sintácticamente; `git diff --check` sin errores.
 
 Las claves y evidencias de las regresiones son sintéticas. No constituyen aprobación de producción ni un cierre de los hallazgos operativos.
+
+## Segunda ejecución remota firmada de CI 2026-10-07
+
+- La ejecución manual [37687005598](https://github.com/hombreirobamio-prog/ClinicaLongevidadApp/actions/runs/37687005598) sobre el commit `2f6ccad` terminó correctamente.
+- Superó restauración, **200 pruebas**, compilación y arranque de ayuda de `tools/ScheduledBackup`, regresiones de manifiesto/paquete y creación del paquete técnico autenticado.
+- Evidencia descargada: `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\ci-20261007-run-37687005598`. El paquete `audit-tests-40acbca35bdd4fa7b34acb1e52dbf942.zip` tiene SHA-256 `D9BE58419BC25F00D41502C2379443987F5C8C3816242A313DCF468AD885BD0D`; se conservaron un TRX y 13 informes sintéticos de recuperación.

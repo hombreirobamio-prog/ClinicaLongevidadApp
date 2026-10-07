@@ -506,3 +506,9 @@ No se han realizado en este cierre cambios de código, migraciones, restauracion
 - Suite completa Release: **200/200 pruebas aprobadas**, 0 fallidas y 0 omitidas. Evidencia: `artifacts\validation-20261007\scheduled_backup_runner_validation.trx`.
 - El pipeline de auditoría compilará y ejecutará la ayuda de `tools/ScheduledBackup` en futuras ejecuciones para detectar regresiones de la herramienta.
 - Comprobación directa del servicio usado por la interfaz: reprogramó correctamente la tarea existente a las 19:17 y conservó `DisallowStartIfOnBatteries=False`, `StopIfGoingOnBatteries=False` y `StartWhenAvailable=True`.
+
+## Segunda ejecución remota firmada de CI 2026-10-07
+
+- La ejecución manual [37687005598](https://github.com/hombreirobamio-prog/ClinicaLongevidadApp/actions/runs/37687005598) sobre el commit `2f6ccad` terminó correctamente.
+- Superó restauración, **200 pruebas**, compilación y arranque de ayuda de `tools/ScheduledBackup`, regresiones de manifiesto/paquete y creación del paquete técnico autenticado.
+- Evidencia descargada: `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\ci-20261007-run-37687005598`. El paquete `audit-tests-40acbca35bdd4fa7b34acb1e52dbf942.zip` tiene SHA-256 `D9BE58419BC25F00D41502C2379443987F5C8C3816242A313DCF468AD885BD0D`; se conservaron un TRX y 13 informes sintéticos de recuperación.
