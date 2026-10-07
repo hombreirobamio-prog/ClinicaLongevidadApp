@@ -73,6 +73,23 @@ namespace ClinicaLongevidadApp.Tests
             Assert.Equal("integ-test", doc.RootElement.GetProperty("UsuarioAdmin").GetString());
         }
 
+        [Fact]
+        public async Task WebhookFallido_PropagaElError_ParaQueLaColaLoReintente()
+        {
+            var previousUrl = Environment.GetEnvironmentVariable("AUDIT_WEBHOOK_URL");
+            try
+            {
+                Environment.SetEnvironmentVariable("AUDIT_WEBHOOK_URL", "http://127.0.0.1:1/audit");
+                var forwarder = new WebhookForwarder();
+
+                await Assert.ThrowsAsync<InvalidOperationException>(() => forwarder.ForwardEventAsync("{}", "signature"));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AUDIT_WEBHOOK_URL", previousUrl);
+            }
+        }
+
         public void Dispose()
         {
             try { if (File.Exists(_dbPath)) File.Delete(_dbPath); } catch { }

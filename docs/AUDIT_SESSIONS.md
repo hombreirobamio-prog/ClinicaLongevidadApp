@@ -523,3 +523,9 @@ No se han realizado en este cierre cambios de código, migraciones, restauracion
 ## Custodia de evidencias 2026-10-08
 
 - Se designó a **Inés Hombreiro Pazos**, Doctora y responsable de Administración de la clínica, como responsable de custodia de evidencias. También se propone como responsable de aprobación de la política; la aprobación formal, la fecha, el sustituto y las retenciones siguen pendientes.
+
+## Reenvío durable de auditoría 2026-10-08
+
+- Se corrigió la propagación de errores de `WebhookForwarder` y `BlobAuditExporter`. Antes registraban el fallo internamente y devolvían éxito a la cola, que podía borrar una entrega no realizada. Ahora el worker conserva la fila para reintento o la mueve a `dead-letter` tras el máximo de intentos.
+- Validación: 6 pruebas dirigidas de cola/webhook aprobadas y compilación Release de la solución correcta, sin advertencias ni errores. Se añadió una prueba que verifica la propagación de un webhook inaccesible.
+- Pendiente: comprobar la deduplicación efectiva por `EventId` en cada destino real; la entrega continúa siendo al menos una vez.

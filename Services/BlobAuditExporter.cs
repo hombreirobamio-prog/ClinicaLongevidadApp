@@ -66,10 +66,12 @@ namespace ClinicaLongevidadApp.Services
             catch (RequestFailedException ex)
             {
                 LogService.Error("BlobAuditExporter", "Error uploading audit blob", ex);
+                throw;
             }
             catch (Exception ex)
             {
                 LogService.Error("BlobAuditExporter", "Unexpected error exporting audit", ex);
+                throw;
             }
         }
     }
