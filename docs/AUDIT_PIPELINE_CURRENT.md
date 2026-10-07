@@ -57,3 +57,9 @@ Las claves y evidencias de las regresiones son sintéticas. No constituyen aprob
 - La ejecución manual [37687005598](https://github.com/hombreirobamio-prog/ClinicaLongevidadApp/actions/runs/37687005598) sobre el commit `2f6ccad` terminó correctamente.
 - Superó restauración, **200 pruebas**, compilación y arranque de ayuda de `tools/ScheduledBackup`, regresiones de manifiesto/paquete y creación del paquete técnico autenticado.
 - Evidencia descargada: `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\ci-20261007-run-37687005598`. El paquete `audit-tests-40acbca35bdd4fa7b34acb1e52dbf942.zip` tiene SHA-256 `D9BE58419BC25F00D41502C2379443987F5C8C3816242A313DCF468AD885BD0D`; se conservaron un TRX y 13 informes sintéticos de recuperación.
+
+## Tercera ejecución remota firmada de CI 2026-10-08
+
+- La ejecución manual [37698849282](https://github.com/hombreirobamio-prog/ClinicaLongevidadApp/actions/runs/37698849282) sobre el commit `b10a1a0` terminó correctamente.
+- Superó restauración, **203 pruebas**, compilación y ayuda de `tools/ScheduledBackup`, regresiones de manifiesto/paquete y creación del paquete técnico autenticado.
+- Evidencia descargada: `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\ci-20261008-run-37698849282`. El paquete `audit-tests-f930ffecb420474699547c48a1823807.zip` tiene SHA-256 `495196F4CC5310929265C8A0F50BD7EFF5C11DE472369B0F3CBE56FDBA67C38A`; se conservaron un TRX y 13 informes sintéticos de recuperación.

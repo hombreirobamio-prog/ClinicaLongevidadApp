@@ -531,3 +531,8 @@ No se han realizado en este cierre cambios de código, migraciones, restauracion
 - Blob Storage usa un nombre basado en la fecha firmada dentro del payload y el `EventId`. Si un intento anterior creó el blob pero su respuesta se perdió, una repetición acepta solo el objeto existente con el mismo identificador y firma; si difieren, conserva el fallo para revisión.
 - Validación: 8 pruebas dirigidas de cola/webhook aprobadas y compilación Release de la solución correcta, sin advertencias ni errores. Se añadieron pruebas que verifican la propagación de un webhook inaccesible, la coincidencia de metadatos Blob y la estabilidad del destino por fecha firmada.
 - Pendiente: comprobar la deduplicación efectiva por `EventId` en cada destino real; la entrega continúa siendo al menos una vez.
+
+## Tercera validación remota firmada 2026-10-08
+
+- La ejecución [37698849282](https://github.com/hombreirobamio-prog/ClinicaLongevidadApp/actions/runs/37698849282) sobre `b10a1a0` terminó correctamente: **203/203 pruebas**, cero fallos, cero errores y cero omitidas.
+- Validó las correcciones de reintento/deduplicación, la compilación del ejecutor de copia, regresiones de manifiesto/paquete y el paquete técnico autenticado. La evidencia descargada contiene el TRX, 13 informes de recuperación y el ZIP `audit-tests-f930ffecb420474699547c48a1823807.zip`, SHA-256 `495196F4CC5310929265C8A0F50BD7EFF5C11DE472369B0F3CBE56FDBA67C38A`.
