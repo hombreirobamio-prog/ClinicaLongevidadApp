@@ -125,3 +125,9 @@ Conservar TRX, informes y resultados de verificación con fechas y revisión del
 - Resultado: correcto. El SHA-256 de la restauración coincidió con el de la copia fuente (`35B12BB2BB0DEF96737A45118F91EC4A91F7D4F5EC45F8A77F019EF929936B3F`), `PRAGMA integrity_check` devolvió `ok`, la copia previa coincidió con el destino de prueba y el marcador no permaneció tras restaurar.
 - Evidencia local protegida: `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\recovery-drill-20261007_195518\recovery-result.json`.
 - Este ensayo acredita el flujo técnico sobre una copia reciente y aislada. No resuelve las 2.100 verificaciones históricas sin su clave original, ni define RTO/RPO, ni autoriza restaurar sobre producción.
+
+## Paquete de evidencia para custodia independiente 2026-10-07
+
+- Se preparó un paquete sin base de datos ni datos clínicos: `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\recovery-drill-20261007_195518\recovery-evidence-package.zip`.
+- Incluye `recovery-result.json` y `evidence-manifest.json`. Su SHA-256 es `06AFC9038F85CE10B16B4395E45C44A16957E0CD6AD0744D9146D419C72DF337`; el comprobante se guarda junto al ZIP como `.sha256`.
+- Está preparado para copiarlo a una ubicación de custodia independiente. Esa copia externa y su responsable siguen pendientes; no se ha subido información clínica ni una base SQLite.
