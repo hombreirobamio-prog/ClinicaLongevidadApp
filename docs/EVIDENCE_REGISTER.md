@@ -10,7 +10,7 @@
 | 08/10/2026 | Paquete técnico firmado de CI, ejecución `37698849282` | SHA-256 `495196F4CC5310929265C8A0F50BD7EFF5C11DE472369B0F3CBE56FDBA67C38A` | Local: `audit_artifacts\ci-20261008-run-37698849282` | Verificado; 203/203 pruebas aprobadas y 13 informes sintéticos. |
 | 08/10/2026 | Paquete técnico firmado de CI, ejecución `37699559905` | SHA-256 `69B9FA0700D9898721BEDA546368AE7BAA7F3FF4B23A5E7BD8223823D8882A22` | Local: `audit_artifacts\ci-20261008-run-37699559905` | Verificado; 204/204 pruebas aprobadas y 13 informes sintéticos. |
 | 07/10/2026 | Punto de control externo H01 | Id de auditoría `2170`; objeto `audit/anchors/20261007T1330372053720Z_00000000000000002170_2808fcf40f40.json` | Azure Blob Storage privado: `audit-anchors` | Creado y verificado; retención de 30 días aún desbloqueada. |
-| 08/10/2026 | Supervisión de tarea diaria de copias | Resultado de tarea `0`; SHA-256 de copia coincidente; acompañantes presentes | Se conservará el JSON generado por `verify_daily_backup_task.ps1` en `audit_artifacts` tras la ejecución automática de las 19:17 | Comprobación manual correcta; evidencia automática pendiente. |
+| 08/10/2026 | Primera ejecución automática de copia diaria | Resultado de tarea `0`; copia creada a las 01:13; SHA-256 coincidente; HMAC y versión presentes | Local: `audit_artifacts\daily-backup-health-20261008_011354.json` | Ejecución automática y comprobación de salud verificadas. |
 
 ## Alta de una nueva evidencia
 
@@ -22,6 +22,6 @@
 
 ## Pendientes del registro
 
-- Añadir el JSON de salud de la primera copia automática cuando se ejecute a las 19:17 del 08/10/2026.
+- Confirmar ejecuciones automáticas continuadas y registrar sus comprobantes de salud periódicos.
 - La custodia es provisionalmente unipersonal a cargo de Inés Hombreiro Pazos. Registrar un sustituto, fecha de aprobación y periodos de retención cuando se revise la política.
 - Actualizar el estado del anclaje H01 cuando se apruebe y bloquee su retención definitiva.
