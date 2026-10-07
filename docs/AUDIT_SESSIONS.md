@@ -512,3 +512,9 @@ No se han realizado en este cierre cambios de código, migraciones, restauracion
 - La ejecución manual [37687005598](https://github.com/hombreirobamio-prog/ClinicaLongevidadApp/actions/runs/37687005598) sobre el commit `2f6ccad` terminó correctamente.
 - Superó restauración, **200 pruebas**, compilación y arranque de ayuda de `tools/ScheduledBackup`, regresiones de manifiesto/paquete y creación del paquete técnico autenticado.
 - Evidencia descargada: `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\ci-20261007-run-37687005598`. El paquete `audit-tests-40acbca35bdd4fa7b34acb1e52dbf942.zip` tiene SHA-256 `D9BE58419BC25F00D41502C2379443987F5C8C3816242A313DCF468AD885BD0D`; se conservaron un TRX y 13 informes sintéticos de recuperación.
+
+## Supervisión de la copia diaria 2026-10-08
+
+- Se añadió `scripts\verify_daily_backup_task.ps1`, un control de solo lectura de la tarea `ClinicaLongevidadApp\DailyAuthenticatedBackup` y de la evidencia de copia más reciente. Comprueba el código de resultado, ejecución con batería, reanudación tras una hora perdida, antigüedad máxima, presencia de SHA-256/HMAC/versión HMAC y coincidencia del SHA-256.
+- Primera comprobación: correcta. Resultado de tarea `0`, siguiente ejecución `08/10/2026 19:17`, copia más reciente de 1,61 horas y todos los comprobantes presentes, con SHA-256 coincidente.
+- Pendiente: conservar la evidencia de la primera ejecución automática y realizar pruebas de interrupción. La tarea se ejecuta con el usuario Francisco conectado para no custodiar credenciales de servicio.
