@@ -536,3 +536,8 @@ No se han realizado en este cierre cambios de código, migraciones, restauracion
 
 - La ejecución [37698849282](https://github.com/hombreirobamio-prog/ClinicaLongevidadApp/actions/runs/37698849282) sobre `b10a1a0` terminó correctamente: **203/203 pruebas**, cero fallos, cero errores y cero omitidas.
 - Validó las correcciones de reintento/deduplicación, la compilación del ejecutor de copia, regresiones de manifiesto/paquete y el paquete técnico autenticado. La evidencia descargada contiene el TRX, 13 informes de recuperación y el ZIP `audit-tests-f930ffecb420474699547c48a1823807.zip`, SHA-256 `495196F4CC5310929265C8A0F50BD7EFF5C11DE472369B0F3CBE56FDBA67C38A`.
+
+## Cuarta validación remota firmada 2026-10-08
+
+- La ejecución [37699559905](https://github.com/hombreirobamio-prog/ClinicaLongevidadApp/actions/runs/37699559905) sobre `506c0f6` terminó correctamente: **204/204 pruebas**, cero fallos, cero errores y cero omitidas.
+- Validó también el caso de cola conservada tras un webhook inaccesible. La evidencia descargada contiene el TRX, 13 informes de recuperación y el ZIP `audit-tests-938673cbf1c2496f8f92953af26d2ace.zip`, SHA-256 `69B9FA0700D9898721BEDA546368AE7BAA7F3FF4B23A5E7BD8223823D8882A22`.

@@ -6,7 +6,7 @@ Actualización documental: 06/10/2026.
 
 ## Evidencias actuales y alcance
 
-Validación más reciente: pipeline remoto firmado [37698849282](https://github.com/hombreirobamio-prog/ClinicaLongevidadApp/actions/runs/37698849282), con suite Release **203/203 aprobadas**, 0 fallidas, 0 errores y 0 omitidas. Su TRX y paquete técnico se conservan en `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\ci-20261008-run-37698849282`. La compilación previa terminó sin errores ni advertencias. Sustituye las cifras de suite más recientes de esta sección; las cifras inferiores se conservan como evidencia histórica de cada entrega.
+Validación más reciente: pipeline remoto firmado [37699559905](https://github.com/hombreirobamio-prog/ClinicaLongevidadApp/actions/runs/37699559905), con suite Release **204/204 aprobadas**, 0 fallidas, 0 errores y 0 omitidas. Su TRX y paquete técnico se conservan en `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\ci-20261008-run-37699559905`. La compilación previa terminó sin errores ni advertencias. Sustituye las cifras de suite más recientes de esta sección; las cifras inferiores se conservan como evidencia histórica de cada entrega.
 
 La base actual conserva referencias a 12 versiones HMAC y 8 de cifrado, pero sólo queda una versión local activa de cada tipo. No activar Key Vault sobre esa base ni volver a firmar eventos históricos. Los registros sin clave exacta deben conservarse como no verificables. [Evaluación y plan de recuperación](KEY_TRANSITION_ASSESSMENT_2026-10-02.md).
 
