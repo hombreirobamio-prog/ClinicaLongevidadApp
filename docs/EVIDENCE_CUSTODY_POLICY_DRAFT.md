@@ -33,6 +33,8 @@ Conservar evidencias suficientes para comprobar las pruebas, las copias y las re
 5. Para una copia clínica, exigir además autorización específica, destino protegido, cifrado y control de acceso antes de moverla.
 6. No registrar valores de HMAC, claves, contraseñas ni tokens en el registro de custodia.
 
+El [registro de evidencias](EVIDENCE_REGISTER.md) contiene el inventario inicial y debe actualizarse al conservar una evidencia nueva.
+
 ## Registro mínimo de custodia
 
 | Campo | Estado actual |
