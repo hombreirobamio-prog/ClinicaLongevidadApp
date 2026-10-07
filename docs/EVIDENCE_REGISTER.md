@@ -11,6 +11,7 @@
 | 08/10/2026 | Paquete técnico firmado de CI, ejecución `37699559905` | SHA-256 `69B9FA0700D9898721BEDA546368AE7BAA7F3FF4B23A5E7BD8223823D8882A22` | Local: `audit_artifacts\ci-20261008-run-37699559905` | Verificado; 204/204 pruebas aprobadas y 13 informes sintéticos. |
 | 07/10/2026 | Punto de control externo H01 | Id de auditoría `2170`; objeto `audit/anchors/20261007T1330372053720Z_00000000000000002170_2808fcf40f40.json` | Azure Blob Storage privado: `audit-anchors` | Creado y verificado; retención de 30 días aún desbloqueada. |
 | 08/10/2026 | Primera ejecución automática de copia diaria | Resultado de tarea `0`; copia creada a las 01:13; SHA-256 coincidente; HMAC y versión presentes | Local: `audit_artifacts\daily-backup-health-20261008_011354.json` | Ejecución automática y comprobación de salud verificadas. |
+| 08/10/2026 | Ensayo de recuperación de copia tras suspensión | Hora prevista 01:20; tarea reanudada 01:22:55 con resultado `0`; SHA-256, HMAC y versión válidos | Local: `audit_artifacts\daily-backup-resume-health-20261008_012426.json` | Ejecución recuperada tras perder la hora programada. |
 
 ## Alta de una nueva evidencia
 

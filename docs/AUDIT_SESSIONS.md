@@ -519,7 +519,8 @@ No se han realizado en este cierre cambios de código, migraciones, restauracion
 - Primera comprobación: correcta. Resultado de tarea `0`, siguiente ejecución `08/10/2026 19:17`, copia más reciente de 1,61 horas y todos los comprobantes presentes, con SHA-256 coincidente.
 - El control puede recibir `-OutputPath` para conservar automáticamente el JSON de cada comprobación en `audit_artifacts`. Se validó esta salida sobre un archivo temporal y se eliminó al finalizar la prueba.
 - La tarea se ejecutó automáticamente tras reprogramarla para la prueba: a las `01:13` del 08/10/2026 devolvió resultado `0`, creó `ClinicaLongevidad_backup_20261007_231301203.db` y pasó el control de salud. El JSON se conserva en `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\daily-backup-health-20261008_011354.json`.
-- Pendiente: confirmar ejecuciones continuadas y realizar pruebas de interrupción. La tarea se ejecuta con el usuario Francisco conectado para no custodiar credenciales de servicio.
+- Ensayo de interrupción: se programó la tarea para las `01:20`, se suspendió Windows y al reanudarlo la tarea se ejecutó a las `01:22:55`, con resultado `0`. Creó `ClinicaLongevidad_backup_20261007_232257333.db`; SHA-256, HMAC y versión HMAC fueron válidos. Comprobante: `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\daily-backup-resume-health-20261008_012426.json`.
+- Pendiente: confirmar ejecuciones continuadas. La tarea se ejecuta con el usuario Francisco conectado para no custodiar credenciales de servicio.
 
 ## Custodia de evidencias 2026-10-08
 
