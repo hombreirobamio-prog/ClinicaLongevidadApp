@@ -40,7 +40,7 @@ El [registro de evidencias](EVIDENCE_REGISTER.md) contiene el inventario inicial
 | Campo | Estado actual |
 | --- | --- |
 | Responsable de custodia | Inés Hombreiro Pazos, Doctora y responsable de Administración de la clínica. |
-| Sustituto o contacto alternativo | Pendiente de designación. |
+| Sustituto o contacto alternativo | No designado. Custodia unipersonal provisional a cargo de Inés Hombreiro Pazos. |
 | Responsable de aprobación | Propuesta: Inés Hombreiro Pazos. Pendiente de aprobación formal. |
 | Fecha de aprobación de la política | Pendiente. |
 | Retención de evidencias técnicas | Pendiente de aprobación. |
@@ -53,6 +53,8 @@ El [registro de evidencias](EVIDENCE_REGISTER.md) contiene el inventario inicial
 - Tras cada ejecución de la copia diaria, conservar el JSON generado por `verify_daily_backup_task.ps1` cuando corresponda a una comprobación operativa.
 - Revisar trimestralmente las personas autorizadas y la disponibilidad de las ubicaciones de custodia.
 - Registrar inmediatamente cualquier pérdida de medio, discrepancia de hash o acceso no autorizado; no sustituir ni regenerar una evidencia afectada.
+
+La custodia puede mantenerse de forma unipersonal mientras se aprueba esta política. En ese caso, una ausencia o indisponibilidad de la responsable impedirá el relevo de acceso y la entrega de evidencias hasta que se designe una sustitución; este riesgo debe revisarse en la siguiente aprobación.
 
 ## Para aprobar este borrador
 

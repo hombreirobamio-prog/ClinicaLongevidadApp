@@ -21,5 +21,5 @@
 ## Pendientes del registro
 
 - Añadir el JSON de salud de la primera copia automática cuando se ejecute a las 19:17 del 08/10/2026.
-- Registrar persona sustituta, fecha de aprobación y periodos de retención al aprobar la política de custodia.
+- La custodia es provisionalmente unipersonal a cargo de Inés Hombreiro Pazos. Registrar un sustituto, fecha de aprobación y periodos de retención cuando se revise la política.
 - Actualizar el estado del anclaje H01 cuando se apruebe y bloquee su retención definitiva.
