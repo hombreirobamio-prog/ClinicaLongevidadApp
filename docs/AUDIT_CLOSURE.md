@@ -1,8 +1,10 @@
 # Estado de cierre de auditoría
 
-Actualización documental: 06/10/2026.
+Actualización documental: 08/10/2026.
 
 **Estado: auditoría operativa abierta.** Las correcciones y pruebas locales documentadas no constituyen aprobación de producción ni revisión independiente. Este documento sustituye la interpretación de cierre de su versión anterior.
+
+El 08/10/2026 la responsable del proyecto confirmó internamente la revisión de las comprobaciones realizadas y la preparación de la entrega limpia. Esta confirmación cubre el código, las pruebas, las evidencias conservadas, la entrega y su copia de continuidad; no convierte los límites expresamente pendientes en un cierre de producción o una revisión independiente.
 
 ## Evidencias actuales y alcance
 
@@ -43,9 +45,9 @@ Esta validación resuelve el pendiente del resultado `phase5` del 29/09/2026 (90
 
 ## Validación de cierre
 
-- Responsable de aprobación: pendiente de identificar.
-- Fecha de aprobación: pendiente.
-- Revisión independiente y aceptación operativa: pendientes.
+- Confirmación interna de revisión y entrega: 08/10/2026, confirmada por la responsable del proyecto.
+- Revisión independiente y aceptación operativa en el ordenador de destino: pendientes de la instalación final.
+- Límites conservados: retención del anclaje de prueba sin bloqueo definitivo y eventos históricos sin clave exacta declarados no verificables.
 
 ## Referencias históricas del 28/09/2026
 

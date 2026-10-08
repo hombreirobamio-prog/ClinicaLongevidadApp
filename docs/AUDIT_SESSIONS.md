@@ -566,3 +566,4 @@ No se han realizado en este cierre cambios de código, migraciones, restauracion
 - Se generó una entrega autocontenida para Windows x64, sin bases de datos, copias, claves, registros ni resultados de pruebas. Incluye la aplicación, el ejecutor opcional de copias diarias, sus comprobantes SHA-256 y una guía de instalación.
 - Se validó la instalación aislada del ejecutor de copias: crea la tarea diaria y el ejecutor en la ubicación esperada; ambos se eliminaron después de la prueba.
 - La [checklist de traslado](CHECKLIST_TRASLADO_NUEVO_EQUIPO.md) fija el orden de instalación limpia, configuración de claves, primera auditoría y copias iniciales del ordenador de destino.
+- La responsable del proyecto confirmó internamente que las comprobaciones y la preparación de entrega fueron revisadas. Se mantienen visibles los límites de producción, del anclaje de prueba y del histórico no verificable.
