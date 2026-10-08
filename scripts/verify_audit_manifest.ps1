@@ -111,7 +111,12 @@ foreach ($e in $entries) {
     # check companion .sha256 file (required)
     $shaFile = "$filePath.sha256"
     if (Test-Path $shaFile) {
-        try { $shaContent = (Get-Content $shaFile -ErrorAction Stop) -join ""; $shaContent = $shaContent.Trim() } catch { $shaContent = $null }
+        try {
+            $shaContent = (Get-Content $shaFile -ErrorAction Stop) -join "";
+            $shaContent = $shaContent.Trim()
+            $shaMatch = [regex]::Match($shaContent, '(?i)\b[0-9a-f]{64}\b')
+            if ($shaMatch.Success) { $shaContent = $shaMatch.Value.ToLowerInvariant() }
+        } catch { $shaContent = $null }
         if ($shaContent) {
             if ($shaContent.ToLower() -ne $hash) {
                 $errors += "SHAFILE-MISMATCH: $shaFile (content: $shaContent, actual: $hash)"
