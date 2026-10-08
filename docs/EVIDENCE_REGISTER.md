@@ -12,7 +12,7 @@
 | 07/10/2026 | Punto de control externo H01 | Id de auditoría `2170`; objeto `audit/anchors/20261007T1330372053720Z_00000000000000002170_2808fcf40f40.json` | Azure Blob Storage privado: `audit-anchors` | Creado y verificado; retención de 30 días aún desbloqueada. |
 | 08/10/2026 | Primera ejecución automática de copia diaria | Resultado de tarea `0`; copia creada a las 01:13; SHA-256 coincidente; HMAC y versión presentes | Local: `audit_artifacts\daily-backup-health-20261008_011354.json` | Ejecución automática y comprobación de salud verificadas. |
 | 08/10/2026 | Ensayo de recuperación de copia tras suspensión | Hora prevista 01:20; tarea reanudada 01:22:55 con resultado `0`; SHA-256, HMAC y versión válidos | Local: `audit_artifacts\daily-backup-resume-health-20261008_012426.json` | Ejecución recuperada tras perder la hora programada. |
-| 08/10/2026 | Validación de clave heredada | Pareja HMAC/ENC localizada en copia heredada; HMAC validó la base heredada con 0 errores | `legacy_20261006\local\keys` y copia SQLite asociada | Solo lectura; no se registraron valores secretos ni se modificaron datos. |
+| 08/10/2026 | Inventario de claves heredadas | Pareja HMAC/ENC localizada; la copia SQLite asociada tiene 0 registros de auditoría y no acredita firmas | `legacy_20261006\local\keys` y copia SQLite asociada | Solo lectura; no se registraron valores secretos ni se modificaron datos. |
 
 ## Alta de una nueva evidencia
 

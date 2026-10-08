@@ -547,5 +547,5 @@ No se han realizado en este cierre cambios de código, migraciones, restauracion
 ## Recuperación de claves heredadas 2026-10-08
 
 - Se localizaron `hmac.key`/`hmac.key.version` y `enc.key`/`enc.key.version` en una copia heredada. Sus formatos y longitudes son válidos; sus valores no se mostraron, copiaron ni registraron.
-- La clave HMAC se cargó solo en memoria para verificar `legacy_20261006\local\ClinicaLongevidad.db` en modo de solo lectura: `VerifyIntegrity` devolvió cero errores.
-- La comprobación de la misma clave sobre la base actual conserva 2.100 incidencias tempranas por ausencia de hash o versión verificable. No se modificó ninguna base ni se intentó volver a firmar registros.
+- La copia SQLite heredada contiene cero registros de auditoría; aunque `VerifyIntegrity` devolvió cero errores, ese resultado no acredita una firma histórica. La clave HMAC heredada corresponde a su versión exacta presente en la base actual.
+- La comprobación sobre la base actual conserva 2.100 incidencias tempranas por ausencia de hash o versión verificable. Una segunda clave HMAC Base64 de 32 bytes se probó en memoria contra todas las versiones HMAC no vacías de la base actual y no coincidió con ninguna. No se modificó ninguna base ni se intentó volver a firmar registros.

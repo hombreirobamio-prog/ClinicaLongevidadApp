@@ -12,7 +12,7 @@ No se leyó, copió ni registró material de claves durante esta evaluación. Ta
 
 Se localizó una pareja local heredada bajo `legacy_20261006\local\keys`: `hmac.key` con su versión y `enc.key` con su versión. Ambas claves están en Base64 válido de 32 bytes y sus identificadores de versión tienen el formato esperado. Los valores no se mostraron, copiaron ni registraron.
 
-La clave HMAC, cargada únicamente en memoria, validó la copia heredada `legacy_20261006\local\ClinicaLongevidad.db` con cero errores mediante `VerifyIntegrity` en modo de solo lectura. La misma comprobación sobre la base actual no resuelve sus 2.100 incidencias: los primeros registros carecen de hash o de versión exacta verificable. Por ello, esta recuperación acredita la copia heredada, pero no autoriza reescribir ni declarar verificados esos registros incompletos de la base actual.
+La copia heredada `legacy_20261006\local\ClinicaLongevidad.db` no contiene registros de auditoría; su resultado de cero errores en `VerifyIntegrity` no acredita una validación de firmas. La clave HMAC heredada sí coincide con su versión exacta en la base actual, pero esta conserva 2.100 incidencias por registros tempranos sin hash o versión verificable. Además, se evaluó una segunda clave Base64 de 32 bytes localizada fuera de la copia heredada: no coincide con ninguna versión HMAC no vacía de la base actual. Ninguna de estas comprobaciones autoriza reescribir ni declarar verificados los registros incompletos.
 
 Los archivos de acompañamiento de las copias (`.hmac.ver`) identifican una versión para verificar una copia; no contienen por sí mismos el material de esa versión y no permiten reconstruir una clave perdida.
 
