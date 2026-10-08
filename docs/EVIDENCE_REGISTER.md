@@ -14,6 +14,7 @@
 | 08/10/2026 | Ensayo de recuperación de copia tras suspensión | Hora prevista 01:20; tarea reanudada 01:22:55 con resultado `0`; SHA-256, HMAC y versión válidos | Local: `audit_artifacts\daily-backup-resume-health-20261008_012426.json` | Ejecución recuperada tras perder la hora programada. |
 | 08/10/2026 | Inventario de claves heredadas | Pareja HMAC/ENC localizada; la copia SQLite asociada tiene 0 registros de auditoría y no acredita firmas | `legacy_20261006\local\keys` y copia SQLite asociada | Solo lectura; no se registraron valores secretos ni se modificaron datos. |
 | 08/10/2026 | Validación de clave histórica de copia v1 | Una clave HMAC Base64 distinta validó SHA-256 y HMAC de dos copias del manifiesto histórico de versión `v1` | Manifiesto `audit_manifest_20260928_150118.txt` y copias heredadas asociadas | Verificada en memoria; no se registró ni movió material secreto. |
+| 08/10/2026 | Custodia de clave histórica de copia v1 | Se creó el secreto independiente `audit-backup-hmac-v1`, habilitado, en el Key Vault de prueba | Portal de Azure, Key Vault `clinica-longevidad-2026` | No se vinculó a la aplicación ni a la auditoría de eventos; el valor no se registra en este inventario. |
 
 ## Alta de una nueva evidencia
 

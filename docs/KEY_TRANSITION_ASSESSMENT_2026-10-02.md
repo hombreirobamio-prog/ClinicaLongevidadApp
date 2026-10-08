@@ -14,6 +14,8 @@ Se localizó una pareja local heredada bajo `legacy_20261006\local\keys`: `hmac.
 
 La copia heredada `legacy_20261006\local\ClinicaLongevidad.db` no contiene registros de auditoría; su resultado de cero errores en `VerifyIntegrity` no acredita una validación de firmas. La clave HMAC heredada sí coincide con su versión exacta en la base actual, pero esta conserva 2.100 incidencias por registros tempranos sin hash o versión verificable. Además, se evaluó una segunda clave Base64 de 32 bytes localizada fuera de la copia heredada: no coincide con ninguna versión HMAC no vacía de la base actual, pero valida criptográficamente dos copias diferentes del manifiesto histórico `audit_manifest_20260928_150118.txt`, ambas de versión `v1`. Se clasifica por tanto como clave histórica de copias de seguridad v1, no como clave de firma de los eventos actuales. Ninguna de estas comprobaciones autoriza reescribir ni declarar verificados los registros incompletos.
 
+El 08/10/2026 esa clave de recuperación se custodió en el Key Vault de prueba como secreto independiente `audit-backup-hmac-v1`, habilitado y etiquetado para su propósito histórico. No se configuró como clave activa de la aplicación, no se modificó ninguna copia ni base de datos y no aporta una clave para las firmas de eventos pendientes.
+
 Los archivos de acompañamiento de las copias (`.hmac.ver`) identifican una versión para verificar una copia; no contienen por sí mismos el material de esa versión y no permiten reconstruir una clave perdida.
 
 ## Decisión operativa
