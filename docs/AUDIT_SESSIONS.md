@@ -553,3 +553,9 @@ No se han realizado en este cierre cambios de código, migraciones, restauracion
 - Con autorización de la responsable, la clave v1 se añadió al Key Vault de prueba como secreto habilitado `audit-backup-hmac-v1`. Permanece separada de las claves activas `audit-hmac-key` y `audit-enc-key`; no se modificó la configuración de la aplicación ni se mostró su valor.
 - Se buscaron por nombre archivos de claves en Documentos, Escritorio, OneDrive, artefactos locales y la unidad `D:` disponibles en el equipo. No se localizó ninguna pareja adicional; solo permanecen los cuatro archivos ya inventariados de `legacy_20261006`. La búsqueda fue de solo lectura y no abrió ni copió valores.
 - La responsable confirmó que no dispone de otros equipos, medios ni custodias con las claves de firma históricas faltantes. Se conserva el estado de no verificabilidad criptográfica de los eventos afectados; no se recalcularán ni sustituirán firmas y Key Vault no se activará sobre la base actual.
+
+## Limpieza local para entrega 2026-10-08
+
+- Con autorización de la responsable se eliminó `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts`, incluidos base local de pruebas, copias, claves locales, informes, registros y ejecutor de copia programada.
+- Se eliminó la tarea `ClinicaLongevidadApp\DailyAuthenticatedBackup`, las cuatro variables de usuario de claves de auditoría y el archivo local de la clave histórica de copia v1.
+- La comprobación posterior confirmó que no existen la raíz de artefactos, la tarea, el archivo local de clave ni valores en las variables eliminadas. No se modificaron el repositorio, datos remotos ni los recursos de prueba de Azure.
