@@ -243,3 +243,327 @@ No se han realizado en este cierre cambios de código, migraciones, restauracion
 - No se leyó, copió ni documentó material de claves; no se modificaron la base, las copias ni el almacén de prueba. Los archivos `.hmac.ver` de los backups sólo identifican versiones, no recuperan una clave.
 - Se documenta el plan de recuperación en [KEY_TRANSITION_ASSESSMENT_2026-10-02.md](KEY_TRANSITION_ASSESSMENT_2026-10-02.md): recuperar material autorizado, probarlo sobre una copia aislada, mapear cada identificador histórico a una versión inmutable de Key Vault y usar un proveedor de transición sin sustituciones silenciosas.
 - Próximo paso: localizar una custodia segura de las claves históricas. Si no existen, conservar los registros intactos y tratarlos como no verificables criptográficamente; no regenerar ni volver a firmar evidencia histórica.
+
+## Validacion de claves historicas no disponibles 2026-10-06
+
+- Se verificó el comportamiento ya implantado para una versión de clave histórica no disponible: `VerifyIntegrity` la informa explícitamente como `signature unverifiable (exact key version unavailable)`; no la acepta como una firma correcta ni intenta usar la clave actual como sustituta.
+- Validación: prueba Release específica `AuditoriaIntegrityTests.VerifyIntegrity_ReportsUnavailableHistoricalKey`, **1/1 aprobada**, sin fallos ni omitidas.
+- Se actualizó la guía del auditor con la interpretación y actuación obligatoria ante ese resultado: conservar el registro, declararlo no verificable mientras falte la clave y no volver a firmarlo.
+- No se modificaron la base de auditoría, las claves, Key Vault ni la configuración de ejecución.
+
+## Actualizacion de evidencia y ubicaciones 2026-10-06
+
+- Validación Release completa posterior: **196/196 pruebas aprobadas**, sin fallos ni omitidas. Evidencia: [TRX](../artifacts/validation-20261006/full-tests.trx). La compilación previa terminó sin errores ni advertencias.
+- Las salidas nuevas se concentran en `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts`, con subcarpetas `backups`, `keys`, `logs`, `reports\integrity`, `reports\diagnostics`, `exports` y `audit_artifacts`. Los avisos de copia manual y programada indican su ruta completa; el CSV propone `exports`.
+- Las carpetas antiguas de Local, Roaming y ProgramData se trasladaron sin sobrescrituras a `legacy_20261006`, bajo la raíz central y separadas por origen. No se borró contenido.
+- Se actualizaron README, estado de cierre, roadmap y guía del auditor. Sigue bloqueada la activación de Key Vault sobre la base existente por ausencia de claves históricas; no se refirma el historial.
+
+## Copias con evidencia verificable 2026-10-06
+
+- Se corrigió `BackupService`: una copia nueva sólo se devuelve si dispone de SHA-256, HMAC y versión de clave. Si falta la clave de firma o no puede escribirse cualquiera de esas evidencias, se rechaza la operación y se eliminan los artefactos incompletos.
+- Pruebas específicas de copias: **8/8 aprobadas**, sin fallos ni omitidas. La nueva prueba confirma que no se crea una copia cuando falta el material de firma.
+- Validación Release completa posterior: **197/197 pruebas aprobadas**, 0 fallidas y 0 omitidas. Evidencia: [TRX](../artifacts/validation-20261006/full-tests-final.trx).
+
+## Scripts de copia centralizados 2026-10-06
+
+- `scripts/backup.ps1` crea ahora el ZIP directamente en `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\backups`, salvo que se indique otra raíz mediante `-ArtifactsDir`; ya no genera una segunda copia en la ruta antigua.
+- `scripts/generate_companions.ps1` busca las copias nuevas en esa misma subcarpeta. Ninguno de los dos scripts usa `legacy_20261006`.
+- Validación: sintaxis de ambos scripts y sus opciones `-Help` comprobadas sin crear copias ni modificar datos.
+
+## Scripts de preparación y diagnóstico centralizados 2026-10-06
+
+- `scripts/check_audit_readiness.ps1` usa el registro de copias de la raíz activa y devuelve el código de error de `dotnet test` si las pruebas fallan; ya no puede informar una preparación correcta tras una suite fallida.
+- `scripts/run_audit_diagnostics.ps1` resuelve la base y los informes desde la raíz activa. Sus salidas estándar y de error se conservan en `reports\diagnostics`; los informes de integridad se buscan en `reports\integrity`.
+- Validación: sintaxis y opciones `-Help` de ambos scripts comprobadas sin ejecutar pruebas, diagnósticos ni modificar datos.
+
+## Evidencia HMAC con versión obligatoria 2026-10-06
+
+- `scripts/generate_companions.ps1 -IncludeHmac` ya no asigna la versión ficticia `1`. Requiere `AUDIT_HMAC_KEY` y `AUDIT_HMAC_KEY_VERSION` antes de procesar copias.
+- La guía aclara que este procedimiento sólo es apropiado para copias nuevas y que no debe sobrescribir acompañantes de evidencia histórica.
+- Validación: sintaxis y opción `-Help` comprobadas sin procesar copias ni utilizar claves.
+
+## Validación de material HMAC para acompañantes 2026-10-07
+
+- El generador exige que `AUDIT_HMAC_KEY` sea Base64 y descodifique al menos 32 bytes antes de crear cualquier acompañante. Se mantiene la versión obligatoria.
+- Prueba aislada: una clave no Base64 fue rechazada sin crear archivos SHA-256 ni HMAC; los archivos de prueba se eliminaron al terminar.
+
+## Verificación y regresiones de manifiestos 2026-10-07
+
+- `scripts/verify_audit_manifest.ps1` ya no acepta una clave de texto libre ni una versión implícita `local`: exige Base64 de al menos 32 bytes y la versión exacta configurada.
+- Los scripts de regresión de manifiesto y de paquete devuelven ahora el código 0 cuando todos sus casos terminan correctamente; antes podían conservar el código 1 de un caso negativo esperado.
+- Validación: **8/8** escenarios sintéticos de manifiesto y **7/7** de paquete aprobados, ambos con código de salida 0. Se usaron claves y archivos sintéticos.
+
+## Resultado fiable de diagnósticos 2026-10-07
+
+- `scripts/run_audit_diagnostics.ps1` propaga el código de salida del proceso de diagnósticos y devuelve 124 cuando vence el tiempo máximo. Ya no puede declarar una ejecución correcta si el proceso interno falla o se cancela por tiempo.
+- Validación: sintaxis y opción `-Help` comprobadas sin iniciar diagnósticos ni acceder a la base de datos.
+
+## Preparación ejecutada en Release 2026-10-07
+
+- `scripts/check_audit_readiness.ps1` ejecuta ahora `dotnet test --configuration Release`, alineando la comprobación de preparación con la configuración usada por la evidencia de auditoría.
+- Validación: sintaxis y comprobación de formato correctas. La referencia vigente de la suite completa permanece en **197/197** pruebas aprobadas.
+
+## Resumen de informes de integridad centralizado 2026-10-07
+
+- `tools/summarize_integrity_report.ps1` prioriza el informe JSON más reciente de `reports\integrity` bajo la raíz activa; conserva `-Path` para revisar un informe elegido expresamente.
+- Validación: informe JSON sintético resumido correctamente; el archivo temporal se eliminó al finalizar.
+
+## Preparación rechaza copias incompletas 2026-10-07
+
+- `scripts/check_audit_readiness.ps1` devuelve error si una copia registrada en el log no existe o si le faltan SHA-256, HMAC o versión de HMAC. Antes sólo informaba de la ausencia y podía finalizar correctamente.
+- El resumen conserva el estado de presencia de los acompañantes, sin imprimir sus valores HMAC en consola.
+- Validación: sintaxis y opción `-Help` comprobadas sin ejecutar pruebas ni leer copias.
+
+## Acceso completo a informes desde Auditoría 2026-10-07
+
+- El botón `Abrir diagnósticos` de la vista principal abre ahora `reports`, la carpeta común que contiene los informes de integridad y de diagnósticos, en lugar de abrir siempre sólo `reports\integrity`.
+- Validación: compilación de la solución correcta, sin errores ni advertencias.
+
+## ZIP de auditoría en la raíz central 2026-10-07
+
+- `scripts/check_audit_readiness.ps1` busca ahora el ZIP de auditoría en `audit_artifacts` bajo la raíz activa, en lugar de consultar únicamente la raíz del repositorio.
+- Validación: sintaxis, opción `-Help` y comprobación de formato correctas sin ejecutar pruebas ni leer artefactos.
+
+## Informes predeterminados de GenerateIntegrity 2026-10-07
+
+- `tools/GenerateIntegrity` guarda ahora su informe predeterminado en `reports\integrity`, alineado con el servicio, el resumidor y la interfaz. Una ruta indicada explícitamente se conserva sin cambios.
+- Validación: compilación de `GenerateIntegrity` correcta, sin errores ni advertencias.
+
+## Menú del auditor sin rutas compartidas antiguas 2026-10-07
+
+- El menú del auditor detecta y propone ZIPs únicamente desde `audit_artifacts` y `backups` bajo la raíz central de usuario; ya no consulta ProgramData.
+- Validación: compilación de la solución correcta, sin errores ni advertencias.
+
+## Pendiente bloqueado: migración del proveedor local de claves 2026-10-07
+
+- Se identificó que el proveedor local histórico persiste claves en archivos de texto y variables de entorno de usuario. No se modifica ahora porque las claves locales existentes pueden ser necesarias para verificar registros históricos.
+- Retomar sólo después de localizar o recuperar el material histórico autorizado. Preparar y validar entonces una migración controlada a DPAPI o Key Vault sobre una copia aislada, sin modificar la base original ni volver a firmar eventos históricos.
+
+## Migración heredada sin reemplazo automático 2026-10-07
+
+- El arranque sólo copia una base heredada si aún no existe una base central. Se eliminó el reemplazo automático basado en fechas de archivo, que podía sustituir una base activa por una copia antigua.
+- Validación: compilación de la solución correcta, sin errores ni advertencias.
+
+## Key Vault obligatorio sin retorno local 2026-10-07
+
+- Si `REQUIRE_KEYVAULT=1` o el entorno es Production, el arranque exige una inicialización válida de Key Vault y ambos nombres de secreto antes de crear el servicio de auditoría. Una URI inválida ya no permite volver silenciosamente al proveedor local.
+- Validación: compilación de la solución correcta, sin errores ni advertencias.
+
+## Key Vault obligatorio con comprobación de lectura 2026-10-07
+
+- El arranque obligatorio ahora comprueba antes de crear el servicio de auditoría que puede leer HMAC y ENC, que tienen longitudes válidas y que las dos versiones activas están disponibles. Evita arrancar con URI y nombres correctos pero con permisos, contenido o versiones no utilizables.
+- Límite: esta verificación consulta Key Vault durante el arranque obligatorio; si Azure no está disponible o faltan permisos, el arranque se bloquea deliberadamente.
+- Validación: compilación de la solución correcta, sin errores ni advertencias.
+
+## Preparación de anclaje externo H01 2026-10-07
+
+- Se añadió `tools/AnchorAudit`, una herramienta que recibe una base explícita en modo solo lectura y usa Azure Blob Storage con `DefaultAzureCredential`. `write` crea un punto de control nuevo con el Id, EventId y hash final; `verify` comprueba que la fila anclada continúa presente e idéntica.
+- No crea contenedores, no utiliza claves de cuenta y no modifica SQLite. Requiere una cuenta de almacenamiento, un contenedor privado con inmutabilidad y el rol mínimo Storage Blob Data Contributor para la identidad operadora.
+- Validación local: compilación correcta, sin errores ni advertencias; ayuda comprobada. Falta aprovisionar el almacenamiento y ejecutar el primer anclaje verificable.
+
+## Primer anclaje externo H01 verificado 2026-10-07
+
+- Se creó la cuenta de almacenamiento `clongevityaudit2026` en Spain Central, con acceso anónimo y claves de cuenta deshabilitados, y el contenedor privado `audit-anchors`. La identidad operadora recibió el rol Storage Blob Data Contributor.
+- `AnchorAudit write` creó el punto de control `audit/anchors/20261007T1330372053720Z_00000000000000002170_2808fcf40f40.json` para el Id de auditoría 2170. `AnchorAudit verify` confirmó que la fila y su hash continúan presentes. La herramienta abrió SQLite en modo solo lectura.
+- El contenedor tiene retención de 30 días en estado desbloqueado, elegida para la prueba inicial. H01 sigue abierto: la retención definitiva debe aprobarse y bloquearse antes del cierre.
+
+## Copias preventivas de la sesión 2026-10-07
+
+- Se creó una copia coherente de la base activa mediante `BackupService`: `backups\ClinicaLongevidad_backup_20261007_134426025.db`. Incluye sus acompañantes SHA-256, HMAC y versión de HMAC.
+- Se creó además la instantánea de código y documentación `backups\ClinicaLongevidadApp_backup_20261007_154437.zip`.
+- Ambas salidas se comprobaron presentes y con tamaño mayor que cero. La aplicación estaba cerrada al iniciar la copia de SQLite.
+
+## Verificación de integridad de la base activa 2026-10-07
+
+- `tools/VerifyIntegrity` se ejecutó en modo solo lectura contra la base activa, después del primer anclaje externo.
+- Resultado: 2.100 incidencias. Los registros iniciales devuelven hash almacenado vacío y no se pueden verificar sus firmas porque falta la versión histórica exacta de la clave.
+- No se modificó la base ni se intentó volver a firmar ningún evento. La recuperación controlada del material histórico sigue siendo el bloqueo para cerrar esta parte de la auditoría.
+
+## Búsqueda local de claves históricas 2026-10-07
+
+- Se revisaron, sin leer contenido, las rutas de claves central, heredada y de perfil de usuario, además de los nombres de archivo administrados por la aplicación.
+- No se localizaron archivos de claves históricas. Las variables de entorno de usuario contienen únicamente una clave HMAC y una clave de cifrado vigentes, con sus versiones actuales.
+- La siguiente fuente posible es una copia anterior del perfil, otro equipo o un respaldo autorizado de claves. No se creó material nuevo ni se sustituyó ninguna clave.
+
+## Informe de integridad posterior al anclaje 2026-10-07
+
+- Se generó el informe de solo lectura `reports\integrity\IntegrityReport_20261007_post-anchor.json` sobre la base activa. Confirma las 2.100 incidencias ya detectadas por `VerifyIntegrity` y no modifica SQLite.
+- `dotnet run --project tools/GenerateIntegrity` quedó bloqueado sin escribir informe; se terminó únicamente ese proceso. La ejecución directa del binario Release generó el informe correctamente. Este comportamiento de la invocación mediante `dotnet run` queda pendiente de revisión, sin afectar la evidencia generada.
+
+## Prueba aislada de administración de auditoría 2026-10-07
+
+- `tools/AuditAdminManual --self-test` terminó correctamente con datos ficticios. Verificó la cola, las restricciones de rol simuladas, la reversión ante fallo de auditoría y la construcción de la vista WPF.
+- Esta prueba no sustituye la validación manual con usuarios reales ni accedió a la base operativa.
+
+## Validación manual de Auditoría y copia 2026-10-07
+
+- En la aplicación real se comprobó manualmente que la vista de Auditoría carga, se ordena y responde a filtrar y actualizar sin errores.
+- La acción `Copia ahora` creó `backups\ClinicaLongevidad_backup_20261007_164738742.db`. Se confirmó la presencia de la base y de sus acompañantes SHA-256, HMAC y versión HMAC; los cuatro archivos tienen el tamaño esperado o están presentes.
+
+## Corrección de la prueba de copia en un minuto 2026-10-07
+
+- Se corrigió `TestScheduleInOneMinuteCommand`: la espera se ejecutaba en un hilo de fondo y después accedía a propiedades de WPF, por lo que la excepción quedaba oculta y no se creaba la copia.
+- La continuación permanece ahora en el contexto de la interfaz hasta completar la copia única. Compilación Release correcta, sin errores ni advertencias.
+- Falta reiniciar la aplicación y comprobar manualmente el botón `Probar 1 min`; la instancia abierta durante la compilación conservaba el ejecutable Debug anterior.
+
+## Cancelación de copia de prueba pendiente 2026-10-07
+
+- Se añadió `Cancelar prueba`, visible únicamente mientras está pendiente la copia única iniciada con `Probar 1 min`.
+- Cancela la espera de esa prueba y limpia su estado visual sin modificar la programación diaria. El cierre de la vista también cancela una prueba pendiente.
+- Validación: compilación Release correcta, sin errores ni advertencias. Comprobación manual superada después de reiniciar la aplicación: `Probar 1 min` muestra `Cancelar prueba` y la cancelación funciona correctamente.
+- Comprobación manual adicional superada: al cerrar la vista de Auditoría antes del minuto, no se crea ninguna copia posterior.
+
+## Validación manual de programación diaria 2026-10-07
+
+- Se comprobó en la aplicación real que una copia diaria puede programarse, cancelarse antes de su ejecución y ejecutarse correctamente al llegar la hora.
+- La copia programada más reciente fue `backups\ClinicaLongevidad_backup_20261007_171700012.db`; se verificó que conserva SHA-256, HMAC y versión HMAC.
+- Con ello queda completada la comprobación manual de `Copia ahora`, `Programar`, `Cancelar` y `Probar 1 min` para una única programación activa.
+
+## Visibilidad de la siguiente copia 2026-10-07
+
+- El panel de copias muestra ahora de forma permanente `Siguiente copia: <fecha y hora>` cuando existe una programación; muestra `-- Ninguna --` cuando no la hay.
+- Se corrigió el enlace del texto para que sea explícitamente de solo lectura (`OneWay`); evitaba una excepción al heredar un modo bidireccional de la vista.
+- El estado de la programación ya no repite fecha y hora: el indicador fijo `Siguiente copia` es la única referencia temporal visible.
+- Validación: compilación Release correcta, sin errores ni advertencias.
+
+## Acceso restringido al rol seleccionado 2026-10-07
+
+- El acceso desde las pantallas Administración, Recepción y Médico se valida contra el rol almacenado del usuario y su contraseña. El campo descriptivo `Área` ya no puede conceder acceso a una pantalla distinta.
+- La comparación admite las variantes con y sin tildes (`Recepción`/`Recepcion` y `Médico`/`Medico`) para no bloquear usuarios válidos con datos heredados.
+- Validación: 13 pruebas de inicio de sesión superadas, incluida la denegación cuando solo coincide el área; compilación Release correcta, sin errores ni advertencias.
+- Validación manual superada: Auditoría registró `Login.FallidoCredenciales` para una contraseña incorrecta, `Login.AccesoNoAutorizadoArea` al intentar entrar desde Recepción en Administración y `Login.Correcto` para `admin` en Administración.
+- Validación manual adicional superada: el usuario `recepcion` accedió a Recepción (`Login.Correcto`) y cerró su sesión (`Sesion.Cerrar`) antes de que `admin` volviera a entrar en Administración.
+- El área Médico se mantiene visible como función futura, pero mientras no tenga panel operativo ya no publica una sesión ni registra un inicio correcto. Registra `Login.AreaNoDisponible` y muestra el aviso correspondiente.
+- Validación: 14 pruebas de inicio de sesión aprobadas y compilación Release correcta, sin errores ni advertencias.
+
+## Suite completa previa a CI 2026-10-07
+
+- Se ejecutó la suite completa en Release antes de preparar la primera ejecución remota firmada: **200/200 pruebas aprobadas**, 0 fallidas y 0 omitidas.
+- Evidencia local: `artifacts\validation-20261007\tests_20261007_ci_prep.trx`.
+
+## Primera ejecución remota firmada de CI 2026-10-07
+
+- Se publicó el commit `345303c` en `chore/centralize-paths` y se ejecutó manualmente `Audit pipeline` en GitHub Actions: [ejecución 37676469997](https://github.com/hombreirobamio-prog/ClinicaLongevidadApp/actions/runs/37676469997).
+- Resultado: correcto. Se completaron restauración, pruebas, regresiones de manifiesto/paquete y la creación/conservación del paquete técnico autenticado.
+- Evidencia descargada: `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\ci-20261007-run-37676469997`; el ZIP del paquete tiene SHA-256 `40FB7D5E43234C4AC9B98674D2C9B7383629295EC5188D933B47E1FE3A0B5D32` e inventario `tests.trx`, `package-manifest.json` y `package-manifest.hmac`.
+
+## Copia de cierre de sesión 2026-10-07
+
+- Se creó la instantánea de código y documentación `backups\ClinicaLongevidadApp_backup_20261007_203703.zip` bajo `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts`.
+- Verificación: 250842604 bytes; SHA-256 `DF3B11B84CD3FA1F07F5B61699C26AB83298254EC9341F0B9F14C73795C6A1E8`.
+- Tras cerrar la aplicación, se creó además la copia coherente de SQLite `backups\ClinicaLongevidad_backup_20261007_193716798.db` mediante `BackupService`.
+- Se verificó la presencia de la base y sus acompañantes `.sha256`, `.hmac` y `.hmac.ver`; el SHA-256 calculado coincide con el comprobante almacenado.
+
+## Secretos de Key Vault con formato estricto 2026-10-07
+
+- El proveedor de Azure Key Vault acepta únicamente HMAC Base64 de al menos 32 bytes y claves de cifrado Base64 de longitud AES válida (16, 24 o 32 bytes). Ya no convierte valores de texto libre en material de clave.
+- Validación: compilación de la solución correcta, sin errores ni advertencias.
+
+## Backfill con base explícita 2026-10-06
+
+- `scripts/run_backfill.ps1` ya no selecciona una base automáticamente. Requiere `-DbPath` para una copia aislada y autorizada, evitando que el flujo de modificación apunte por defecto a la base activa.
+- La guía prohíbe usarlo para volver a firmar registros históricos.
+- Validación: sintaxis y ayuda correctas; la ejecución sin `-DbPath` devuelve el código 2 sin abrir ni modificar ninguna base.
+
+## Ensayo operativo aislado de recuperación 2026-10-07
+
+- Se restauró la copia autenticada `ClinicaLongevidad_backup_20261007_193716798.db` exclusivamente sobre un destino de prueba aislado; la base activa permaneció cerrada y no se abrió ni modificó.
+- `BackupService.RestoreBackup` comprobó SHA-256, HMAC y versión de clave antes de sustituir el destino. La restauración creó una copia previa del destino y reemplazó un marcador SQLite de prueba.
+- Resultado: correcto. El SHA-256 de la restauración coincidió con el de la copia fuente (`35B12BB2BB0DEF96737A45118F91EC4A91F7D4F5EC45F8A77F019EF929936B3F`), `PRAGMA integrity_check` devolvió `ok`, la copia previa coincidió con el destino de prueba y el marcador no permaneció tras restaurar.
+- Evidencia local protegida: `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\recovery-drill-20261007_195518\recovery-result.json`.
+- Este ensayo acredita el flujo técnico sobre una copia reciente y aislada. No resuelve las 2.100 verificaciones históricas sin su clave original, ni define RTO/RPO, ni autoriza restaurar sobre producción.
+
+## Paquete de evidencia para custodia independiente 2026-10-07
+
+- Se preparó un paquete sin base de datos ni datos clínicos: `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\recovery-drill-20261007_195518\recovery-evidence-package.zip`.
+- Incluye `recovery-result.json` y `evidence-manifest.json`. Su SHA-256 es `06AFC9038F85CE10B16B4395E45C44A16957E0CD6AD0744D9146D419C72DF337`; el comprobante se guarda junto al ZIP como `.sha256`.
+- Está preparado para copiarlo a una ubicación de custodia independiente. Esa copia externa y su responsable siguen pendientes; no se ha subido información clínica ni una base SQLite.
+
+## Custodia externa de evidencia en USB 2026-10-07
+
+- El paquete de evidencia de recuperación, sin base SQLite ni datos clínicos, se copió al medio extraíble `ESD-USB (E:)` en `ClinicaLongevidadApp\AuditEvidence\2026-10-07\`.
+- Se trasladaron `recovery-evidence-package.zip` y su comprobante `.sha256`. La comprobación posterior confirmó el SHA-256 `06AFC9038F85CE10B16B4395E45C44A16957E0CD6AD0744D9146D419C72DF337`, idéntico al original local.
+- La custodia física del medio queda a cargo del responsable que lo retirará. Este soporte contiene solo el paquete de evidencia, no copias de bases de datos clínicas.
+
+## Ensayo de rechazo de evidencia manipulada 2026-10-07
+
+- Se alteró únicamente el comprobante HMAC de una copia aislada de prueba y se intentó restaurar sobre un destino ficticio.
+- Resultado: `BackupService` rechazó la evidencia antes de iniciar una sustitución; el destino conservó exactamente su hash previo y no se creó ninguna copia `pre_restore`.
+- Evidencia: `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\recovery-rejection-drill-20261007_203353\recovery-rejection-result.json`.
+
+## Programación independiente de copia diaria 2026-10-07
+
+- Se añadió `tools/ScheduledBackup`, que crea una copia autenticada de la base central usando el mismo `BackupService`, SHA-256, HMAC y versión de clave que la aplicación.
+- Se publicó el ejecutor en `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\scheduled-backup-runner` y se instaló la tarea de Windows `ClinicaLongevidadApp\DailyAuthenticatedBackup` a las 19:17 diariamente.
+- La tarea acepta ejecución con batería y se configura para ejecutarse cuando Windows vuelva a estar disponible si se perdió la hora prevista. Se ejecuta en modo interactivo con el usuario Francisco, necesario para acceder al material de claves local.
+- Validación manual: ejecución bajo demanda correcta con resultado `0`; generó `ClinicaLongevidad_backup_20261007_204734959.db` junto con `.sha256`, `.hmac` y `.hmac.ver`. El SHA-256 calculado coincide con su comprobante: `68acc881255b0eafcef287b959ae4d392a1de7a3110bd11f45e84627f023a0cb`.
+- Cuando el ejecutor está instalado, los botones `Programar` y `Cancelar` de Auditoría actualizan o eliminan esta tarea de Windows, evitando depender del temporizador de la ventana.
+- El RPO de 24 horas queda condicionado a que el equipo se inicie y el usuario de la tarea haya iniciado sesión. Ejecutar sin inicio de sesión requeriría custodiar credenciales o migrar el material de claves a una identidad de servicio; no se ha configurado por seguridad.
+
+## Validación de tarea diaria independiente 2026-10-07
+
+- Compilación Release correcta de la aplicación y de `tools/ScheduledBackup`, sin errores ni advertencias.
+- Suite completa Release: **200/200 pruebas aprobadas**, 0 fallidas y 0 omitidas. Evidencia: `artifacts\validation-20261007\scheduled_backup_runner_validation.trx`.
+- El pipeline de auditoría compilará y ejecutará la ayuda de `tools/ScheduledBackup` en futuras ejecuciones para detectar regresiones de la herramienta.
+- Comprobación directa del servicio usado por la interfaz: reprogramó correctamente la tarea existente a las 19:17 y conservó `DisallowStartIfOnBatteries=False`, `StopIfGoingOnBatteries=False` y `StartWhenAvailable=True`.
+
+## Segunda ejecución remota firmada de CI 2026-10-07
+
+- La ejecución manual [37687005598](https://github.com/hombreirobamio-prog/ClinicaLongevidadApp/actions/runs/37687005598) sobre el commit `2f6ccad` terminó correctamente.
+- Superó restauración, **200 pruebas**, compilación y arranque de ayuda de `tools/ScheduledBackup`, regresiones de manifiesto/paquete y creación del paquete técnico autenticado.
+- Evidencia descargada: `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\ci-20261007-run-37687005598`. El paquete `audit-tests-40acbca35bdd4fa7b34acb1e52dbf942.zip` tiene SHA-256 `D9BE58419BC25F00D41502C2379443987F5C8C3816242A313DCF468AD885BD0D`; se conservaron un TRX y 13 informes sintéticos de recuperación.
+
+## Supervisión de la copia diaria 2026-10-08
+
+- Se añadió `scripts\verify_daily_backup_task.ps1`, un control de solo lectura de la tarea `ClinicaLongevidadApp\DailyAuthenticatedBackup` y de la evidencia de copia más reciente. Comprueba el código de resultado, ejecución con batería, reanudación tras una hora perdida, antigüedad máxima, presencia de SHA-256/HMAC/versión HMAC y coincidencia del SHA-256.
+- Primera comprobación: correcta. Resultado de tarea `0`, siguiente ejecución `08/10/2026 19:17`, copia más reciente de 1,61 horas y todos los comprobantes presentes, con SHA-256 coincidente.
+- El control puede recibir `-OutputPath` para conservar automáticamente el JSON de cada comprobación en `audit_artifacts`. Se validó esta salida sobre un archivo temporal y se eliminó al finalizar la prueba.
+- La tarea se ejecutó automáticamente tras reprogramarla para la prueba: a las `01:13` del 08/10/2026 devolvió resultado `0`, creó `ClinicaLongevidad_backup_20261007_231301203.db` y pasó el control de salud. El JSON se conserva en `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\daily-backup-health-20261008_011354.json`.
+- Ensayo de interrupción: se programó la tarea para las `01:20`, se suspendió Windows y al reanudarlo la tarea se ejecutó a las `01:22:55`, con resultado `0`. Creó `ClinicaLongevidad_backup_20261007_232257333.db`; SHA-256, HMAC y versión HMAC fueron válidos. Comprobante: `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\daily-backup-resume-health-20261008_012426.json`.
+- Pendiente: confirmar ejecuciones continuadas. La tarea se ejecuta con el usuario Francisco conectado para no custodiar credenciales de servicio.
+
+## Custodia de evidencias 2026-10-08
+
+- Se designó a **Inés Hombreiro Pazos**, Doctora y responsable de Administración de la clínica, como responsable de custodia de evidencias. También se propone como responsable de aprobación de la política; la aprobación formal, la fecha, el sustituto y las retenciones siguen pendientes.
+
+## Reenvío durable de auditoría 2026-10-08
+
+- Se corrigió la propagación de errores de `WebhookForwarder` y `BlobAuditExporter`. Antes registraban el fallo internamente y devolvían éxito a la cola, que podía borrar una entrega no realizada. Ahora el worker conserva la fila para reintento o la mueve a `dead-letter` tras el máximo de intentos.
+- El webhook crea una solicitud HTTP nueva en cada intento; así sus tres reintentos no reutilizan una solicitud ya enviada.
+- Blob Storage usa un nombre basado en la fecha firmada dentro del payload y el `EventId`. Si un intento anterior creó el blob pero su respuesta se perdió, una repetición acepta solo el objeto existente con el mismo identificador y firma; si difieren, conserva el fallo para revisión.
+- Validación: 9 pruebas dirigidas de cola/webhook aprobadas y compilación Release de la solución correcta, sin advertencias ni errores. Se añadieron pruebas que verifican la propagación de un webhook inaccesible, la conservación de la fila por el worker, la coincidencia de metadatos Blob y la estabilidad del destino por fecha firmada.
+- Pendiente: comprobar la deduplicación efectiva por `EventId` en cada destino real; la entrega continúa siendo al menos una vez.
+
+## Tercera validación remota firmada 2026-10-08
+
+- La ejecución [37698849282](https://github.com/hombreirobamio-prog/ClinicaLongevidadApp/actions/runs/37698849282) sobre `b10a1a0` terminó correctamente: **203/203 pruebas**, cero fallos, cero errores y cero omitidas.
+- Validó las correcciones de reintento/deduplicación, la compilación del ejecutor de copia, regresiones de manifiesto/paquete y el paquete técnico autenticado. La evidencia descargada contiene el TRX, 13 informes de recuperación y el ZIP `audit-tests-f930ffecb420474699547c48a1823807.zip`, SHA-256 `495196F4CC5310929265C8A0F50BD7EFF5C11DE472369B0F3CBE56FDBA67C38A`.
+
+## Cuarta validación remota firmada 2026-10-08
+
+- La ejecución [37699559905](https://github.com/hombreirobamio-prog/ClinicaLongevidadApp/actions/runs/37699559905) sobre `506c0f6` terminó correctamente: **204/204 pruebas**, cero fallos, cero errores y cero omitidas.
+- Validó también el caso de cola conservada tras un webhook inaccesible. La evidencia descargada contiene el TRX, 13 informes de recuperación y el ZIP `audit-tests-938673cbf1c2496f8f92953af26d2ace.zip`, SHA-256 `69B9FA0700D9898721BEDA546368AE7BAA7F3FF4B23A5E7BD8223823D8882A22`.
+
+## Recuperación de claves heredadas 2026-10-08
+
+- Se localizaron `hmac.key`/`hmac.key.version` y `enc.key`/`enc.key.version` en una copia heredada. Sus formatos y longitudes son válidos; sus valores no se mostraron, copiaron ni registraron.
+- La copia SQLite heredada contiene cero registros de auditoría; aunque `VerifyIntegrity` devolvió cero errores, ese resultado no acredita una firma histórica. La clave HMAC heredada corresponde a su versión exacta presente en la base actual.
+- La comprobación sobre la base actual conserva 2.100 incidencias tempranas por ausencia de hash o versión verificable. Una segunda clave HMAC Base64 de 32 bytes se probó en memoria contra todas las versiones HMAC no vacías de la base actual y no coincidió con ninguna.
+- El manifiesto histórico `audit_manifest_20260928_150118.txt` identificó la versión `v1`. La segunda clave validó criptográficamente, con SHA-256 y HMAC coincidentes, dos copias de seguridad distintas de esa versión. Se clasifica como clave de recuperación de copias v1; no se modificó ninguna base ni se intentó volver a firmar registros.
+- Con autorización de la responsable, la clave v1 se añadió al Key Vault de prueba como secreto habilitado `audit-backup-hmac-v1`. Permanece separada de las claves activas `audit-hmac-key` y `audit-enc-key`; no se modificó la configuración de la aplicación ni se mostró su valor.
+- Se buscaron por nombre archivos de claves en Documentos, Escritorio, OneDrive, artefactos locales y la unidad `D:` disponibles en el equipo. No se localizó ninguna pareja adicional; solo permanecen los cuatro archivos ya inventariados de `legacy_20261006`. La búsqueda fue de solo lectura y no abrió ni copió valores.
+- La responsable confirmó que no dispone de otros equipos, medios ni custodias con las claves de firma históricas faltantes. Se conserva el estado de no verificabilidad criptográfica de los eventos afectados; no se recalcularán ni sustituirán firmas y Key Vault no se activará sobre la base actual.
+
+## Limpieza local para entrega 2026-10-08
+
+- Con autorización de la responsable se eliminó `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts`, incluidos base local de pruebas, copias, claves locales, informes, registros y ejecutor de copia programada.
+- Se eliminó la tarea `ClinicaLongevidadApp\DailyAuthenticatedBackup`, las cuatro variables de usuario de claves de auditoría y el archivo local de la clave histórica de copia v1.
+- La comprobación posterior confirmó que no existen la raíz de artefactos, la tarea, el archivo local de clave ni valores en las variables eliminadas. No se modificaron el repositorio, datos remotos ni los recursos de prueba de Azure.
+- Se volvió a validar el tratamiento de firmas históricas sin clave mediante cinco pruebas dirigidas: una versión HMAC retirada se informa como `unverifiable`, nunca como íntegra. La prueba creó únicamente un registro local de 1,2 KB, que se eliminó junto con la raíz de artefactos al finalizar.
+
+## Preparación de traslado 2026-10-08
+
+- Se generó una entrega autocontenida para Windows x64, sin bases de datos, copias, claves, registros ni resultados de pruebas. Incluye la aplicación, el ejecutor opcional de copias diarias, sus comprobantes SHA-256 y una guía de instalación.
+- Se validó la instalación aislada del ejecutor de copias: crea la tarea diaria y el ejecutor en la ubicación esperada; ambos se eliminaron después de la prueba.
+- La [checklist de traslado](CHECKLIST_TRASLADO_NUEVO_EQUIPO.md) fija el orden de instalación limpia, configuración de claves, primera auditoría y copias iniciales del ordenador de destino.
+- La responsable del proyecto confirmó internamente que las comprobaciones y la preparación de entrega fueron revisadas. Se mantienen visibles los límites de producción, del anclaje de prueba y del histórico no verificable.

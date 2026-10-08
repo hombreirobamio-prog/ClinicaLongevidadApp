@@ -1,7 +1,21 @@
 param(
-    [string]$DbPath = "$env:LOCALAPPDATA\ClinicaLongevidad.db",
-    [int]$BatchSize = 100
+    [string]$ArtifactsDir = '',
+    [string]$DbPath = '',
+    [int]$BatchSize = 100,
+    [switch]$Help
 )
+
+if ($Help) {
+    Write-Output "Usage: .\scripts\run_backfill.ps1 [-ArtifactsDir <path>] [-DbPath <path>] [-BatchSize <n>]"
+    Write-Output "Runs a preview dry-run and (optionally) applies backfill batches against an explicitly selected isolated audit DB copy."
+    exit 0
+}
+
+# Backfill can alter audit records. Never select the active database implicitly.
+if ([string]::IsNullOrWhiteSpace($DbPath)) {
+    Write-Error 'DbPath is required. Provide the path to an isolated copy of the audit database; the active database is not selected automatically.'
+    exit 2
+}
 
 # Script to preview, dry-run and apply backfill using tools/RotateKeys
 # Usage: powershell -ExecutionPolicy Bypass -File .\scripts\run_backfill.ps1 -DbPath "C:\path\to\ClinicaLongevidad.db" -BatchSize 100

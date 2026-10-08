@@ -1,8 +1,27 @@
- $dt = Get-Date -Format 'yyyyMMdd_HHmmss'
- $dt = Get-Date -Format 'yyyyMMdd_HHmmss'
- $cwd = (Get-Location).Path
- $backupDir = Join-Path $cwd 'backups'
- New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
+param(
+    [string]$BaseDir = (Get-Location).Path,
+    [string]$LocalAppData = $env:LOCALAPPDATA,
+    [string]$ArtifactsDir = '',
+    [switch]$Help
+)
+
+if ($Help) {
+    Write-Output "Usage: .\scripts\backup.ps1 [-BaseDir <path>] [-ArtifactsDir <path>]"
+    Write-Output "Creates a ZIP backup under the active artifacts backups folder."
+    exit 0
+}
+
+$dt = Get-Date -Format 'yyyyMMdd_HHmmss'
+$cwd = $BaseDir
+$artifactRoot = if (-not [string]::IsNullOrWhiteSpace($ArtifactsDir)) {
+    $ArtifactsDir
+} elseif (-not [string]::IsNullOrWhiteSpace($LocalAppData)) {
+    Join-Path $LocalAppData 'ClinicaLongevidadAppArtifacts'
+} else {
+    Join-Path $cwd 'artifacts'
+}
+$backupDir = Join-Path $artifactRoot 'backups'
+New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
  $dest = Join-Path $backupDir ("ClinicaLongevidadApp_backup_$dt.zip")
 
 # Collect files to include in backup, excluding common developer/temp folders and files that are locked
@@ -44,19 +63,34 @@ catch {
 
 Write-Output "BACKUP_CREATED:$dest"
 
-# Also copy the generated ZIP to the user's LocalAppData backups folder so the app can detect it
+# Also attempt to copy recent audit logs into the artifacts logs folder so tools can find diagnostics
 try {
-    $localDest = Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadApp\backups'
-    New-Item -ItemType Directory -Force -Path $localDest | Out-Null
-    Copy-Item -Path $dest -Destination $localDest -Force
-    $localFile = Join-Path $localDest (Split-Path $dest -Leaf)
-    if (Test-Path $localFile) {
-        Write-Output "COPIED_TO_LOCALAPPDATA:$localFile"
+    $targetLogs = Join-Path $artifactRoot 'logs'
+
+    New-Item -ItemType Directory -Force -Path $targetLogs | Out-Null
+
+    # Build candidate paths (avoid Join-Path producing arrays when inputs are unexpected)
+    $candidates = @()
+    if ($targetLogs) {
+        $candidates += "$targetLogs\backup.log"
+        $candidates += "$targetLogs\backup_vm.log"
     }
-    else {
-        Write-Warning "Copy reported success but file not found at destination: $localFile"
+
+    $copiedAny = $false
+    foreach ($path in $candidates | Get-Unique) {
+        if (Test-Path $path) {
+            try {
+                Copy-Item -Path $path -Destination (Join-Path $targetLogs (Split-Path $path -Leaf)) -Force
+                Write-Output "COPIED_LOG:$path -> $targetLogs"
+                $copiedAny = $true
+            }
+            catch { }
+        }
+    }
+    if (-not $copiedAny) {
+        Write-Output "No backup logs found to copy into artifacts logs ($targetLogs)" | Out-Null
     }
 }
 catch {
-    Write-Warning "Failed to copy backup to LocalAppData: $($_.Exception.Message)"
+    Write-Warning "Failed to copy backup logs into artifacts folder: $($_.Exception.Message)"
 }

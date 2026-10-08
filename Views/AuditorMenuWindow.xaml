@@ -22,11 +22,11 @@
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <!-- Increase left column so ZIP names fit better -->
-                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="220"/>
                 <!-- Give more space to central area where buttons and manifest live -->
                 <ColumnDefinition Width="5*"/>
                 <!-- Keep delivery panel narrower but allow resizing with GridSplitter -->
-                <ColumnDefinition Width="0.7*"/>
+                <ColumnDefinition Width="200"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
@@ -61,26 +61,30 @@
             <!-- Central panel with action buttons, manifest UI and log -->
             <!-- Shifted right to align with the top action buttons -->
             <DockPanel Grid.Column="1" Margin="12,0,8,0">
-                <!-- Top action buttons in a single horizontal row; use UniformGrid so all items share equal width -->
-                <UniformGrid DockPanel.Dock="Top" Rows="1" Margin="15,0,0,12">
-                    <Button x:Name="BtnSelectZip" Height="36" Click="BtnSelectZip_Click" Margin="6,0">Seleccionar ZIP y calcular SHA256</Button>
-                    <Button x:Name="BtnDetectZips" Height="36" Click="BtnDetectZips_Click" Margin="6,0">Detectar ZIPs (carpeta estándar)</Button>
-                    <Button x:Name="BtnVerifyManifest" Height="36" Click="BtnVerifyManifest_Click" Margin="6,0">Verificar manifiesto</Button>
-                    <Button x:Name="BtnUnpack" Height="36" Click="BtnUnpack_Click" Margin="6,0">Descomprimir</Button>
-                    <Button x:Name="BtnGenDiag" Height="36" Click="BtnGenDiag_Click" Margin="6,0">Generar diagnósticos</Button>
+                <!-- Keep a single readable action row. Narrow windows can scroll it horizontally. -->
+                <ScrollViewer DockPanel.Dock="Top" Margin="15,0,0,12"
+                              HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Disabled">
+                    <StackPanel Orientation="Horizontal">
+                    <Button x:Name="BtnSelectZip" Width="175" Height="36" Click="BtnSelectZip_Click" Margin="0,0,6,0">Seleccionar ZIP y calcular SHA256</Button>
+                    <Button x:Name="BtnDetectZips" Width="170" Height="36" Click="BtnDetectZips_Click" Margin="0,0,6,0">Detectar ZIPs (carpeta estándar)</Button>
+                    <Button x:Name="BtnVerifyManifest" Width="150" Height="36" Click="BtnVerifyManifest_Click" Margin="0,0,6,0">Verificar manifiesto</Button>
+                    <Button x:Name="BtnUnpack" Width="120" Height="36" Click="BtnUnpack_Click" Margin="0,0,6,0">Descomprimir</Button>
+                    <Button x:Name="BtnGenDiag" Width="155" Height="36" Click="BtnGenDiag_Click" Margin="0,0,6,0">Generar diagnósticos</Button>
                     <!-- manifest actions moved into top row -->
-                    <Button x:Name="BtnLoadManifest" Height="36" Click="BtnLoadManifest_Click" Margin="6,0">Cargar manifiesto</Button>
-                    <Button x:Name="BtnVerifyLoadedManifest" Height="36" Click="BtnVerifyLoadedManifest_Click" Margin="6,0">Verificar manifiesto (local)</Button>
+                    <Button x:Name="BtnLoadManifest" Width="150" Height="36" Click="BtnLoadManifest_Click" Margin="0,0,6,0">Cargar manifiesto</Button>
+                    <Button x:Name="BtnVerifyLoadedManifest" Width="170" Height="36" Click="BtnVerifyLoadedManifest_Click" Margin="0,0,6,0">Verificar manifiesto (local)</Button>
                     <!-- HMAC validation: enter key (base64 or hex) and validate -->
-                    <PasswordBox x:Name="PwdHmacKey" Height="36" Margin="6,0" ToolTip="Clave HMAC (Base64 o hex)"
+                    <PasswordBox x:Name="PwdHmacKey" Width="160" Height="36" Margin="0,0,6,0" ToolTip="Clave HMAC (Base64 o hex)"
                                  Background="{StaticResource Brush_PanelOscuro}"
                                  Foreground="{StaticResource Brush_TextoClaro}"
                                  BorderBrush="{StaticResource Brush_PrincipalAzul}"
                                  BorderThickness="1"
                                  Padding="6"
                                  VerticalContentAlignment="Center" />
-                    <Button x:Name="BtnValidateHmac" Height="36" Click="BtnValidateHmac_Click" Margin="6,0">Validar HMAC</Button>
-                </UniformGrid>
+                    <Button x:Name="BtnValidateHmac" Width="135" Height="36" Click="BtnValidateHmac_Click">Validar HMAC</Button>
+                    </StackPanel>
+                </ScrollViewer>
 
                 <!-- manifest buttons removed (now in top actions row) -->
 
@@ -142,11 +146,11 @@
             </DockPanel>
 
             <!-- Delivery panel -->
-            <StackPanel Grid.Column="2" Grid.Row="0" Margin="8,36,0,0" Width="220" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <StackPanel Grid.Column="2" Grid.Row="0" Margin="8,36,0,0" Width="190" HorizontalAlignment="Left" VerticalAlignment="Top">
                 <TextBlock Text="Entrega" FontWeight="SemiBold" Foreground="{StaticResource Brush_TextoClaro}" Margin="0,0,0,8" HorizontalAlignment="Center"/>
                 <TextBlock Text="Auditor:" Foreground="{StaticResource Brush_TextoClaro}" Margin="6,4,6,2" />
                 <Grid Margin="0,0,6,8">
-                    <TextBox x:Name="TxtAuditorName" Width="188" Height="24" Background="{StaticResource Brush_PanelOscuro}" Foreground="{StaticResource Brush_TextoClaro}"
+                    <TextBox x:Name="TxtAuditorName" Width="170" Height="24" Background="{StaticResource Brush_PanelOscuro}" Foreground="{StaticResource Brush_TextoClaro}"
                              BorderBrush="{StaticResource Brush_PrincipalAzul}" BorderThickness="1" Padding="4" HorizontalAlignment="Left" />
                     <TextBlock Text="Nombre" IsHitTestVisible="False" Foreground="#FF8A8A8A" Margin="6,0,0,0" VerticalAlignment="Center">
                         <TextBlock.Style>

@@ -111,7 +111,12 @@ foreach ($e in $entries) {
     # check companion .sha256 file (required)
     $shaFile = "$filePath.sha256"
     if (Test-Path $shaFile) {
-        try { $shaContent = (Get-Content $shaFile -ErrorAction Stop) -join ""; $shaContent = $shaContent.Trim() } catch { $shaContent = $null }
+        try {
+            $shaContent = (Get-Content $shaFile -ErrorAction Stop) -join "";
+            $shaContent = $shaContent.Trim()
+            $shaMatch = [regex]::Match($shaContent, '(?i)\b[0-9a-f]{64}\b')
+            if ($shaMatch.Success) { $shaContent = $shaMatch.Value.ToLowerInvariant() }
+        } catch { $shaContent = $null }
         if ($shaContent) {
             if ($shaContent.ToLower() -ne $hash) {
                 $errors += "SHAFILE-MISMATCH: $shaFile (content: $shaContent, actual: $hash)"
@@ -179,15 +184,17 @@ foreach ($e in $entries) {
         if (-not $e.HMACVersion) { $authProblems += "HMACVER-MISSING-IN-MANIFEST: $filePath" }
         if (-not (Test-Path -LiteralPath $hmacVerFile)) { $authProblems += "HMACVER-MISSING-FILE: $hmacVerFile" }
         $configuredVersion = $env:AUDIT_HMAC_KEY_VERSION
-        if (-not $configuredVersion) { $configuredVersion = 'local' }
-        if (-not $env:AUDIT_HMAC_KEY) { $authProblems += "HMAC-UNVERIFIABLE: key unavailable for $filePath" }
+        if ([string]::IsNullOrWhiteSpace($configuredVersion)) { $authProblems += "HMAC-UNVERIFIABLE: exact key version unavailable for $filePath" }
+        elseif (-not $env:AUDIT_HMAC_KEY) { $authProblems += "HMAC-UNVERIFIABLE: key unavailable for $filePath" }
         elseif (-not $e.HMACVersion -or $configuredVersion -cne $e.HMACVersion) {
             $authProblems += "HMAC-UNVERIFIABLE: exact key version unavailable for $filePath"
         }
         else {
             try {
-                try { $keyBytes = [Convert]::FromBase64String($env:AUDIT_HMAC_KEY) }
-                catch { $keyBytes = [System.Text.Encoding]::UTF8.GetBytes($env:AUDIT_HMAC_KEY) }
+                $keyBytes = [Convert]::FromBase64String($env:AUDIT_HMAC_KEY)
+                if ($keyBytes.Length -lt 32) {
+                    throw 'HMAC key is shorter than 32 bytes.'
+                }
                 $mac = [System.Security.Cryptography.HMACSHA256]::new($keyBytes)
                 try {
                     $stream = [System.IO.File]::OpenRead($filePath)
@@ -200,7 +207,7 @@ foreach ($e in $entries) {
                 }
                 else { Write-Host "  HMAC cryptographically verified." -ForegroundColor Green }
             }
-            catch { $authProblems += "HMAC-UNVERIFIABLE: computation failed for $filePath" }
+            catch { $authProblems += "HMAC-UNVERIFIABLE: configured key is invalid or computation failed for $filePath" }
         }
         if ($RequireHmac) { $errors += $authProblems }
         else { $warnings += $authProblems }

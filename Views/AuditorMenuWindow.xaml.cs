@@ -1,5 +1,4 @@
 using System;
-using System;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -14,6 +13,8 @@ using System.Windows.Media;
 using System.ComponentModel;
 using Microsoft.Win32;
 
+#pragma warning disable CS8600
+
 namespace ClinicaLongevidadApp.Views
 {
     public partial class AuditorMenuWindow : Window
@@ -22,7 +23,9 @@ namespace ClinicaLongevidadApp.Views
         private string? _lastManifestPath;
         private string _lastHash = string.Empty;
         // Indicates the HMAC key was auto-loaded from secure storage during window load
+#pragma warning disable CS0414
         private bool _hmacKeyAutoLoaded = false;
+#pragma warning restore CS0414
 
         public AuditorMenuWindow()
         {
@@ -49,10 +52,22 @@ namespace ClinicaLongevidadApp.Views
                     dg.LayoutUpdated += AuditGrid_LayoutUpdated;
                 }
 
-                // Register sorter for the audit DataGrid(s) so they display continuous timestamps
-                try { RegisterAuditGridSorter(); } catch { }
             }
             catch { }
+        }
+
+        private static IEnumerable<string> FindAuditZips()
+        {
+            var folders = new[]
+            {
+                ClinicaLongevidadApp.Services.AppPaths.AuditArtifactsDir,
+                ClinicaLongevidadApp.Services.AppPaths.BackupsDir
+            };
+
+            return folders
+                .Where(Directory.Exists)
+                .SelectMany(folder => Directory.GetFiles(folder, "*.zip"))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
         }
 
         private void AuditGrid_LayoutUpdated(object? sender, EventArgs e)
@@ -113,6 +128,8 @@ namespace ClinicaLongevidadApp.Views
             }
         }
 
+#pragma warning restore CS8600
+
         private void BtnSaveHmacKey_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -131,8 +148,26 @@ namespace ClinicaLongevidadApp.Views
                     return;
                 }
 
-                ClinicaLongevidadApp.Services.HmacKeyStore.SaveEncryptedKey(keyBytes);
-                TxtLogAppend("Clave HMAC guardada de forma segura en LocalAppData.");
+                // Save encrypted key on Windows using DPAPI; on other platforms fall back to plaintext .txt
+                if (OperatingSystem.IsWindows())
+                {
+                    ClinicaLongevidadApp.Services.HmacKeyStore.SaveEncryptedKey(keyBytes);
+                    TxtLogAppend("Clave HMAC guardada de forma segura en LocalAppData.");
+                }
+                else
+                {
+                    try
+                    {
+                        var path = ClinicaLongevidadApp.Services.HmacKeyStore.GetKeyFilePath();
+                        var txtPath = System.IO.Path.ChangeExtension(path, ".txt");
+                        System.IO.File.WriteAllText(txtPath, Convert.ToBase64String(keyBytes));
+                        TxtLogAppend("Clave HMAC guardada en texto plano en LocalAppData (.txt) — sólo para entornos no-Windows.");
+                    }
+                    catch (Exception ex)
+                    {
+                        TxtLogAppend("Error guardando clave HMAC en texto plano: " + ex.Message);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -307,6 +342,33 @@ namespace ClinicaLongevidadApp.Views
             return existing + ", " + add;
         }
 
+        private void OpenFileInExplorer(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return;
+
+            try
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    var psi = new System.Diagnostics.ProcessStartInfo("explorer", "/select,\"" + path + "\"") { UseShellExecute = true };
+                    System.Diagnostics.Process.Start(psi);
+                }
+                else if (OperatingSystem.IsLinux())
+                {
+                    var dir = System.IO.Path.GetDirectoryName(path) ?? path;
+                    var psi = new System.Diagnostics.ProcessStartInfo("xdg-open", dir) { UseShellExecute = true };
+                    System.Diagnostics.Process.Start(psi);
+                }
+                else if (OperatingSystem.IsMacOS())
+                {
+                    var dir = System.IO.Path.GetDirectoryName(path) ?? path;
+                    var psi = new System.Diagnostics.ProcessStartInfo("open", dir) { UseShellExecute = true };
+                    System.Diagnostics.Process.Start(psi);
+                }
+            }
+            catch { }
+        }
+
         private static bool TryDecodeKey(string text, out byte[] bytes)
         {
             bytes = Array.Empty<byte>();
@@ -397,7 +459,12 @@ namespace ClinicaLongevidadApp.Views
         {
             try
             {
-                var dlg = new OpenFileDialog { Filter = "Manifest text|*.txt", Title = "Seleccionar manifiesto de auditoría" };
+                var dlg = new OpenFileDialog
+                {
+                    Filter = "Manifest text|*.txt",
+                    Title = "Seleccionar manifiesto de auditoría",
+                    InitialDirectory = ClinicaLongevidadApp.Services.AppPaths.AuditManifestsDir
+                };
                 if (dlg.ShowDialog(this) != true) return;
 
                 _lastManifestPath = dlg.FileName;
@@ -528,30 +595,7 @@ namespace ClinicaLongevidadApp.Views
             try
             {
                 // Auto-detect and preselect the most recent ZIP if available
-                var found = new System.Collections.Generic.List<string>();
-
-                try
-                {
-                    var local = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
-                    var p2 = System.IO.Path.Combine(local, "ClinicaLongevidadApp", "backups");
-                    if (System.IO.Directory.Exists(p2)) found.AddRange(System.IO.Directory.GetFiles(p2, "*.zip"));
-                }
-                catch { }
-
-                try
-                {
-                    var common = System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData);
-                    var p1 = System.IO.Path.Combine(common, "ClinicaLongevidadApp", "AuditArtifacts");
-                    if (System.IO.Directory.Exists(p1)) found.AddRange(System.IO.Directory.GetFiles(p1, "*.zip"));
-                }
-                catch { }
-
-                try
-                {
-                    var desktop = System.Environment.GetFolderPath(System.Environment.SpecialFolder.DesktopDirectory);
-                    if (System.IO.Directory.Exists(desktop)) found.AddRange(System.IO.Directory.GetFiles(desktop, "audit-artifacts*.zip"));
-                }
-                catch { }
+                var found = FindAuditZips().ToList();
 
                 if (found.Count > 0)
                 {
@@ -576,7 +620,8 @@ namespace ClinicaLongevidadApp.Views
                 // Try to auto-load an encrypted HMAC key from LocalAppData (DPAPI-protected) or a plaintext fallback
                 try
                 {
-                    if (ClinicaLongevidadApp.Services.HmacKeyStore.TryLoadDecryptedKey(out var keyBytes))
+                    // Use platform guard for DPAPI operations (Windows-only)
+                    if (OperatingSystem.IsWindows() && ClinicaLongevidadApp.Services.HmacKeyStore.TryLoadDecryptedKey(out var keyBytes))
                     {
                         var pb = this.FindName("PwdHmacKey") as System.Windows.Controls.PasswordBox;
                         if (pb != null)
@@ -609,30 +654,7 @@ namespace ClinicaLongevidadApp.Views
             try
             {
                 LstDetectedZips.Items.Clear();
-                var found = new System.Collections.Generic.List<string>();
-
-                try
-                {
-                    var common = System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData);
-                    var p1 = System.IO.Path.Combine(common, "ClinicaLongevidadApp", "AuditArtifacts");
-                    if (System.IO.Directory.Exists(p1)) found.AddRange(System.IO.Directory.GetFiles(p1, "*.zip"));
-                }
-                catch { }
-
-                try
-                {
-                    var local = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
-                    var p2 = System.IO.Path.Combine(local, "ClinicaLongevidadApp", "backups");
-                    if (System.IO.Directory.Exists(p2)) found.AddRange(System.IO.Directory.GetFiles(p2, "*.zip"));
-                }
-                catch { }
-
-                try
-                {
-                    var desktop = System.Environment.GetFolderPath(System.Environment.SpecialFolder.DesktopDirectory);
-                    if (System.IO.Directory.Exists(desktop)) found.AddRange(System.IO.Directory.GetFiles(desktop, "audit-artifacts*.zip"));
-                }
-                catch { }
+                var found = FindAuditZips();
 
                 // Remove duplicates and add to listbox
                 foreach (var f in System.Linq.Enumerable.Distinct(found))
@@ -691,12 +713,11 @@ namespace ClinicaLongevidadApp.Views
                     var hash = await Task.Run(() => ComputeSha256(_selectedZipPath));
                     _lastHash = hash;
                     TxtLogAppend($"SHA256: {hash}");
-                    try
-                    {
-                        var psiOpen = new System.Diagnostics.ProcessStartInfo("explorer", "/select,\"" + _selectedZipPath + "\"") { UseShellExecute = true };
-                        System.Diagnostics.Process.Start(psiOpen);
-                    }
-                    catch { }
+                        try
+                        {
+                            OpenFileInExplorer(_selectedZipPath);
+                        }
+                        catch { }
                 }
             }
             catch (System.Exception ex)
@@ -728,8 +749,11 @@ namespace ClinicaLongevidadApp.Views
                     return;
                 }
 
-                var psiOpen = new System.Diagnostics.ProcessStartInfo("explorer", "/select,\"" + path + "\"") { UseShellExecute = true };
-                System.Diagnostics.Process.Start(psiOpen);
+                try
+                {
+                    OpenFileInExplorer(path);
+                }
+                catch { }
                 try
                 {
                     var ev = new ClinicaLongevidadApp.Models.AuditoriaEvento
@@ -762,21 +786,19 @@ namespace ClinicaLongevidadApp.Views
                     RestoreDirectory = true
                 };
 
-                // Prefer local AppData backups, then common application data audit artifacts, then Desktop
+                // Prefer the active artifact folders used by the application.
                 try
                 {
-                    var local = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
-                    var preferLocal = System.IO.Path.Combine(local, "ClinicaLongevidadApp", "backups");
+                    var preferLocal = ClinicaLongevidadApp.Services.AppPaths.AuditArtifactsDir;
                     if (System.IO.Directory.Exists(preferLocal))
                     {
                         dlg.InitialDirectory = preferLocal;
                     }
                     else
                     {
-                        var common = System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData);
-                        var prefer = System.IO.Path.Combine(common, "ClinicaLongevidadApp", "AuditArtifacts");
+                        var prefer = ClinicaLongevidadApp.Services.AppPaths.BackupsDir;
                         if (System.IO.Directory.Exists(prefer)) dlg.InitialDirectory = prefer;
-                        else dlg.InitialDirectory = System.Environment.GetFolderPath(System.Environment.SpecialFolder.DesktopDirectory);
+                        else dlg.InitialDirectory = ClinicaLongevidadApp.Services.AppPaths.BaseDir;
                     }
                 }
                 catch
@@ -835,7 +857,7 @@ namespace ClinicaLongevidadApp.Views
 
                 // Ejecuta el script de verificación existente (scripts\verify_audit_manifest.ps1)
                 var scriptName = "verify_audit_manifest.ps1";
-                string scriptPath = null;
+                string? scriptPath = null;
                 var tried = new List<string>();
 
                 // Candidate: app base + scripts
@@ -927,7 +949,7 @@ namespace ClinicaLongevidadApp.Views
                 System.IO.Compression.ZipFile.ExtractToDirectory(_selectedZipPath, dest);
                 TxtLogAppend("ZIP descomprimido en: " + dest);
                 // Abrir carpeta
-                try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer", '"' + dest + '"') { UseShellExecute = true }); } catch { }
+                try { OpenFileInExplorer(dest); } catch { }
             }
             catch (Exception ex)
             {
@@ -1061,8 +1083,7 @@ namespace ClinicaLongevidadApp.Views
         {
             try
             {
-                var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-                var outPath = System.IO.Path.Combine(desktop, "audit_delivery_summary_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".txt");
+                var outPath = System.IO.Path.Combine(ClinicaLongevidadApp.Services.AppPaths.AuditArtifactsDir, "audit_delivery_summary_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".txt");
                 File.WriteAllText(outPath, TxtLog.Text ?? string.Empty, Encoding.UTF8);
                 TxtLogAppend("Impreso guardado en: " + outPath);
                 try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer", "/select,\"" + outPath + "\"") { UseShellExecute = true }); } catch { }
@@ -1100,8 +1121,18 @@ namespace ClinicaLongevidadApp.Views
                 _lastHash = string.Empty;
 
                 // Clear UI fields
-                try { (this.FindName("PwdHmacKey") as System.Windows.Controls.PasswordBox).Password = string.Empty; } catch { }
-                try { (this.FindName("TxtAuditorName") as System.Windows.Controls.TextBox).Text = string.Empty; } catch { }
+                try
+                {
+                    var pbBox = this.FindName("PwdHmacKey") as System.Windows.Controls.PasswordBox;
+                    if (pbBox != null) pbBox.Password = string.Empty;
+                }
+                catch { }
+                try
+                {
+                    var txt = this.FindName("TxtAuditorName") as System.Windows.Controls.TextBox;
+                    if (txt != null) txt.Text = string.Empty;
+                }
+                catch { }
                 _hmacKeyAutoLoaded = false;
 
                 // Attempt to remove known temporary folders created by the app
@@ -1145,6 +1176,7 @@ namespace ClinicaLongevidadApp.Views
 
                 var rx = new Regex("(\\d{1,2}\\/\\d{1,2}\\/\\d{4})\\s+(\\d{1,2}:\\d{2}:\\d{2})");
 
+                #pragma warning disable CS8600
                 DateTime? ExtractTimestamp(string line)
                 {
                     if (string.IsNullOrWhiteSpace(line)) return null;
@@ -1153,7 +1185,9 @@ namespace ClinicaLongevidadApp.Views
                     var parts = line.Trim().Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
                     if (parts.Length >= 2)
                     {
-                        var candidate = parts[0] + " " + parts[1];
+                        var p0 = parts.Length > 0 ? parts[0] ?? string.Empty : string.Empty;
+                        var p1 = parts.Length > 1 ? parts[1] ?? string.Empty : string.Empty;
+                        var candidate = (p0 + " " + p1).Trim();
                         var fmts = new[] { "dd/MM/yyyy H:mm:ss", "d/M/yyyy H:mm:ss", "dd/MM/yyyy HH:mm:ss", "d/M/yyyy HH:mm:ss" };
                         if (DateTime.TryParseExact(candidate, fmts, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
                             return dt;
@@ -1171,6 +1205,7 @@ namespace ClinicaLongevidadApp.Views
 
                     return null;
                 }
+                #pragma warning restore CS8600
 
                 var sorted = lines.OrderByDescending(l => ExtractTimestamp(l) ?? DateTime.MinValue).ToArray();
 

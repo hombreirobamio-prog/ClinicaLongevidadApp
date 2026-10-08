@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
 using System.Windows;
 using ClinicaLongevidadApp.Commands;
 using ClinicaLongevidadApp.Models;
@@ -124,6 +126,25 @@ namespace ClinicaLongevidadApp.ViewModels
                     return;
                 }
 
+                if (!AreaTienePanelDisponible(areaSeleccionada))
+                {
+                    RegistrarEventoLogin(
+                        accion: "Login.AreaNoDisponible",
+                        usuarioAdmin: usuario.NombreUsuario,
+                        usuarioAfectado: areaSeleccionada,
+                        ok: false,
+                        detalles: AuditoriaDetallesHelper.CrearJson(
+                            ("Area", areaSeleccionada),
+                            ("Usuario", usuario.NombreUsuario)));
+
+                    MostrarMensaje(
+                        $"El área {areaSeleccionada} todavía no está disponible.",
+                        "Área no disponible",
+                        MessageBoxImage.Information);
+
+                    return;
+                }
+
                 RegistrarEventoLogin(
                     accion: "Login.Correcto",
                     usuarioAdmin: usuario.NombreUsuario,
@@ -244,15 +265,34 @@ namespace ClinicaLongevidadApp.ViewModels
             Models.Usuario usuario,
             string areaSeleccionada)
         {
+            // The first screen grants access according to the user's role.  The
+            // separate Area field is descriptive (for example, "Laboratorio")
+            // and must never grant access to Administración, Recepción or Médico.
             return string.Equals(
-                       usuario.Rol?.Trim(),
-                       areaSeleccionada,
-                       StringComparison.OrdinalIgnoreCase)
-                   ||
-                   string.Equals(
-                       usuario.Area?.Trim(),
-                       areaSeleccionada,
-                       StringComparison.OrdinalIgnoreCase);
+                NormalizarRol(usuario.Rol),
+                NormalizarRol(areaSeleccionada),
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string NormalizarRol(string? valor)
+        {
+            string texto = (valor ?? string.Empty).Trim().Normalize(NormalizationForm.FormD);
+            var resultado = new StringBuilder(texto.Length);
+
+            foreach (char caracter in texto)
+            {
+                if (CharUnicodeInfo.GetUnicodeCategory(caracter) != UnicodeCategory.NonSpacingMark)
+                {
+                    resultado.Append(caracter);
+                }
+            }
+
+            return resultado.ToString().Normalize(NormalizationForm.FormC);
+        }
+
+        private static bool AreaTienePanelDisponible(string areaSeleccionada)
+        {
+            return NormalizarRol(areaSeleccionada).ToUpperInvariant() is "ADMINISTRACION" or "RECEPCION";
         }
 
         private static void AbrirDashboard(string areaSeleccionada)

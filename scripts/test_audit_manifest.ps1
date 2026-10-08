@@ -59,3 +59,5 @@ finally {
     $env:AUDIT_HMAC_KEY = $previousKey
     $env:AUDIT_HMAC_KEY_VERSION = $previousVersion
 }
+
+exit 0

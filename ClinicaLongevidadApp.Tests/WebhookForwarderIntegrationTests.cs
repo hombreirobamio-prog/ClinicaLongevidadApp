@@ -2,6 +2,7 @@ using ClinicaLongevidadApp.Models;
 using ClinicaLongevidadApp.Services;
 using Microsoft.Data.Sqlite;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -71,6 +72,80 @@ namespace ClinicaLongevidadApp.Tests
             Assert.Equal("restore", doc.RootElement.GetProperty("Accion").GetString());
             Assert.Equal("RotateKeys", doc.RootElement.GetProperty("Modulo").GetString());
             Assert.Equal("integ-test", doc.RootElement.GetProperty("UsuarioAdmin").GetString());
+        }
+
+        [Fact]
+        public async Task WebhookFallido_PropagaElError_ParaQueLaColaLoReintente()
+        {
+            var previousUrl = Environment.GetEnvironmentVariable("AUDIT_WEBHOOK_URL");
+            try
+            {
+                Environment.SetEnvironmentVariable("AUDIT_WEBHOOK_URL", "http://127.0.0.1:1/audit");
+                var forwarder = new WebhookForwarder();
+
+                await Assert.ThrowsAsync<InvalidOperationException>(() => forwarder.ForwardEventAsync("{}", "signature"));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AUDIT_WEBHOOK_URL", previousUrl);
+            }
+        }
+
+        [Fact]
+        public async Task Worker_ConservaElEvento_CuandoElWebhookNoEstaDisponible()
+        {
+            var previousUrl = Environment.GetEnvironmentVariable("AUDIT_WEBHOOK_URL");
+            try
+            {
+                Environment.SetEnvironmentVariable("AUDIT_WEBHOOK_URL", "http://127.0.0.1:1/audit");
+                var forwarder = new WebhookForwarder();
+                var service = new AuditoriaService(_conn, forwarder: forwarder);
+                service.RegistrarEvento(new AuditoriaEvento
+                {
+                    UsuarioAdmin = "integ-test",
+                    Accion = "webhook-failure",
+                    Modulo = "Tests",
+                    Detalles = "{}"
+                });
+
+                using var worker = new AuditForwardQueueWorker(_conn, forwarder, null, 60);
+                await worker.ProcessOnceAsync();
+
+                using var connection = new SqliteConnection(_conn);
+                connection.Open();
+                using var command = connection.CreateCommand();
+                command.CommandText = "SELECT COUNT(1), MAX(Attempts) FROM AuditForwardQueue;";
+                using var reader = command.ExecuteReader();
+                Assert.True(reader.Read());
+                Assert.Equal(1L, reader.GetInt64(0));
+                Assert.Equal(1L, reader.GetInt64(1));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AUDIT_WEBHOOK_URL", previousUrl);
+            }
+        }
+
+        [Fact]
+        public void BlobExistente_SoloSeAcepta_SiEventIdYFirmaCoinciden()
+        {
+            var metadata = new Dictionary<string, string>
+            {
+                ["eventId"] = "event-123",
+                ["signature"] = "signature-123"
+            };
+
+            Assert.True(BlobAuditExporter.MetadataMatchesExistingEvent(metadata, "event-123", "signature-123"));
+            Assert.False(BlobAuditExporter.MetadataMatchesExistingEvent(metadata, "event-123", "other-signature"));
+            Assert.False(BlobAuditExporter.MetadataMatchesExistingEvent(metadata, "other-event", "signature-123"));
+        }
+
+        [Fact]
+        public void BlobDeEvento_UsaLaFechaFirmada_ParaMantenerElMismoDestinoEnReintentos()
+        {
+            var payload = "{\"FechaHora\":\"2026-10-07T23:59:59.0000000Z\"}";
+
+            Assert.Equal("20261007/event-123.json", BlobAuditExporter.BuildBlobName("event-123", payload));
         }
 
         public void Dispose()

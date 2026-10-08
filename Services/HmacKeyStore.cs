@@ -1,18 +1,19 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
+using System.Runtime.Versioning;
 
 namespace ClinicaLongevidadApp.Services
 {
     public static class HmacKeyStore
     {
-        // Ruta: %LOCALAPPDATA%\ClinicaLongevidadApp\keys\hmac.key
+        // Ruta centralizada por AppPaths: %LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\keys\hmac.key
         public static string GetKeyFilePath()
         {
-            var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            return Path.Combine(local, "ClinicaLongevidadApp", "keys", "hmac.key");
+            return Path.Combine(AppPaths.KeysDir, "hmac.key");
         }
 
+        [SupportedOSPlatform("windows")]
         public static void SaveEncryptedKey(byte[] keyBytes)
         {
             var path = GetKeyFilePath();
@@ -23,6 +24,7 @@ namespace ClinicaLongevidadApp.Services
             File.WriteAllBytes(path, protectedBytes);
         }
 
+        [SupportedOSPlatform("windows")]
         public static bool TryLoadDecryptedKey(out byte[] keyBytes)
         {
             keyBytes = Array.Empty<byte>();

@@ -1,18 +1,52 @@
 param(
-    [switch]$IncludeHmac
+    [string]$BaseDir = (Get-Location).Path,
+    [string]$LocalAppData = $env:LOCALAPPDATA,
+    [string]$ArtifactsDir = '',
+    [switch]$IncludeHmac,
+    [switch]$Help
 )
 
-# Generate companion files (.sha256 and optionally .hmac/.hmac.ver) for backups
-$localBackups = Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadApp\backups'
-$artifactBackups = Join-Path (Get-Location) 'artifacts\backups'
+if ($Help) {
+    Write-Output "Usage: .\scripts\generate_companions.ps1 [-ArtifactsDir <path>] [-IncludeHmac]"
+    Write-Output "Generates .sha256 and optional .hmac/.hmac.ver companion files for backups in the active artifacts folder."
+    exit 0
+}
+
+# Generate companion files (.sha256 and optionally .hmac/.hmac.ver) for backups.
+$artifactRoot = if (-not [string]::IsNullOrWhiteSpace($ArtifactsDir)) {
+    $ArtifactsDir
+} elseif (-not [string]::IsNullOrWhiteSpace($LocalAppData)) {
+    Join-Path $LocalAppData 'ClinicaLongevidadAppArtifacts'
+} else {
+    Join-Path $BaseDir 'artifacts'
+}
+$localBackups = Join-Path $artifactRoot 'backups'
 
 $paths = @()
 if (Test-Path $localBackups) { $paths += $localBackups }
-if (Test-Path $artifactBackups) { $paths += $artifactBackups }
 
 if ($paths.Count -eq 0) {
-    Write-Error "No backup paths found. Checked: $localBackups and $artifactBackups"
+    Write-Error "No backup path found. Checked: $localBackups"
     exit 2
+}
+
+if ($IncludeHmac -and [string]::IsNullOrWhiteSpace($env:AUDIT_HMAC_KEY)) {
+    throw 'AUDIT_HMAC_KEY is required when -IncludeHmac is specified.'
+}
+if ($IncludeHmac -and [string]::IsNullOrWhiteSpace($env:AUDIT_HMAC_KEY_VERSION)) {
+    throw 'AUDIT_HMAC_KEY_VERSION is required when -IncludeHmac is specified.'
+}
+$hmacKeyBytes = $null
+if ($IncludeHmac) {
+    try {
+        $hmacKeyBytes = [Convert]::FromBase64String($env:AUDIT_HMAC_KEY)
+    }
+    catch {
+        throw 'AUDIT_HMAC_KEY must be Base64-encoded when -IncludeHmac is specified.'
+    }
+    if ($hmacKeyBytes.Length -lt 32) {
+        throw 'AUDIT_HMAC_KEY must decode to at least 32 bytes when -IncludeHmac is specified.'
+    }
 }
 
 foreach ($p in $paths) {
@@ -38,20 +72,13 @@ foreach ($p in $paths) {
         Write-Host "Wrote: $($f + '.sha256')"
 
         if ($IncludeHmac) {
-            if (-not $env:AUDIT_HMAC_KEY) { Write-Host "AUDIT_HMAC_KEY not set; skipping HMAC for $f"; continue }
-            # Support either a base64-encoded key or a raw string key. Convert to a byte[] for the HMAC constructor.
-            try {
-                $kb = [Convert]::FromBase64String($env:AUDIT_HMAC_KEY)
-            }
-            catch {
-                $kb = [System.Text.Encoding]::UTF8.GetBytes($env:AUDIT_HMAC_KEY)
-            }
             $data = [System.IO.File]::ReadAllBytes($f)
             # Use the typed constructor (avoids PowerShell expanding the byte[] into many arguments)
-            $h = [System.Security.Cryptography.HMACSHA256]::new($kb)
+            $h = [System.Security.Cryptography.HMACSHA256]::new($hmacKeyBytes)
             $mac = $h.ComputeHash($data)
             ([BitConverter]::ToString($mac) -replace '-','').ToLower() | Out-File -FilePath ($f + '.hmac') -Encoding ascii
-            ($env:AUDIT_HMAC_KEY_VERSION ?? '1') | Out-File -FilePath ($f + '.hmac.ver') -Encoding ascii
+            $ver = $env:AUDIT_HMAC_KEY_VERSION
+            $ver | Out-File -FilePath ($f + '.hmac.ver') -Encoding ascii
             Write-Host "Wrote: $($f + '.hmac') and .hmac.ver"
         }
     }

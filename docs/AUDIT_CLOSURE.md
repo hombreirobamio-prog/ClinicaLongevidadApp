@@ -1,10 +1,18 @@
 # Estado de cierre de auditoría
 
-Actualización documental: 30/09/2026.
+Actualización documental: 08/10/2026.
 
 **Estado: auditoría operativa abierta.** Las correcciones y pruebas locales documentadas no constituyen aprobación de producción ni revisión independiente. Este documento sustituye la interpretación de cierre de su versión anterior.
 
+El 08/10/2026 la responsable del proyecto confirmó internamente la revisión de las comprobaciones realizadas y la preparación de la entrega limpia. Esta confirmación cubre el código, las pruebas, las evidencias conservadas, la entrega y su copia de continuidad; no convierte los límites expresamente pendientes en un cierre de producción o una revisión independiente.
+
 ## Evidencias actuales y alcance
+
+Validación más reciente: pipeline remoto firmado [37699559905](https://github.com/hombreirobamio-prog/ClinicaLongevidadApp/actions/runs/37699559905), con suite Release **204/204 aprobadas**, 0 fallidas, 0 errores y 0 omitidas. Su TRX y paquete técnico se conservan en `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\ci-20261008-run-37699559905`. La compilación previa terminó sin errores ni advertencias. Sustituye las cifras de suite más recientes de esta sección; las cifras inferiores se conservan como evidencia histórica de cada entrega.
+
+La base actual conserva referencias a 12 versiones HMAC y 8 de cifrado, pero sólo queda una versión local activa de cada tipo. No activar Key Vault sobre esa base ni volver a firmar eventos históricos. Los registros sin clave exacta deben conservarse como no verificables. [Evaluación y plan de recuperación](KEY_TRANSITION_ASSESSMENT_2026-10-02.md).
+
+Los artefactos nuevos de la aplicación se guardan bajo `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts`, en las subcarpetas `backups`, `keys`, `logs`, `reports\integrity`, `reports\diagnostics`, `exports` y `audit_artifacts`. Los datos de ubicaciones anteriores se archivan separadamente y no se mezclan con los archivos activos.
 
 Validación posterior de administración de cola: nueva ejecución Release sobre el estado actual, sin errores ni warnings emitidos, **188/188 aprobadas**, 0 fallidas y 0 omitidas. [TRX de validación](../artifacts/audit-fixes-20260930/h04-cola-admin-validation/tests.trx). No sustituye la validación manual WPF ni de permisos en despliegue.
 
@@ -17,8 +25,8 @@ Validación posterior de administración de cola: nueva ejecución Release sobre
 - H04, pacientes (30/09/2026): crear, editar y eliminar pacientes confirman el cambio y su evento en la transacción común. Se retiran los eventos de éxito anticipados y duplicados de recepción. Compilación Release y suite de esa entrega: **118/118 pruebas aprobadas**, sin fallidas ni omitidas. [TRX de pacientes y regresiones](../artifacts/audit-fixes-20260930/h04-pacientes-full/tests.trx). Pendiente validación manual de UI; no implica atomicidad del flujo completo de creación de una cita.
 - H04, festivos (30/09/2026): crear, actualizar y eliminar el festivo y su evento se confirman en una sola transacción SQLite. Si falla negocio, firma, inserción de auditoría o COMMIT, se revierte la operación. Compilación Release y suite final: **103/103 pruebas aprobadas**, sin omitidas. [TRX actual](../artifacts/audit-fixes-20260930/h04-final/tests.trx). No cierra H04 en otros módulos ni acredita validación manual de UI.
 - [Correcciones realizadas](AUDIT_REMEDIATION_2026-09-29.md): propagación de errores de auditoría, controles de restauración, cifrado y payload v2, entre otras correcciones. Sus apartados de entregas posteriores actualizan el estado de los pendientes iniciales.
-- [Pipeline y paquete técnico](AUDIT_PIPELINE_CURRENT.md): documenta 78/78 pruebas .NET, 8/8 escenarios de manifiestos y 7/7 escenarios de paquetes aprobados en la tercera entrega. El paquete `technical-tests-only` no acredita operación en producción. La ejecución remota de CI sigue pendiente.
-- [Ensayo aislado de recuperación](AUDIT_RECOVERY_DRILL_2026-09-29.md): ocho escenarios sintéticos satisfactorios y suite final de 86/86 pruebas aprobadas, sin omitidas. Evidencia: [TRX final](../artifacts/audit-fixes-20260929/phase4-final/tests.trx). Los informes de recuperación se conservan por separado y todavía no forman parte del ZIP técnico firmado.
+- [Pipeline y paquete técnico](AUDIT_PIPELINE_CURRENT.md): documenta 78/78 pruebas .NET, 8/8 escenarios de manifiestos y 7/7 escenarios de paquetes aprobados en la tercera entrega. Las ejecuciones remotas manuales `37676469997` y `37687005598` completaron correctamente pruebas, regresiones y la creación/conservación del paquete `technical-tests-only`; la segunda también compiló el ejecutor de copia independiente. No acredita operación en producción.
+- [Ensayo aislado de recuperación](AUDIT_RECOVERY_DRILL_2026-09-29.md): escenarios sintéticos satisfactorios y suite final de 86/86 pruebas aprobadas, sin omitidas. Evidencia: [TRX final](../artifacts/audit-fixes-20260929/phase4-final/tests.trx). Los informes de recuperación se conservan por separado y todavía no forman parte del ZIP técnico firmado.
 
 El 30/09/2026 se compiló en Release y se ejecutó la suite anterior a las entregas de H04: **91/91 pruebas aprobadas**, sin fallidas ni omitidas. Evidencia: [TRX de la suite](../artifacts/audit-fixes-20260930/full-suite/tests.trx). El escenario `active-sqlite` también pasó de forma aislada: [TRX individual](../artifacts/audit-fixes-20260930/active-sqlite/tests.trx).
 
@@ -26,20 +34,20 @@ Esta validación resuelve el pendiente del resultado `phase5` del 29/09/2026 (90
 
 ## Pendientes para el cierre
 
-- H01: anclaje externo que permita detectar truncado final o sustitución completa de la cadena.
+- H01: `tools/AnchorAudit` está verificado con Azure Blob Storage privado para crear y comprobar un punto de control externo. La cuenta no admite claves compartidas y la identidad operadora usa Storage Blob Data Contributor. El contenedor tiene una retención de 30 días que permanece desbloqueada por decisión operativa, por lo que todavía falta aprobar y bloquear la retención definitiva antes de declarar H01 cerrado.
 - H03: verificar permisos con usuarios reales sobre el binario desplegado.
-- H04: continuar con rotación según el inventario y verificar los destinos de reenvío. Login exige auditar antes de publicar sesión, sin transacción común entre memoria y SQLite. Festivos, pacientes, citas, usuarios, horarios y administración de cola ya confirman sus cambios y eventos en una transacción; no se afirma atomicidad global de la aplicación.
-- H07/H08: comprobar la configuración efectiva de cifrado y claves en producción y la compatibilidad de consumidores con payload v2. Las correcciones de nuevas escrituras no protegen retrospectivamente los metadatos v1.
-- H09: configurar y ejecutar CI remoto; completar el paquete operativo firmado con backup autenticado, informe de integridad nuevo, resultado de recuperación y custodia independiente.
-- Recuperación: realizar un ensayo autorizado sobre una copia representativa y protegida, con claves históricas reales, objetivos RTO/RPO acordados y aplicación detenida. Revisar interrupciones y atomicidad de la sustitución; el ensayo sintético no valida restaurar sobre una base activa.
+- H04: no activar la rotación con Key Vault sobre la base existente hasta recuperar las claves históricas o aprobar formalmente el tratamiento de los registros no verificables. Los errores de webhook y Blob ya se propagan a la cola para reintento y posterior `dead-letter`, evitando que una entrega fallida se borre como éxito. Verificar aún los destinos de reenvío reales y su deduplicación por `EventId`. Login exige auditar antes de publicar sesión, sin transacción común entre memoria y SQLite. Festivos, pacientes, citas, usuarios, horarios y administración de cola ya confirman sus cambios y eventos en una transacción; no se afirma atomicidad global de la aplicación.
+- H07/H08: una pareja de claves heredadas localizada el 08/10/2026 corresponde a una versión de la base actual; su copia SQLite asociada no contiene registros de auditoría y no acredita validación histórica. Los 2.100 registros tempranos sin hash o versión exacta de la base actual siguen sin poder verificarse y deben conservarse intactos. Una segunda clave HMAC localizada no coincide con las versiones HMAC no vacías de la base actual, pero verifica dos copias históricas de versión `v1`. Falta comprobar la configuración efectiva de cifrado y claves en producción y la compatibilidad de consumidores con payload v2. Las correcciones de nuevas escrituras no protegen retrospectivamente los metadatos v1.
+- H09: CI remoto y el paquete técnico autenticado ya están verificados. El resultado de recuperación ya está empaquetado en una evidencia sin datos clínicos; sigue pendiente completar el paquete operativo con backup autenticado, informe de integridad nuevo. La evidencia de recuperación ya tiene una copia externa verificada en USB; el [borrador de custodia](EVIDENCE_CUSTODY_POLICY_DRAFT.md) prepara el registro de responsable y conservación, que siguen pendientes de aprobación.
+- Recuperación: el 07/10/2026 se completó un ensayo técnico aislado con una copia reciente autenticada, validación HMAC/SHA-256, sustitución de un destino de prueba y `integrity_check=ok`. Se adoptan provisionalmente RTO de 4 horas y RPO de 24 horas; la evidencia ya cuenta con copia externa verificada. La tarea independiente diaria ya cubre el caso de aplicación cerrada con el usuario conectado. El 08/10/2026 se verificaron su primera ejecución automática y la recuperación tras suspensión: la tarea prevista a las 01:20 se reanudó a las 01:22:55 con resultado `0` y comprobantes SHA-256/HMAC/versionado válidos. Falta confirmar ejecuciones continuadas y validar el tratamiento de los registros que requieren claves históricas; no se ha restaurado sobre una base activa ni de producción.
 - Verificar alertas, retención, acceso y custodia de evidencias.
-- H10: completar inventario y revisión independiente, con identidad del responsable, fecha y evidencias verificadas antes de declarar el cierre.
+- H10: el [inventario inicial de evidencias](EVIDENCE_REGISTER.md) ya identifica los paquetes, anclaje y la primera copia automática verificada. Falta definir sustituto/retenciones, confirmar las ejecuciones continuadas y realizar la revisión independiente con fecha y aceptación antes de declarar el cierre.
 
 ## Validación de cierre
 
-- Responsable de aprobación: pendiente de identificar.
-- Fecha de aprobación: pendiente.
-- Revisión independiente y aceptación operativa: pendientes.
+- Confirmación interna de revisión y entrega: 08/10/2026, confirmada por la responsable del proyecto.
+- Revisión independiente y aceptación operativa en el ordenador de destino: pendientes de la instalación final.
+- Límites conservados: retención del anclaje de prueba sin bloqueo definitivo y eventos históricos sin clave exacta declarados no verificables.
 
 ## Referencias históricas del 28/09/2026
 

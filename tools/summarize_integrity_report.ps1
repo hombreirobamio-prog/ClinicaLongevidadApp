@@ -1,8 +1,25 @@
 param(
-    [string]$Path = "C:\ProgramData\ClinicaLongevidadApp\AuditIntegrityReports\IntegrityReport_20260924_110728_id1.json",
+    [string]$Path = "",
     [int]$MaxErrors = 20,
     [int]$MaxSurround = 10
 )
+
+if ([string]::IsNullOrWhiteSpace($Path)) {
+    # Prefer the active centralized integrity reports folder, then allow a
+    # report placed in the current directory for CI or manual use.
+    $candidates = @("IntegrityReport_CI.json", "IntegrityReport_*.json")
+    $found = $null
+    $centralReports = Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadAppArtifacts\reports\integrity'
+    foreach ($folder in @($centralReports, (Get-Location).Path)) {
+        foreach ($pat in $candidates) {
+            $files = Get-ChildItem -Path $folder -Filter $pat -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTimeUtc -Descending
+            if ($files -and $files.Count -gt 0) { $found = $files[0].FullName; break }
+        }
+        if ($found) { break }
+    }
+    if (-not $found) { Write-Error "Report not found. Checked: $centralReports and the current folder. Provide -Path to a report file."; exit 2 }
+    $Path = $found
+}
 if (-not (Test-Path $Path)) { Write-Error "Report not found: $Path"; exit 2 }
 try {
     $text = Get-Content -Raw -LiteralPath $Path

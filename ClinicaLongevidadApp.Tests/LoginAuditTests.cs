@@ -189,5 +189,47 @@ public sealed class LoginAuditTests : IDisposable
             new LoginViewModel("Recepción", null!, _ => user, _ => opened++));
         AssertDenied();
     }
+
+    [Fact]
+    public void AreaDescriptivaNoConcedeAccesoCuandoElRolNoCoincide()
+    {
+        user.Area = "Administración";
+
+        Create("Administración").EntrarCommand.Execute(null);
+
+        AssertDenied();
+        var item = Assert.Single(audit.GetRecentAudits(10));
+        Assert.Equal("Login.AccesoNoAutorizadoArea", item.Accion);
+        Assert.Empty(audit.VerifyIntegrity());
+    }
+
+    [Fact]
+    public void RolSinAcentoPermiteElAccesoAlAreaEquivalente()
+    {
+        user.Rol = "Recepcion";
+        user.Area = "Laboratorio";
+
+        Create("Recepción").EntrarCommand.Execute(null);
+
+        Assert.Equal(user.NombreUsuario, Sesion.UsuarioActual);
+        Assert.Equal(1, opened);
+        Assert.Single(audit.GetRecentAudits(10));
+        Assert.Empty(audit.VerifyIntegrity());
+    }
+
+    [Fact]
+    public void AreaSinPanelNoPublicaSesionAunqueLasCredencialesSeanValidas()
+    {
+        user.Rol = "Médico";
+        user.Area = "Medicina General";
+
+        Create("Médico").EntrarCommand.Execute(null);
+
+        AssertDenied();
+        var item = Assert.Single(audit.GetRecentAudits(10));
+        Assert.Equal("Login.AreaNoDisponible", item.Accion);
+        Assert.Equal("ERROR", item.Resultado);
+        Assert.Empty(audit.VerifyIntegrity());
+    }
 }
 

@@ -374,3 +374,9 @@ _audit_inspect/
 # Keep docs and scripts tracked
 !docs/
 !scripts/
+
+# Local database and audit exports (do not commit DB files)
+ClinicaLongevidad.db
+IntegrityReport_local.json
+*.db
+out_*.json

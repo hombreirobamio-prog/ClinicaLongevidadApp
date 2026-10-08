@@ -8,10 +8,7 @@ namespace ClinicaLongevidadApp.Services
     /// </summary>
     public static class LogService
     {
-        private static readonly string LogDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "ClinicaLongevidadApp",
-            "Logs");
+        private static readonly string LogDirectory = AppPaths.LogsDir;
 
         static LogService()
         {

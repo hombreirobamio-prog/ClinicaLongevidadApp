@@ -25,36 +25,40 @@ namespace ClinicaLongevidadApp.Services
         {
             try
             {
-                using var req = new HttpRequestMessage(HttpMethod.Post, _url);
-                req.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-                if (!string.IsNullOrEmpty(signature))
-                {
-                    req.Headers.Add("X-Audit-Signature", signature);
-                }
-
                 // Add simple retry
                 int attempts = 0;
+                Exception? lastError = null;
                 while (attempts < 3)
                 {
                     attempts++;
                     try
                     {
+                        using var req = new HttpRequestMessage(HttpMethod.Post, _url);
+                        req.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+                        if (!string.IsNullOrEmpty(signature))
+                        {
+                            req.Headers.Add("X-Audit-Signature", signature);
+                        }
+
                         var res = await _http.SendAsync(req);
                         if (res.IsSuccessStatusCode) return;
+                        lastError = new HttpRequestException($"Webhook returned {(int)res.StatusCode} ({res.ReasonPhrase}).");
                     }
                     catch (Exception ex)
                     {
+                        lastError = ex;
                         LogService.Warning("WebhookForwarder", $"Attempt {attempts} failed: {ex.Message}");
                     }
 
                     await Task.Delay(500);
                 }
 
-                LogService.Error("WebhookForwarder", "Failed to forward audit event after retries", null);
+                throw new InvalidOperationException("Failed to forward audit event after retries.", lastError);
             }
             catch (Exception ex)
             {
                 LogService.Error("WebhookForwarder", "Unexpected error forwarding audit event", ex);
+                throw;
             }
         }
     }

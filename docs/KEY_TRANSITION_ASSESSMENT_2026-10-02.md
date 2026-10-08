@@ -8,6 +8,16 @@ La base de auditoría existente contiene eventos con 12 versiones HMAC no vacía
 
 No se leyó, copió ni registró material de claves durante esta evaluación. Tampoco se modificó la base de auditoría, el almacén de claves ni las copias de seguridad.
 
+## Hallazgo posterior: copia heredada localizada (08/10/2026)
+
+Se localizó una pareja local heredada bajo `legacy_20261006\local\keys`: `hmac.key` con su versión y `enc.key` con su versión. Ambas claves están en Base64 válido de 32 bytes y sus identificadores de versión tienen el formato esperado. Los valores no se mostraron, copiaron ni registraron.
+
+La copia heredada `legacy_20261006\local\ClinicaLongevidad.db` no contiene registros de auditoría; su resultado de cero errores en `VerifyIntegrity` no acredita una validación de firmas. La clave HMAC heredada sí coincide con su versión exacta en la base actual, pero esta conserva 2.100 incidencias por registros tempranos sin hash o versión verificable. Además, se evaluó una segunda clave Base64 de 32 bytes localizada fuera de la copia heredada: no coincide con ninguna versión HMAC no vacía de la base actual, pero valida criptográficamente dos copias diferentes del manifiesto histórico `audit_manifest_20260928_150118.txt`, ambas de versión `v1`. Se clasifica por tanto como clave histórica de copias de seguridad v1, no como clave de firma de los eventos actuales. Ninguna de estas comprobaciones autoriza reescribir ni declarar verificados los registros incompletos.
+
+El 08/10/2026 esa clave de recuperación se custodió en el Key Vault de prueba como secreto independiente `audit-backup-hmac-v1`, habilitado y etiquetado para su propósito histórico. No se configuró como clave activa de la aplicación, no se modificó ninguna copia ni base de datos y no aporta una clave para las firmas de eventos pendientes.
+
+Ese mismo día se revisaron por nombre, sin leer valores, las ubicaciones disponibles de Documentos, Escritorio, OneDrive, artefactos locales y la unidad `D:`. No apareció ningún archivo adicional `hmac.key`, `hmac.key.version`, `enc.key` ni `enc.key.version`; solo la pareja ya inventariada bajo `legacy_20261006`. Esta comprobación no demuestra que las claves faltantes no existan en otros equipos, medios desconectados o custodias externas.
+
 Los archivos de acompañamiento de las copias (`.hmac.ver`) identifican una versión para verificar una copia; no contienen por sí mismos el material de esa versión y no permiten reconstruir una clave perdida.
 
 ## Decisión operativa
@@ -28,6 +38,8 @@ No sustituir, regenerar ni volver a firmar eventos históricos. Una clave nueva 
 
 Los registros cuyas versiones no puedan recuperarse deben conservarse intactos y declararse como no verificables criptográficamente. La aplicación no debe afirmar que su integridad fue validada. Cualquier política de retención, etiquetado o exportación de esos registros se decidirá antes de modificar código o datos.
 
+El 08/10/2026 la responsable confirmó que no dispone de otra custodia, equipo o medio con las claves de firma históricas faltantes. Para la base actual, esas versiones se consideran no disponibles: los eventos afectados permanecen intactos y no verificables criptográficamente. Esta decisión no autoriza recalcular, sustituir ni volver a firmar ningún evento, ni activar Key Vault para esa base existente.
+
 ## Próximo dato necesario
 
-Determinar si existe una custodia segura de las claves locales usadas antes de la versión actual. Sin ese material no se puede completar una transición verificable del histórico.
+Conservar el estado de no verificabilidad del histórico y completar una revisión independiente que confirme que la aplicación, los informes y las exportaciones no lo presentan como verificado. La clave de recuperación de copias v1 ya custodiada en Key Vault sigue siendo independiente de este límite.

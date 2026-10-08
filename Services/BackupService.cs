@@ -24,8 +24,7 @@ namespace ClinicaLongevidadApp.Services
         {
             try
             {
-                var baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "logs");
-                Directory.CreateDirectory(baseDir);
+                var baseDir = AppPaths.LogsDir;
                 var file = Path.Combine(baseDir, "backup.log");
                 var line = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}\r\n";
                 File.AppendAllText(file, line, Encoding.UTF8);
@@ -86,6 +85,8 @@ namespace ClinicaLongevidadApp.Services
                 throw new InvalidOperationException("Database file not found or connection string is not file-based.");
             }
 
+            EnsureBackupSigningMaterialIsAvailable();
+
             var dir = backupDir ?? Path.GetDirectoryName(dbFile) ?? Environment.CurrentDirectory;
             Directory.CreateDirectory(dir);
 
@@ -143,6 +144,7 @@ namespace ClinicaLongevidadApp.Services
                 try
                 {
                     ComputeAndWriteChecksums(backupPath);
+                    EnsureBackupEvidenceExists(backupPath);
                 }
                 catch (Exception ex)
                 {
@@ -168,11 +170,14 @@ namespace ClinicaLongevidadApp.Services
                     try
                     {
                         ComputeAndWriteChecksums(backupPath);
+                        EnsureBackupEvidenceExists(backupPath);
                     }
                     catch (Exception ex3)
                     {
                         try { WriteDebugLog($"ComputeAndWriteChecksums (fallback) failed: {ex3.Message}"); } catch { }
                         AuditLogHelper.Warning("BackupService", $"ComputeAndWriteChecksums (fallback) failed: {ex3.Message}");
+                        DeleteBackupArtifacts(backupPath);
+                        throw new InvalidOperationException("Backup security evidence could not be created.", ex3);
                     }
 
                     return backupPath;
@@ -427,6 +432,36 @@ namespace ClinicaLongevidadApp.Services
             {
                 try { WriteDebugLog($"ComputeAndWriteChecksums fatal error: {ex.Message}\n{ex.StackTrace}"); } catch { }
                 AuditLogHelper.Warning("BackupService", $"ComputeAndWriteChecksums fatal error: {ex.Message}");
+            }
+        }
+
+        private void EnsureBackupSigningMaterialIsAvailable()
+        {
+            var key = _keyProvider?.GetHmacKey();
+            var version = _keyProvider?.GetHmacKeyVersion();
+            if (key == null || key.Length == 0 || string.IsNullOrWhiteSpace(version))
+            {
+                throw new InvalidOperationException("A backup requires an HMAC key and key version before it can be created.");
+            }
+        }
+
+        private static void EnsureBackupEvidenceExists(string backupPath)
+        {
+            foreach (var suffix in new[] { ".sha256", ".hmac", ".hmac.ver" })
+            {
+                var evidencePath = backupPath + suffix;
+                if (!File.Exists(evidencePath) || new FileInfo(evidencePath).Length == 0)
+                {
+                    throw new InvalidOperationException("Backup security evidence could not be created.");
+                }
+            }
+        }
+
+        private static void DeleteBackupArtifacts(string backupPath)
+        {
+            foreach (var suffix in new[] { "", ".sha256", ".hmac", ".hmac.ver" })
+            {
+                try { if (File.Exists(backupPath + suffix)) File.Delete(backupPath + suffix); } catch { }
             }
         }
 

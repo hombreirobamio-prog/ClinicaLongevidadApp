@@ -1,15 +1,37 @@
 # PowerShell script: check_audit_readiness.ps1
 # Ejecuta comprobaciones básicas para auditoría y muestra un resumen.
 
+param(
+    [string]$ArtifactsDir = '',
+    [switch]$Help
+)
+
+if ($Help) {
+    Write-Output "Usage: .\scripts\check_audit_readiness.ps1 [-ArtifactsDir <path>]"
+    Write-Output "Performs basic audit readiness checks and inspects recent backup artifacts."
+    exit 0
+}
+
 Write-Output "== ClinicaLongevidadApp: Audit Readiness Check =="
+$readinessProblems = @()
 
 # 1) dotnet test
-Write-Output "\n-- Running unit tests (dotnet test) --"
-$tests = dotnet test -v minimal
+Write-Output "\n-- Running Release unit tests (dotnet test) --"
+$tests = & dotnet test --configuration Release -v minimal
+$testExitCode = $LASTEXITCODE
 Write-Output $tests
+if ($testExitCode -ne 0) {
+    Write-Error "Unit tests failed with exit code $testExitCode."
+    exit $testExitCode
+}
 
-# 2) Check backup.log
-$log = Join-Path $env:LOCALAPPDATA "ClinicaLongevidadApp\logs\backup.log"
+# 2) Check backup.log in the active artifacts root.
+$artifactRoot = if (-not [string]::IsNullOrWhiteSpace($ArtifactsDir)) {
+    $ArtifactsDir
+} else {
+    Join-Path $env:LOCALAPPDATA 'ClinicaLongevidadAppArtifacts'
+}
+$log = Join-Path $artifactRoot 'logs\backup.log'
 if (Test-Path $log) {
     Write-Output "\n-- Found backup.log: $log --"
     $created = Select-String -Path $log -Pattern "TriggerImmediateBackup created:" | Select-Object -Last 5
@@ -36,20 +58,28 @@ if ($created) {
                 $hmacver = "$path.hmac.ver"
                 Write-Output ("  Size: " + (Get-Item $path).Length + " bytes")
                 Write-Output ("  SHA present: " + (Test-Path $sha))
-                if (Test-Path $sha) { Write-Output ("    -> " + (Get-Content $sha -Raw)) }
                 Write-Output ("  HMAC present: " + (Test-Path $hmac))
-                if (Test-Path $hmac) { Write-Output ("    -> " + (Get-Content $hmac -Raw)) }
                 Write-Output ("  HMAC.ver present: " + (Test-Path $hmacver))
+                if (-not (Test-Path $sha)) { $readinessProblems += "Missing SHA-256 evidence: $sha" }
+                if (-not (Test-Path $hmac)) { $readinessProblems += "Missing HMAC evidence: $hmac" }
+                if (-not (Test-Path $hmacver)) { $readinessProblems += "Missing HMAC version evidence: $hmacver" }
             } else {
                 Write-Output "  DB exists: NO (directory may have been removed)"
+                $readinessProblems += "Backup reported in log is missing: $path"
             }
         }
     }
 }
 
-# 4) Check audit-artifacts zip in repo
-$repoZip = Get-ChildItem -Path (Get-Location) -Filter "audit-artifacts_*.zip" -File | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-if ($repoZip) { Write-Output "\n-- Found audit artifact zip: $($repoZip.FullName)" } else { Write-Output "\n-- No audit artifact zip found in repo root." }
+# 4) Check audit artifact ZIP in the active artifacts root.
+$auditArtifactsDir = Join-Path $artifactRoot 'audit_artifacts'
+$auditZip = Get-ChildItem -Path $auditArtifactsDir -Filter "audit-artifacts_*.zip" -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+if ($auditZip) { Write-Output "\n-- Found audit artifact zip: $($auditZip.FullName)" } else { Write-Output "\n-- No audit artifact zip found in $auditArtifactsDir." }
+
+if ($readinessProblems.Count -gt 0) {
+    Write-Error ("Audit readiness failed:`n - " + ($readinessProblems -join "`n - "))
+    exit 1
+}
 
 Write-Output "\n== Check finished =="
 

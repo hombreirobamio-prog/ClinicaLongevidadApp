@@ -62,3 +62,17 @@ La prueba exige que la restauración sobre la conexión activa sea rechazada y q
 - Paquete operativo firmado que incluya backup autenticado, informe de integridad, resultado de recuperación y custodia independiente.
 
 Estado: ensayo sintético satisfactorio; auditoría operativa abierta.
+
+## Ensayo operativo aislado de recuperación 2026-10-07
+
+- Se restauró la copia autenticada `ClinicaLongevidad_backup_20261007_193716798.db` exclusivamente sobre un destino de prueba aislado; la base activa permaneció cerrada y no se abrió ni modificó.
+- `BackupService.RestoreBackup` comprobó SHA-256, HMAC y versión de clave antes de sustituir el destino. La restauración creó una copia previa del destino y reemplazó un marcador SQLite de prueba.
+- Resultado: correcto. El SHA-256 de la restauración coincidió con el de la copia fuente (`35B12BB2BB0DEF96737A45118F91EC4A91F7D4F5EC45F8A77F019EF929936B3F`), `PRAGMA integrity_check` devolvió `ok`, la copia previa coincidió con el destino de prueba y el marcador no permaneció tras restaurar.
+- Evidencia local protegida: `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\recovery-drill-20261007_195518\recovery-result.json`.
+- Este ensayo acredita el flujo técnico sobre una copia reciente y aislada. No resuelve las 2.100 verificaciones históricas sin su clave original, ni define RTO/RPO, ni autoriza restaurar sobre producción.
+
+## Ensayo de rechazo de evidencia manipulada 2026-10-07
+
+- Se alteró únicamente el comprobante HMAC de una copia aislada de prueba y se intentó restaurar sobre un destino ficticio.
+- Resultado: `BackupService` rechazó la evidencia antes de iniciar una sustitución; el destino conservó exactamente su hash previo y no se creó ninguna copia `pre_restore`.
+- Evidencia: `%LOCALAPPDATA%\ClinicaLongevidadAppArtifacts\audit_artifacts\recovery-rejection-drill-20261007_203353\recovery-rejection-result.json`.

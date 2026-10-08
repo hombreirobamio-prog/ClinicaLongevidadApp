@@ -11,7 +11,7 @@ class Program
             if (args.Length > 0 && !string.IsNullOrWhiteSpace(args[0])) conn = args[0];
             else
             {
-                var dbPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidad.db");
+                var dbPath = System.IO.Path.Combine(ClinicaLongevidadApp.Services.AppPaths.BaseDir, "ClinicaLongevidad.db");
                 conn = $"Data Source={dbPath}";
             }
 

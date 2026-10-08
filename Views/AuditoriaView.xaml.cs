@@ -76,11 +76,11 @@ namespace ClinicaLongevidadApp.Views
         {
             try
             {
-                var localLogs = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "logs");
-                var commonReports = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "ClinicaLongevidadApp", "AuditIntegrityReports");
+                var reports = ClinicaLongevidadApp.Services.AppPaths.ReportsDir;
+                var localLogs = ClinicaLongevidadApp.Services.AppPaths.LogsDir;
 
                 string? toOpen = null;
-                if (System.IO.Directory.Exists(commonReports)) toOpen = commonReports;
+                if (System.IO.Directory.Exists(reports)) toOpen = reports;
                 else if (System.IO.Directory.Exists(localLogs)) toOpen = localLogs;
 
                 if (string.IsNullOrWhiteSpace(toOpen))
@@ -89,7 +89,7 @@ namespace ClinicaLongevidadApp.Views
                     return;
                 }
 
-                try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer", "\"" + toOpen + "\"") { UseShellExecute = true }); } catch (Exception ex) { Services.DialogHelper.ShowError("Abrir diagnósticos", "No se pudo abrir la carpeta: " + ex.Message); }
+                try { OpenFileInExplorer(toOpen); } catch (Exception ex) { Services.DialogHelper.ShowError("Abrir diagnósticos", "No se pudo abrir la carpeta: " + ex.Message); }
             }
             catch { }
         }
@@ -143,7 +143,7 @@ namespace ClinicaLongevidadApp.Views
 
                                     if (!string.IsNullOrWhiteSpace(toOpen) && System.IO.Directory.Exists(toOpen))
                                     {
-                                        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer", "\"" + toOpen + "\"") { UseShellExecute = true }); } catch { }
+                                        try { OpenFileInExplorer(toOpen); } catch { }
                                     }
                                 }
                                 catch { }
@@ -214,6 +214,33 @@ namespace ClinicaLongevidadApp.Views
             }
 
             e.Handled = true;
+        }
+
+        private void OpenFileInExplorer(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return;
+
+            try
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    var psi = new System.Diagnostics.ProcessStartInfo("explorer", "/select,\"" + path + "\"") { UseShellExecute = true };
+                    System.Diagnostics.Process.Start(psi);
+                }
+                else if (OperatingSystem.IsLinux())
+                {
+                    var dir = System.IO.Path.GetDirectoryName(path) ?? path;
+                    var psi = new System.Diagnostics.ProcessStartInfo("xdg-open", dir) { UseShellExecute = true };
+                    System.Diagnostics.Process.Start(psi);
+                }
+                else if (OperatingSystem.IsMacOS())
+                {
+                    var dir = System.IO.Path.GetDirectoryName(path) ?? path;
+                    var psi = new System.Diagnostics.ProcessStartInfo("open", dir) { UseShellExecute = true };
+                    System.Diagnostics.Process.Start(psi);
+                }
+            }
+            catch { }
         }
 
         private async void BtnRecentAudit_Click(object sender, RoutedEventArgs e)

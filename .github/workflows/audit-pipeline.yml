@@ -28,6 +28,11 @@ jobs:
         env:
           AUDIT_RECOVERY_EVIDENCE_DIR: ${{ github.workspace }}/artifacts/ci-recovery
         run: dotnet test ClinicaLongevidadApp.Tests/ClinicaLongevidadApp.Tests.csproj --no-restore --configuration Release --logger 'trx;LogFileName=tests.trx' --results-directory artifacts/ci-test-results
+      - name: Build scheduled backup runner
+        run: |
+          dotnet restore tools/ScheduledBackup/ScheduledBackup.csproj
+          dotnet build tools/ScheduledBackup/ScheduledBackup.csproj --configuration Release --no-restore
+          dotnet run --project tools/ScheduledBackup/ScheduledBackup.csproj --configuration Release --no-build -- --help
       - name: Manifest and package regression
         run: |
           powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test_audit_manifest.ps1

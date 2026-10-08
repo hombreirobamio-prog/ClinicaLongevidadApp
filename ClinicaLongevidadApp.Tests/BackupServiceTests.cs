@@ -51,7 +51,7 @@ namespace ClinicaLongevidadApp.Tests
             if (!exists)
             {
                 // try to show debug log to help diagnose
-                var logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClinicaLongevidadApp", "logs");
+                var logDir = Path.Combine(ClinicaLongevidadApp.Services.AppPaths.LogsDir);
                 var logFile = Path.Combine(logDir, "backup.log");
                 string logContents = "";
                 try { if (File.Exists(logFile)) logContents = File.ReadAllText(logFile); } catch { }
@@ -96,6 +96,17 @@ namespace ClinicaLongevidadApp.Tests
             Assert.True(cnt >= 0);
         }
 
+        [Fact]
+        public void CreateBackup_RejectsMissingSigningMaterial_WithoutCreatingBackup()
+        {
+            var svc = new BackupService(new MissingKeyProvider());
+
+            var error = Assert.Throws<InvalidOperationException>(() => svc.CreateBackup(_conn, _backupDir));
+
+            Assert.Contains("HMAC key", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Empty(Directory.GetFiles(_backupDir));
+        }
+
         [Theory]
         [InlineData(".sha256")]
         [InlineData(".hmac")]
@@ -128,6 +139,16 @@ namespace ClinicaLongevidadApp.Tests
             try { if (!string.IsNullOrWhiteSpace(_originalCopyPath) && File.Exists(_originalCopyPath)) File.Delete(_originalCopyPath); } catch { }
             try { if (Directory.Exists(_backupDir)) Directory.Delete(_backupDir, true); } catch { }
             try { Environment.SetEnvironmentVariable("AUDIT_HMAC_KEY", _previousHmacEnv); } catch { }
+        }
+
+        private sealed class MissingKeyProvider : IKeyProvider
+        {
+            public byte[]? GetHmacKey() => null;
+            public byte[]? GetEncryptionKey() => null;
+            public string? GetHmacKeyVersion() => null;
+            public string? GetEncryptionKeyVersion() => null;
+            public byte[]? GetHmacKeyByVersion(string? version) => null;
+            public byte[]? GetEncryptionKeyByVersion(string? version) => null;
         }
     }
 }

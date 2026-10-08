@@ -49,3 +49,5 @@ try {
     $tests | Write-Host
 }
 finally { $env:AUDIT_HMAC_KEY = $oldKey; $env:AUDIT_HMAC_KEY_VERSION = $oldVersion }
+
+exit 0

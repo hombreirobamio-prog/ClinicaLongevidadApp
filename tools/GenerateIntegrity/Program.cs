@@ -11,9 +11,22 @@ namespace GenerateIntegrityTool
         {
             try
             {
-                if (args.Length < 1) throw new ArgumentException("An existing database path is required.");
-                var dbPath = args[0];
-                var reportPath = args.Length > 1 ? args[1] : Path.Combine(Directory.GetCurrentDirectory(), "IntegrityReport_CI.json");
+                string dbPath;
+                if (args.Length < 1 || string.IsNullOrWhiteSpace(args[0]))
+                {
+                    // Default to centralized DB location used by the app
+                    dbPath = Path.Combine(ClinicaLongevidadApp.Services.AppPaths.BaseDir, "ClinicaLongevidad.db");
+                }
+                else
+                {
+                    dbPath = args[0];
+                }
+
+                var reportPath = args.Length > 1 && !string.IsNullOrWhiteSpace(args[1])
+                    ? args[1]
+                    : Path.Combine(ClinicaLongevidadApp.Services.AppPaths.IntegrityReportsDir, "IntegrityReport_CI.json");
+                // Ensure report dir exists
+                try { Directory.CreateDirectory(Path.GetDirectoryName(reportPath) ?? Directory.GetCurrentDirectory()); } catch { }
 
                 var conn = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder { DataSource = dbPath, Mode = Microsoft.Data.Sqlite.SqliteOpenMode.ReadOnly, Pooling = false }.ToString();
                 var svc = new AuditoriaService(conn, initializeSchema: false);

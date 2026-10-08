@@ -37,9 +37,7 @@ namespace ClinicaLongevidadApp.Services
             try
             {
                 var secret = _client.GetSecret(_hmacSecretName);
-                string value = secret.Value.Value ?? string.Empty;
-                // support base64 or raw
-                try { return Convert.FromBase64String(value); } catch { return System.Text.Encoding.UTF8.GetBytes(value); }
+                return DecodeHmacSecret(secret.Value.Value);
             }
             catch
             {
@@ -54,8 +52,7 @@ namespace ClinicaLongevidadApp.Services
             try
             {
                 var secret = _client.GetSecret(_encSecretName);
-                string value = secret.Value.Value ?? string.Empty;
-                try { return Convert.FromBase64String(value); } catch { return System.Text.Encoding.UTF8.GetBytes(value); }
+                return DecodeEncryptionSecret(secret.Value.Value);
             }
             catch
             {
@@ -98,8 +95,7 @@ namespace ClinicaLongevidadApp.Services
             try
             {
                 var secret = _client.GetSecret(_hmacSecretName, version);
-                string value = secret.Value.Value ?? string.Empty;
-                try { return Convert.FromBase64String(value); } catch { return System.Text.Encoding.UTF8.GetBytes(value); }
+                return DecodeHmacSecret(secret.Value.Value);
             }
             catch
             {
@@ -114,8 +110,35 @@ namespace ClinicaLongevidadApp.Services
             try
             {
                 var secret = _client.GetSecret(_encSecretName, version);
-                string value = secret.Value.Value ?? string.Empty;
-                try { return Convert.FromBase64String(value); } catch { return System.Text.Encoding.UTF8.GetBytes(value); }
+                return DecodeEncryptionSecret(secret.Value.Value);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static byte[]? DecodeHmacSecret(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return null;
+            try
+            {
+                var key = Convert.FromBase64String(value);
+                return key.Length >= 32 ? key : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static byte[]? DecodeEncryptionSecret(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return null;
+            try
+            {
+                var key = Convert.FromBase64String(value);
+                return key.Length is 16 or 24 or 32 ? key : null;
             }
             catch
             {
