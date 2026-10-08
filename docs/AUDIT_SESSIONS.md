@@ -543,3 +543,9 @@ No se han realizado en este cierre cambios de código, migraciones, restauracion
 
 - La ejecución [37699559905](https://github.com/hombreirobamio-prog/ClinicaLongevidadApp/actions/runs/37699559905) sobre `506c0f6` terminó correctamente: **204/204 pruebas**, cero fallos, cero errores y cero omitidas.
 - Validó también el caso de cola conservada tras un webhook inaccesible. La evidencia descargada contiene el TRX, 13 informes de recuperación y el ZIP `audit-tests-938673cbf1c2496f8f92953af26d2ace.zip`, SHA-256 `69B9FA0700D9898721BEDA546368AE7BAA7F3FF4B23A5E7BD8223823D8882A22`.
+
+## Recuperación de claves heredadas 2026-10-08
+
+- Se localizaron `hmac.key`/`hmac.key.version` y `enc.key`/`enc.key.version` en una copia heredada. Sus formatos y longitudes son válidos; sus valores no se mostraron, copiaron ni registraron.
+- La clave HMAC se cargó solo en memoria para verificar `legacy_20261006\local\ClinicaLongevidad.db` en modo de solo lectura: `VerifyIntegrity` devolvió cero errores.
+- La comprobación de la misma clave sobre la base actual conserva 2.100 incidencias tempranas por ausencia de hash o versión verificable. No se modificó ninguna base ni se intentó volver a firmar registros.

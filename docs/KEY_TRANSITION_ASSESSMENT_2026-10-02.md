@@ -8,6 +8,12 @@ La base de auditoría existente contiene eventos con 12 versiones HMAC no vacía
 
 No se leyó, copió ni registró material de claves durante esta evaluación. Tampoco se modificó la base de auditoría, el almacén de claves ni las copias de seguridad.
 
+## Hallazgo posterior: copia heredada localizada (08/10/2026)
+
+Se localizó una pareja local heredada bajo `legacy_20261006\local\keys`: `hmac.key` con su versión y `enc.key` con su versión. Ambas claves están en Base64 válido de 32 bytes y sus identificadores de versión tienen el formato esperado. Los valores no se mostraron, copiaron ni registraron.
+
+La clave HMAC, cargada únicamente en memoria, validó la copia heredada `legacy_20261006\local\ClinicaLongevidad.db` con cero errores mediante `VerifyIntegrity` en modo de solo lectura. La misma comprobación sobre la base actual no resuelve sus 2.100 incidencias: los primeros registros carecen de hash o de versión exacta verificable. Por ello, esta recuperación acredita la copia heredada, pero no autoriza reescribir ni declarar verificados esos registros incompletos de la base actual.
+
 Los archivos de acompañamiento de las copias (`.hmac.ver`) identifican una versión para verificar una copia; no contienen por sí mismos el material de esa versión y no permiten reconstruir una clave perdida.
 
 ## Decisión operativa
