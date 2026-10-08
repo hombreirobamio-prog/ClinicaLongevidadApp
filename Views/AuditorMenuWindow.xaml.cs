@@ -459,7 +459,12 @@ namespace ClinicaLongevidadApp.Views
         {
             try
             {
-                var dlg = new OpenFileDialog { Filter = "Manifest text|*.txt", Title = "Seleccionar manifiesto de auditoría" };
+                var dlg = new OpenFileDialog
+                {
+                    Filter = "Manifest text|*.txt",
+                    Title = "Seleccionar manifiesto de auditoría",
+                    InitialDirectory = ClinicaLongevidadApp.Services.AppPaths.AuditManifestsDir
+                };
                 if (dlg.ShowDialog(this) != true) return;
 
                 _lastManifestPath = dlg.FileName;

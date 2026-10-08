@@ -29,6 +29,7 @@ namespace ClinicaLongevidadApp.Services
         public static string DiagnosticsDir => EnsureDir(Path.Combine(ReportsDir, "diagnostics"));
         public static string ExportsDir => EnsureDir(Path.Combine(BaseDir, "exports"));
         public static string AuditArtifactsDir => EnsureDir(Path.Combine(BaseDir, "audit_artifacts"));
+        public static string AuditManifestsDir => EnsureDir(Path.Combine(AuditArtifactsDir, "manifests"));
 
         // Locations under CommonApplicationData for reports intended to be shared
         public static string CommonBaseDir => EnsureDir(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), AppFolderName));
