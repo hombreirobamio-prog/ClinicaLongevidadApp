@@ -16,6 +16,8 @@ La copia heredada `legacy_20261006\local\ClinicaLongevidad.db` no contiene regis
 
 El 08/10/2026 esa clave de recuperación se custodió en el Key Vault de prueba como secreto independiente `audit-backup-hmac-v1`, habilitado y etiquetado para su propósito histórico. No se configuró como clave activa de la aplicación, no se modificó ninguna copia ni base de datos y no aporta una clave para las firmas de eventos pendientes.
 
+Ese mismo día se revisaron por nombre, sin leer valores, las ubicaciones disponibles de Documentos, Escritorio, OneDrive, artefactos locales y la unidad `D:`. No apareció ningún archivo adicional `hmac.key`, `hmac.key.version`, `enc.key` ni `enc.key.version`; solo la pareja ya inventariada bajo `legacy_20261006`. Esta comprobación no demuestra que las claves faltantes no existan en otros equipos, medios desconectados o custodias externas.
+
 Los archivos de acompañamiento de las copias (`.hmac.ver`) identifican una versión para verificar una copia; no contienen por sí mismos el material de esa versión y no permiten reconstruir una clave perdida.
 
 ## Decisión operativa

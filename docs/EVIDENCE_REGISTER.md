@@ -15,6 +15,7 @@
 | 08/10/2026 | Inventario de claves heredadas | Pareja HMAC/ENC localizada; la copia SQLite asociada tiene 0 registros de auditoría y no acredita firmas | `legacy_20261006\local\keys` y copia SQLite asociada | Solo lectura; no se registraron valores secretos ni se modificaron datos. |
 | 08/10/2026 | Validación de clave histórica de copia v1 | Una clave HMAC Base64 distinta validó SHA-256 y HMAC de dos copias del manifiesto histórico de versión `v1` | Manifiesto `audit_manifest_20260928_150118.txt` y copias heredadas asociadas | Verificada en memoria; no se registró ni movió material secreto. |
 | 08/10/2026 | Custodia de clave histórica de copia v1 | Se creó el secreto independiente `audit-backup-hmac-v1`, habilitado, en el Key Vault de prueba | Portal de Azure, Key Vault `clinica-longevidad-2026` | No se vinculó a la aplicación ni a la auditoría de eventos; el valor no se registra en este inventario. |
+| 08/10/2026 | Búsqueda de claves históricas disponibles | No se localizaron archivos de clave adicionales en las ubicaciones y unidad disponibles; solo la pareja ya inventariada | Documentos, Escritorio, OneDrive, artefactos locales y unidad `D:` | Búsqueda nominal de solo lectura; no prueba ausencia en medios no conectados ni otros equipos. |
 
 ## Alta de una nueva evidencia
 
