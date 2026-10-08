@@ -38,6 +38,8 @@ No sustituir, regenerar ni volver a firmar eventos históricos. Una clave nueva 
 
 Los registros cuyas versiones no puedan recuperarse deben conservarse intactos y declararse como no verificables criptográficamente. La aplicación no debe afirmar que su integridad fue validada. Cualquier política de retención, etiquetado o exportación de esos registros se decidirá antes de modificar código o datos.
 
+El 08/10/2026 la responsable confirmó que no dispone de otra custodia, equipo o medio con las claves de firma históricas faltantes. Para la base actual, esas versiones se consideran no disponibles: los eventos afectados permanecen intactos y no verificables criptográficamente. Esta decisión no autoriza recalcular, sustituir ni volver a firmar ningún evento, ni activar Key Vault para esa base existente.
+
 ## Próximo dato necesario
 
-Determinar si existe una custodia segura de las claves locales usadas antes de la versión actual. Sin ese material no se puede completar una transición verificable del histórico.
+Conservar el estado de no verificabilidad del histórico y completar una revisión independiente que confirme que la aplicación, los informes y las exportaciones no lo presentan como verificado. La clave de recuperación de copias v1 ya custodiada en Key Vault sigue siendo independiente de este límite.
