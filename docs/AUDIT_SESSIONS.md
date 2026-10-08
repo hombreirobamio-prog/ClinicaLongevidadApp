@@ -560,3 +560,9 @@ No se han realizado en este cierre cambios de código, migraciones, restauracion
 - Se eliminó la tarea `ClinicaLongevidadApp\DailyAuthenticatedBackup`, las cuatro variables de usuario de claves de auditoría y el archivo local de la clave histórica de copia v1.
 - La comprobación posterior confirmó que no existen la raíz de artefactos, la tarea, el archivo local de clave ni valores en las variables eliminadas. No se modificaron el repositorio, datos remotos ni los recursos de prueba de Azure.
 - Se volvió a validar el tratamiento de firmas históricas sin clave mediante cinco pruebas dirigidas: una versión HMAC retirada se informa como `unverifiable`, nunca como íntegra. La prueba creó únicamente un registro local de 1,2 KB, que se eliminó junto con la raíz de artefactos al finalizar.
+
+## Preparación de traslado 2026-10-08
+
+- Se generó una entrega autocontenida para Windows x64, sin bases de datos, copias, claves, registros ni resultados de pruebas. Incluye la aplicación, el ejecutor opcional de copias diarias, sus comprobantes SHA-256 y una guía de instalación.
+- Se validó la instalación aislada del ejecutor de copias: crea la tarea diaria y el ejecutor en la ubicación esperada; ambos se eliminaron después de la prueba.
+- La [checklist de traslado](CHECKLIST_TRASLADO_NUEVO_EQUIPO.md) fija el orden de instalación limpia, configuración de claves, primera auditoría y copias iniciales del ordenador de destino.
